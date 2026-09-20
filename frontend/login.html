@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — Location App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">🏠 Location App</div>
+    <nav>
+      <a href="index.html">Accueil</a>
+      <a href="login.html" class="active">Connexion</a>
+      <a href="register.html" class="btn-primary">Inscription</a>
+    </nav>
+  </header>
+
+  <main class="auth-container">
+    <div class="auth-card">
+      <h1>Connexion</h1>
+      <p class="auth-subtitle">Accédez à votre espace personnel</p>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="email">Adresse email</label>
+          <input type="email" id="email" name="email" placeholder="exemple@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="mot_de_passe">Mot de passe</label>
+          <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" required>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">Se connecter</button>
+      </form>
+
+      <p class="auth-footer">
+        Pas encore de compte ? <a href="register.html">Créer un compte</a>
+      </p>
+
+      <div id="message" class="message"></div>
+    </div>
+  </main>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

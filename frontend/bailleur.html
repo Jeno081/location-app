@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Bailleur — Location App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">🏠 Location App</div>
+    <nav>
+      <span id="userName" class="user-badge"></span>
+      <button onclick="logout()" class="btn-secondary">Déconnexion</button>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <div class="dashboard-header">
+      <h1>Mon espace bailleur</h1>
+      <button class="btn-primary" onclick="openPropertyModal()">+ Ajouter un logement</button>
+    </div>
+
+    <!-- Statistiques rapides -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Logements</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statDispo">0</div>
+        <div class="stat-label">Disponibles</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statLoyer">0 $</div>
+        <div class="stat-label">Revenu mensuel</div>
+      </div>
+    </div>
+
+    <!-- Liste des logements -->
+    <h2 class="section-title">Mes logements</h2>
+    <div id="propertiesList" class="properties-grid">
+      <p class="empty-message">Chargement...</p>
+    </div>
+  </main>
+
+  <!-- Modal (fenêtre popup) pour ajouter un logement -->
+  <div id="propertyModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closePropertyModal()">&times;</span>
+      <h2>Ajouter un logement</h2>
+
+      <form id="propertyForm">
+        <div class="form-group">
+          <label for="titre">Titre</label>
+          <input type="text" id="titre" placeholder="Ex : Appartement 2 chambres" required>
+        </div>
+
+        <div class="form-group">
+          <label for="adresse">Adresse</label>
+          <input type="text" id="adresse" placeholder="Ex : 12 Avenue de la Paix" required>
+        </div>
+
+        <div class="form-group">
+          <label for="ville">Ville</label>
+          <input type="text" id="ville" placeholder="Ex : Kinshasa">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="loyer">Loyer ($)</label>
+            <input type="number" id="loyer" placeholder="350" required min="0">
+          </div>
+          <div class="form-group">
+            <label for="charges">Charges ($)</label>
+            <input type="number" id="charges" placeholder="50" min="0" value="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" rows="3" placeholder="Décrivez le logement..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">Créer le logement</button>
+      </form>
+
+      <div id="propertyMessage" class="message"></div>
+    </div>
+  </div>
+
+  <script src="js/bailleur.js"></script>
+</body>
+</html>

@@ -1,20 +1,23 @@
 // ============================================
-// server.js — Point d'entrée de notre backend
+// server.js — Point d'entrée du backend
 // ============================================
 
 const express = require("express");
+const path = require("path");
 const app = express();
 const PORT = 3000;
 
-// --- Middleware global ---
-app.use(express.json()); // Permet de recevoir du JSON dans les requêtes
+// --- Middlewares globaux ---
+app.use(express.json());
 
-// --- Routes ---
-app.get("/", (req, res) => {
-  res.send("Bienvenue sur l'API de Location App !");
+// --- Servir le frontend (HTML, CSS, JS) ---
+app.use(express.static(path.join(__dirname, "../frontend")));
+
+// --- Routes API ---
+app.get("/api", (req, res) => {
+  res.json({ message: "API Location App operationnelle" });
 });
 
-// Routes d'authentification
 const authRoutes = require("./routes/api/auth");
 app.use("/api/auth", authRoutes);
 

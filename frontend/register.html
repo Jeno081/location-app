@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription — Location App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">🏠 Location App</div>
+    <nav>
+      <a href="index.html">Accueil</a>
+      <a href="login.html">Connexion</a>
+      <a href="register.html" class="btn-primary">Inscription</a>
+    </nav>
+  </header>
+
+  <main class="auth-container">
+    <div class="auth-card">
+      <h1>Créer un compte</h1>
+      <p class="auth-subtitle">Rejoignez Location App en quelques secondes</p>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="nom">Nom complet</label>
+          <input type="text" id="nom" name="nom" placeholder="Ex : Jean Bailleur" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">Adresse email</label>
+          <input type="email" id="email" name="email" placeholder="exemple@email.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="telephone">Téléphone</label>
+          <input type="tel" id="telephone" name="telephone" placeholder="0812345678">
+        </div>
+
+        <div class="form-group">
+          <label for="mot_de_passe">Mot de passe</label>
+          <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Au moins 6 caractères" required minlength="6">
+        </div>
+
+        <div class="form-group">
+          <label>Je suis :</label>
+          <div class="role-choice">
+            <label class="role-option">
+              <input type="radio" name="role" value="bailleur" required>
+              <span>🏠 Bailleur (propriétaire)</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="locataire" required>
+              <span>🔑 Locataire</span>
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary btn-block">Créer mon compte</button>
+      </form>
+
+      <p class="auth-footer">
+        Vous avez déjà un compte ? <a href="login.html">Se connecter</a>
+      </p>
+
+      <!-- Zone de message (succès / erreur) -->
+      <div id="message" class="message"></div>
+    </div>
+  </main>
+
+  <script src="js/register.js"></script>
+</body>
+</html>

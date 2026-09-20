@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Espace Locataire — Location App</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <header class="navbar">
+    <div class="logo">🏠 Location App</div>
+    <nav>
+      <span id="userName" class="user-badge"></span>
+      <button onclick="logout()" class="btn-secondary">Déconnexion</button>
+    </nav>
+  </header>
+
+  <main class="dashboard">
+    <div class="dashboard-header">
+      <h1>Logements disponibles</h1>
+      <input type="text" id="searchInput" placeholder="🔍 Rechercher par ville ou titre..." class="search-input">
+    </div>
+
+    <div id="propertiesList" class="properties-grid">
+      <p class="empty-message">Chargement...</p>
+    </div>
+  </main>
+
+  <script src="js/locataire.js"></script>
+</body>
+</html>
