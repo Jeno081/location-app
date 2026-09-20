@@ -24,6 +24,10 @@ app.use("/api/auth", authRoutes);
 const propertyRoutes = require("./routes/api/properties");
 app.use("/api/properties", propertyRoutes);
 
+const incidentRoutes = require("./routes/api/incidents");
+app.use("/api/incidents", incidentRoutes);
+
+
 // --- Démarrage ---
 app.listen(PORT, () => {
   console.log("Serveur demarre sur http://localhost:" + PORT);

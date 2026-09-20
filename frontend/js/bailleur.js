@@ -136,3 +136,65 @@ function logout() {
 
 // --- Chargement initial ---
 loadProperties();
+
+// ============================================
+// 6. Charger les incidents reçus
+// ============================================
+async function loadIncidents() {
+  const container = document.getElementById("incidentsList");
+  try {
+    const response = await fetch(`${API_URL}/incidents/recus`, {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      container.innerHTML = `<p class="empty-message">Erreur : ${data.message}</p>`;
+      return;
+    }
+
+    if (data.incidents.length === 0) {
+      container.innerHTML = `<p class="empty-message">Aucun incident signalé pour l'instant.</p>`;
+      return;
+    }
+
+    container.innerHTML = data.incidents.map(i => `
+      <div class="property-card">
+        <div class="property-status ${i.statut === 'resolu' ? 'disponible' : 'loue'}">${i.statut}</div>
+        <h3>${i.property_titre}</h3>
+        <p class="property-address">👤 ${i.locataire_nom} — ${i.locataire_tel || "—"}</p>
+        <p class="property-desc">${i.description}</p>
+        <p class="property-charges">Signalé le : ${new Date(i.date_creation).toLocaleDateString('fr-FR')}</p>
+        <select onchange="updateIncidentStatus(${i.id}, this.value)" class="search-input" style="width:100%;margin-top:10px;">
+          <option value="ouvert" ${i.statut === 'ouvert' ? 'selected' : ''}>Ouvert</option>
+          <option value="en_cours" ${i.statut === 'en_cours' ? 'selected' : ''}>En cours</option>
+          <option value="resolu" ${i.statut === 'resolu' ? 'selected' : ''}>Résolu</option>
+        </select>
+      </div>
+    `).join("");
+  } catch (err) {
+    container.innerHTML = `<p class="empty-message">Erreur de chargement.</p>`;
+  }
+}
+
+async function updateIncidentStatus(id, statut) {
+  try {
+    const response = await fetch(`${API_URL}/incidents/${id}/statut`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ statut })
+    });
+
+    if (response.ok) {
+      loadIncidents();
+    }
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// --- Charger les incidents au démarrage ---
+loadIncidents();
