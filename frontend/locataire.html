@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Espace Locataire — Location App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -16,7 +19,7 @@
     </nav>
   </header>
 
-   <main class="dashboard">
+  <main class="dashboard">
     <div class="dashboard-header">
       <h1>Logements disponibles</h1>
       <input type="text" id="searchInput" placeholder="🔍 Rechercher par ville ou titre..." class="search-input">
@@ -26,31 +29,75 @@
       <p class="empty-message">Chargement...</p>
     </div>
 
-    <!-- Section Mes signalements -->
+    <h2 class="section-title" style="margin-top: 60px;">Mes contrats de location</h2>
+    <div id="contractsList" class="properties-grid">
+      <p class="empty-message">Chargement...</p>
+    </div>
+
+    <h2 class="section-title" style="margin-top: 60px;">Mes paiements</h2>
+    <div id="paymentsList" class="properties-grid">
+      <p class="empty-message">Chargement...</p>
+    </div>
+
     <h2 class="section-title" style="margin-top: 60px;">Mes signalements</h2>
     <div id="incidentsList" class="properties-grid">
       <p class="empty-message">Chargement...</p>
     </div>
   </main>
 
-  <!-- Modale pour signaler un incident -->
+  <!-- Modale incident -->
   <div id="incidentModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeIncidentModal()">&times;</span>
       <h2>Signaler un problème</h2>
-
       <form id="incidentForm">
         <div class="form-group">
           <label for="incidentDescription">Décrivez le problème</label>
-          <textarea id="incidentDescription" rows="4" placeholder="Ex : Fuite d'eau dans la salle de bain..." required></textarea>
+          <textarea id="incidentDescription" rows="4" placeholder="Ex : Fuite d'eau..." required></textarea>
         </div>
-
         <input type="hidden" id="incidentPropertyId">
-
-        <button type="submit" class="btn-primary btn-block">Envoyer le signalement</button>
+        <button type="submit" class="btn-primary btn-block">Envoyer</button>
       </form>
-
       <div id="incidentMessage" class="message"></div>
+    </div>
+  </div>
+
+  <!-- Modale paiement -->
+  <div id="paymentModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closePaymentModal()">&times;</span>
+      <h2>Effectuer un paiement</h2>
+      <form id="paymentForm">
+        <div class="form-group">
+          <label for="paymentContract">Contrat</label>
+          <select id="paymentContract" required>
+            <option value="">-- Choisir un contrat --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="paymentMois">Mois concerné</label>
+          <input type="text" id="paymentMois" placeholder="Ex : Octobre 2026" required>
+        </div>
+        <div class="form-group">
+          <label for="paymentMontant">Montant ($)</label>
+          <input type="number" id="paymentMontant" required min="0">
+        </div>
+        <div class="form-group">
+          <label>Méthode de paiement</label>
+          <div class="role-choice">
+            <label class="role-option">
+              <input type="radio" name="methode" value="mobile_money" checked>
+              <span>📱 Mobile Money (M-Pesa)</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="methode" value="carte">
+              <span>💳 Carte bancaire</span>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary btn-block">Payer maintenant</button>
+      </form>
+      <div id="paymentMessage" class="message"></div>
     </div>
   </div>
 
