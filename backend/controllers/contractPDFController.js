@@ -111,7 +111,17 @@ exports.downloadContractPDF = (req, res) => {
   if (contract.property_charges) {
     doc.text(`Charges mensuelles : ${contract.property_charges} $`);
   }
-  doc.text(`Statut du contrat : ${contract.statut.replace("_", " ").toUpperCase()}`);
+    doc.text(`Statut du contrat : ${contract.statut.replace("_", " ").toUpperCase()}`);
+
+  // ✅ Clauses personnalisées
+  if (contract.clauses_personnalisees) {
+    doc.moveDown(1.2);
+    doc.fontSize(12).fillColor("#0f172a").font("Helvetica-Bold")
+       .text("CLAUSES PARTICULIERES", { underline: true });
+    doc.moveDown(0.4);
+    doc.font("Helvetica").fontSize(10).fillColor("#334155");
+    doc.text(contract.clauses_personnalisees, { align: "justify" });
+  }
 
   doc.moveDown(1.5);
 

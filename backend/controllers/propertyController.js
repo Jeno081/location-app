@@ -144,3 +144,28 @@ exports.deleteProperty = (req, res) => {
 
   res.json({ message: "Logement supprime avec succes" });
 };
+
+// ============================================
+// MES LOGEMENTS LOUÉS — GET /api/properties/mes-locations
+// (locataire : retourne ses logements actifs)
+// ============================================
+exports.getMesLocations = (req, res) => {
+  const locataire_id = req.user.id;
+
+  const properties = db.prepare(`
+    SELECT p.*,
+           c.id AS contract_id,
+           c.date_debut, c.date_fin, c.montant_loyer,
+           c.statut AS contract_statut,
+           b.nom AS bailleur_nom,
+           b.email AS bailleur_email,
+           b.telephone AS bailleur_telephone
+    FROM properties p
+    JOIN contracts c ON c.property_id = p.id
+    JOIN users b ON p.bailleur_id = b.id
+    WHERE c.locataire_id = ? AND c.statut = 'actif'
+    ORDER BY c.date_creation DESC
+  `).all(locataire_id);
+
+  res.json({ properties });
+};

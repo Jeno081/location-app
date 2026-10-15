@@ -11,15 +11,10 @@
 </head>
 <body>
 
-  <header class="navbar">
-    <div class="logo">🏠 Location App</div>
-    <nav>
-      <span id="userName" class="user-badge"></span>
-      <button onclick="logout()" class="btn-secondary">Déconnexion</button>
-    </nav>
-  </header>
+  <div id="navbar"></div>
 
   <main class="dashboard">
+
     <div class="dashboard-header">
       <h1>Mon espace bailleur</h1>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
@@ -29,43 +24,56 @@
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-value" id="statTotal">0</div>
-        <div class="stat-label">Logements</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statDispo">0</div>
-        <div class="stat-label">Disponibles</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statLoyer">0 $</div>
-        <div class="stat-label">Revenu mensuel</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value" id="statEncaisse">0 $</div>
-        <div class="stat-label">Total encaissé</div>
-      </div>
+      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Logements</div></div>
+      <div class="stat-card"><div class="stat-value" id="statDispo">0</div><div class="stat-label">Disponibles</div></div>
+      <div class="stat-card"><div class="stat-value" id="statLoues">0</div><div class="stat-label">Loués</div></div>
+      <div class="stat-card"><div class="stat-value" id="statLoyer">0 $</div><div class="stat-label">Revenu mensuel</div></div>
+      <div class="stat-card"><div class="stat-value" id="statEncaisse">0 $</div><div class="stat-label">Total encaissé</div></div>
+      <div class="stat-card"><div class="stat-value" id="statRetards">0</div><div class="stat-label">En retard</div></div>
     </div>
 
-    <h2 class="section-title">Mes logements</h2>
-    <div id="propertiesList" class="properties-grid">
-      <p class="empty-message">Chargement...</p>
+    <div class="tabs">
+      <button class="tab active" data-tab="suivi">📊 Suivi paiements</button>
+      <button class="tab" data-tab="biens">🏠 Mes biens</button>
+      <button class="tab" data-tab="locataires">👥 Locataires</button>
+      <button class="tab" data-tab="contrats">📄 Contrats</button>
+      <button class="tab" data-tab="paiements">💳 Paiements</button>
+      <button class="tab" data-tab="incidents">🔧 Incidents</button>
     </div>
 
-    <h2 class="section-title" style="margin-top: 60px;">Mes contrats</h2>
-    <div id="contractsList" class="properties-grid">
-      <p class="empty-message">Chargement...</p>
+    <div id="tab-suivi" class="tab-content active">
+      <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
-    <h2 class="section-title" style="margin-top: 60px;">Paiements reçus</h2>
-    <div id="paymentsList" class="properties-grid">
-      <p class="empty-message">Chargement...</p>
+    <div id="tab-biens" class="tab-content">
+      <div class="filter-bar">
+        <button class="filter-btn active" data-filter="tous" onclick="filterProperties(this, 'tous')">Tous</button>
+        <button class="filter-btn" data-filter="disponible" onclick="filterProperties(this, 'disponible')">🟢 Disponibles</button>
+        <button class="filter-btn" data-filter="loue" onclick="filterProperties(this, 'loue')">🔴 Loués</button>
+        <button class="filter-btn" data-filter="archive" onclick="filterProperties(this, 'archive')">⚫ Archivés</button>
+      </div>
+      <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
-    <h2 class="section-title" style="margin-top: 60px;">Incidents signalés</h2>
-    <div id="incidentsList" class="properties-grid">
-      <p class="empty-message">Chargement...</p>
+    <div id="tab-locataires" class="tab-content">
+      <div id="tenantsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
+    <div id="tab-contrats" class="tab-content">
+      <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
+    </div>
+
+    <div id="tab-paiements" class="tab-content">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
+        <button class="btn-primary" onclick="exportCSV()">📊 Exporter en Excel</button>
+      </div>
+      <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
+    </div>
+
+    <div id="tab-incidents" class="tab-content">
+      <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
+    </div>
+
   </main>
 
   <!-- Modale logement -->
@@ -74,39 +82,17 @@
       <span class="modal-close" onclick="closePropertyModal()">&times;</span>
       <h2>Ajouter un logement</h2>
       <form id="propertyForm">
-        <div class="form-group">
-          <label for="titre">Titre</label>
-          <input type="text" id="titre" placeholder="Ex : Appartement 2 chambres" required>
-        </div>
-        <div class="form-group">
-          <label for="adresse">Adresse</label>
-          <input type="text" id="adresse" placeholder="Ex : 12 Avenue de la Paix" required>
-        </div>
-        <div class="form-group">
-          <label for="ville">Ville</label>
-          <input type="text" id="ville" placeholder="Ex : Kinshasa">
-        </div>
+        <div class="form-group"><label for="titre">Titre</label><input type="text" id="titre" required></div>
+        <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" required></div>
+        <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville"></div>
         <div class="form-row">
-          <div class="form-group">
-            <label for="loyer">Loyer ($)</label>
-            <input type="number" id="loyer" placeholder="350" required min="0">
-          </div>
-          <div class="form-group">
-            <label for="charges">Charges ($)</label>
-            <input type="number" id="charges" placeholder="50" min="0" value="0">
-          </div>
+          <div class="form-group"><label for="loyer">Loyer ($)</label><input type="number" id="loyer" required min="0"></div>
+          <div class="form-group"><label for="charges">Charges ($)</label><input type="number" id="charges" min="0" value="0"></div>
         </div>
-        <div class="form-group">
-          <label for="description">Description</label>
-          <textarea id="description" rows="3" placeholder="Décrivez le logement..."></textarea>
-        </div>
-        <div class="form-group">
-          <label for="photos">Photos (max 5)</label>
-          <input type="file" id="photos" accept="image/*" multiple>
-        </div>
+        <div class="form-group"><label for="description">Description</label><textarea id="description" rows="3"></textarea></div>
+        <div class="form-group"><label for="photos">Photos (max 5)</label><input type="file" id="photos" accept="image/*" multiple></div>
         <button type="submit" class="btn-primary btn-block">Créer le logement</button>
       </form>
-      <div id="propertyMessage" class="message"></div>
     </div>
   </div>
 
@@ -114,38 +100,78 @@
   <div id="contractModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeContractModal()">&times;</span>
-      <h2>Créer un contrat de location</h2>
+      <h2>Créer un contrat</h2>
       <form id="contractForm">
         <div class="form-group">
-          <label for="contractProperty">Logement</label>
-          <select id="contractProperty" required>
-            <option value="">-- Choisir --</option>
-          </select>
+          <label for="contractProperty">Logement (uniquement disponibles)</label>
+          <select id="contractProperty" required><option value="">-- Choisir --</option></select>
         </div>
-        <div class="form-group">
-          <label for="contractLocataire">Email du locataire</label>
-          <input type="email" id="contractLocataire" placeholder="locataire@email.com" required>
+        <div class="form-group"><label for="contractLocataire">Email du locataire</label><input type="email" id="contractLocataire" required></div>
+        <div class="form-row">
+          <div class="form-group"><label for="contractLocataireNom">Nom du locataire</label><input type="text" id="contractLocataireNom"></div>
+          <div class="form-group"><label for="contractLocataireTel">Téléphone</label><input type="tel" id="contractLocataireTel"></div>
         </div>
         <div class="form-row">
-          <div class="form-group">
-            <label for="contractDebut">Date de début</label>
-            <input type="date" id="contractDebut" required>
-          </div>
-          <div class="form-group">
-            <label for="contractFin">Date de fin (optionnel)</label>
-            <input type="date" id="contractFin">
-          </div>
+          <div class="form-group"><label for="contractDebut">Date début</label><input type="date" id="contractDebut" required></div>
+          <div class="form-group"><label for="contractFin">Date fin</label><input type="date" id="contractFin"></div>
         </div>
+        <div class="form-group"><label for="contractMontant">Loyer ($)</label><input type="number" id="contractMontant" required min="0"></div>
+
         <div class="form-group">
-          <label for="contractMontant">Montant du loyer ($)</label>
-          <input type="number" id="contractMontant" placeholder="350" required min="0">
+          <label for="contractClauses">Clauses personnalisées (optionnel)</label>
+          <textarea id="contractClauses" rows="5" placeholder="Ex :&#10;Le préavis de départ est de 2 mois.&#10;Une caution de 2 mois de loyer est exigée.&#10;Les animaux domestiques ne sont pas autorisés."></textarea>
+          <p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px;">
+            💡 Ces clauses apparaîtront dans le contrat PDF signé.
+          </p>
         </div>
+
         <button type="submit" class="btn-primary btn-block">Créer le contrat</button>
       </form>
-      <div id="contractMessage" class="message"></div>
     </div>
   </div>
 
+  <!-- Modale mot de passe -->
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <h2>🔑 Compte locataire créé</h2>
+      <p style="color: var(--gray-700); margin-bottom: 20px;">Notez ce mot de passe et communiquez-le au locataire.</p>
+      <div style="background: linear-gradient(135deg, #eef2ff 0%, #fce7f3 100%); padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+        <div style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 8px; text-transform: uppercase;">Mot de passe temporaire</div>
+        <div id="passwordDisplay" style="font-size: 2rem; font-weight: 800; letter-spacing: 4px; color: var(--primary); font-family: monospace;"></div>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary btn-block" onclick="copyPassword()">📋 Copier</button>
+        <button class="btn-primary btn-block" onclick="closePasswordModal()">J'ai noté</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale documents locataire -->
+  <div id="docsModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <span class="modal-close" onclick="closeDocsModal()">&times;</span>
+      <h2 id="docsModalTitle">Documents du locataire</h2>
+      <div id="docsModalContent" class="properties-grid"><p class="empty-message">Chargement...</p></div>
+    </div>
+  </div>
+
+  <!-- Modale rappel -->
+  <div id="rappelModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeRappelModal()">&times;</span>
+      <h2>🔔 Envoyer un rappel</h2>
+      <form id="rappelForm">
+        <input type="hidden" id="rappelContractId">
+        <div class="form-group">
+          <label for="rappelMessage">Message</label>
+          <textarea id="rappelMessage" rows="4" required></textarea>
+        </div>
+        <button type="submit" class="btn-primary btn-block">Envoyer</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/navbar.js"></script>
   <script src="js/bailleur.js"></script>
 </body>
 </html>

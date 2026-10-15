@@ -1,12 +1,12 @@
 // ============================================
-// paymentController.js — Gestion des paiements
+// paymentController.js — Paiements + Suivi + Rappels + Export
 // ============================================
 
 const db = require("../database/db");
+const { Parser } = require("json2csv");
 
 // ============================================
-// CRÉER un paiement — POST /api/payments
-// (locataire uniquement)
+// CRÉER un paiement
 // ============================================
 exports.createPayment = (req, res) => {
   const { contract_id, montant, mois, methode } = req.body;
@@ -16,16 +16,10 @@ exports.createPayment = (req, res) => {
     return res.status(400).json({ message: "Champs obligatoires manquants" });
   }
 
-  // Vérifier que le contrat appartient bien à ce locataire
   const contract = db.prepare("SELECT * FROM contracts WHERE id = ?").get(contract_id);
-  if (!contract) {
-    return res.status(404).json({ message: "Contrat introuvable" });
-  }
-  if (contract.locataire_id !== locataire_id) {
-    return res.status(403).json({ message: "Non autorise" });
-  }
+  if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
+  if (contract.locataire_id !== locataire_id) return res.status(403).json({ message: "Non autorise" });
 
-  // Enregistrer le paiement (statut "paye" simulé)
   const now = new Date().toISOString();
   const result = db.prepare(`
     INSERT INTO payments (contract_id, montant, mois, methode, statut, date_paiement)
@@ -39,41 +33,29 @@ exports.createPayment = (req, res) => {
 };
 
 // ============================================
-// LISTER mes paiements — GET /api/payments/mes-paiements
-// (locataire)
+// MES paiements (locataire)
 // ============================================
 exports.getMyPayments = (req, res) => {
   const locataire_id = req.user.id;
-
   const payments = db.prepare(`
-    SELECT pay.*,
-           c.montant_loyer,
-           p.titre AS property_titre,
-           p.adresse AS property_adresse
+    SELECT pay.*, c.montant_loyer, p.titre AS property_titre, p.adresse AS property_adresse
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE c.locataire_id = ?
     ORDER BY pay.date_paiement DESC
   `).all(locataire_id);
-
   res.json({ payments });
 };
 
 // ============================================
-// LISTER les paiements reçus — GET /api/payments/recus
-// (bailleur)
+// Paiements reçus (bailleur)
 // ============================================
 exports.getPaymentsForBailleur = (req, res) => {
   const bailleur_id = req.user.id;
-
   const payments = db.prepare(`
-    SELECT pay.*,
-           c.montant_loyer,
-           p.titre AS property_titre,
-           p.adresse AS property_adresse,
-           u.nom AS locataire_nom,
-           u.email AS locataire_email
+    SELECT pay.*, c.montant_loyer, p.titre AS property_titre, p.adresse AS property_adresse,
+           u.nom AS locataire_nom, u.email AS locataire_email
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
@@ -81,13 +63,11 @@ exports.getPaymentsForBailleur = (req, res) => {
     WHERE p.bailleur_id = ?
     ORDER BY pay.date_paiement DESC
   `).all(bailleur_id);
-
   res.json({ payments });
 };
 
 // ============================================
-// DÉTAIL d'un paiement — GET /api/payments/:id
-// (bailleur OU locataire concerné)
+// Détail d'un paiement
 // ============================================
 exports.getPaymentById = (req, res) => {
   const { id } = req.params;
@@ -95,18 +75,10 @@ exports.getPaymentById = (req, res) => {
   const role = req.user.role;
 
   const payment = db.prepare(`
-    SELECT pay.*,
-           c.locataire_id,
-           c.montant_loyer,
-           c.date_debut,
-           p.titre AS property_titre,
-           p.adresse AS property_adresse,
-           p.ville AS property_ville,
-           p.bailleur_id,
-           b.nom AS bailleur_nom,
-           b.email AS bailleur_email,
-           l.nom AS locataire_nom,
-           l.email AS locataire_email
+    SELECT pay.*, c.locataire_id, c.montant_loyer, c.date_debut,
+           p.titre AS property_titre, p.adresse AS property_adresse, p.ville AS property_ville, p.bailleur_id,
+           b.nom AS bailleur_nom, b.email AS bailleur_email,
+           l.nom AS locataire_nom, l.email AS locataire_email
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
@@ -115,16 +87,177 @@ exports.getPaymentById = (req, res) => {
     WHERE pay.id = ?
   `).get(id);
 
-  if (!payment) {
-    return res.status(404).json({ message: "Paiement introuvable" });
-  }
+  if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
 
   const autorise = (role === "bailleur" && payment.bailleur_id === userId)
                 || (role === "locataire" && payment.locataire_id === userId);
 
-  if (!autorise) {
-    return res.status(403).json({ message: "Non autorise" });
+  if (!autorise) return res.status(403).json({ message: "Non autorise" });
+  res.json({ payment });
+};
+
+// ============================================
+// Tableau de bord
+// ============================================
+exports.getDashboard = (req, res) => {
+  const bailleur_id = req.user.id;
+
+  const contrats = db.prepare(`
+    SELECT c.id AS contract_id, c.montant_loyer, c.date_debut, c.date_fin,
+           u.id AS locataire_id, u.nom AS locataire_nom, u.email AS locataire_email,
+           p.id AS property_id, p.titre AS property_titre, p.adresse AS property_adresse
+    FROM contracts c
+    JOIN properties p ON c.property_id = p.id
+    JOIN users u ON c.locataire_id = u.id
+    WHERE p.bailleur_id = ? AND c.statut = 'actif'
+    ORDER BY u.nom
+  `).all(bailleur_id);
+
+  const maintenant = new Date();
+  const moisActuel = maintenant.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+  const moisActuelCapitalise = moisActuel.charAt(0).toUpperCase() + moisActuel.slice(1);
+
+  const dashboard = contrats.map(c => {
+    const paiementMois = db.prepare(`
+      SELECT * FROM payments
+      WHERE contract_id = ? AND mois = ?
+      ORDER BY date_paiement DESC LIMIT 1
+    `).get(c.contract_id, moisActuelCapitalise);
+
+    const totalPaye = db.prepare(`
+      SELECT COALESCE(SUM(montant), 0) AS total FROM payments WHERE contract_id = ?
+    `).get(c.contract_id).total;
+
+    const debut = new Date(c.date_debut);
+    const moisEcoules = Math.max(0, (maintenant.getFullYear() - debut.getFullYear()) * 12 + (maintenant.getMonth() - debut.getMonth()) + 1);
+    const totalPayeMois = db.prepare(`
+      SELECT COUNT(DISTINCT mois) AS nb FROM payments WHERE contract_id = ?
+    `).get(c.contract_id).nb;
+    const moisEnRetard = Math.max(0, moisEcoules - totalPayeMois);
+
+    let statut = "a_jour";
+    if (moisEnRetard >= 2) statut = "retard_grave";
+    else if (moisEnRetard === 1) statut = "retard";
+    else if (!paiementMois) statut = "en_attente";
+
+    return {
+      ...c,
+      mois_actuel: moisActuelCapitalise,
+      paye_ce_mois: !!paiementMois,
+      paiement_mois: paiementMois || null,
+      total_paye: totalPaye,
+      mois_en_retard: moisEnRetard,
+      statut_paiement: statut
+    };
+  });
+
+  res.json({ dashboard, mois_actuel: moisActuelCapitalise });
+};
+
+// ============================================
+// Envoyer un rappel
+// ============================================
+exports.envoyerRappel = (req, res) => {
+  const { contract_id, message } = req.body;
+  const bailleur_id = req.user.id;
+
+  if (!contract_id || !message) {
+    return res.status(400).json({ message: "Champs obligatoires manquants" });
   }
 
-  res.json({ payment });
+  const contract = db.prepare(`
+    SELECT c.id FROM contracts c
+    JOIN properties p ON c.property_id = p.id
+    WHERE c.id = ? AND p.bailleur_id = ?
+  `).get(contract_id, bailleur_id);
+
+  if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
+
+  db.prepare("INSERT INTO reminders (contract_id, message) VALUES (?, ?)").run(contract_id, message);
+
+  res.status(201).json({ message: "Rappel envoye" });
+};
+
+// ============================================
+// Mes rappels (locataire)
+// ============================================
+exports.getMesRappels = (req, res) => {
+  const locataire_id = req.user.id;
+  const rappels = db.prepare(`
+    SELECT r.*, p.titre AS property_titre
+    FROM reminders r
+    JOIN contracts c ON r.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    WHERE c.locataire_id = ?
+    ORDER BY r.date_envoi DESC
+  `).all(locataire_id);
+  res.json({ rappels });
+};
+
+exports.marquerRappelLu = (req, res) => {
+  const { id } = req.params;
+  const locataire_id = req.user.id;
+
+  const rappel = db.prepare(`
+    SELECT r.* FROM reminders r
+    JOIN contracts c ON r.contract_id = c.id
+    WHERE r.id = ? AND c.locataire_id = ?
+  `).get(id, locataire_id);
+
+  if (!rappel) return res.status(404).json({ message: "Rappel introuvable" });
+
+  db.prepare("UPDATE reminders SET statut = 'lu' WHERE id = ?").run(id);
+  res.json({ message: "Rappel marque comme lu" });
+};
+
+// ============================================
+// 📊 EXPORT CSV — GET /api/payments/export-csv
+// (bailleur uniquement)
+// ============================================
+exports.exportCSV = (req, res) => {
+  const bailleur_id = req.user.id;
+
+  const payments = db.prepare(`
+    SELECT 
+      pay.id AS ID,
+      u.nom AS Locataire,
+      u.email AS Email,
+      u.telephone AS Telephone,
+      p.titre AS Logement,
+      p.adresse AS Adresse,
+      pay.mois AS Mois,
+      pay.montant AS Montant,
+      pay.methode AS Methode,
+      pay.statut AS Statut,
+      pay.date_paiement AS Date_paiement
+    FROM payments pay
+    JOIN contracts c ON pay.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    JOIN users u ON c.locataire_id = u.id
+    WHERE p.bailleur_id = ?
+    ORDER BY pay.date_paiement DESC
+  `).all(bailleur_id);
+
+  if (payments.length === 0) {
+    return res.status(400).json({ message: "Aucun paiement a exporter" });
+  }
+
+  // Formater les dates pour Excel
+  const data = payments.map(p => ({
+    ...p,
+    Date_paiement: p.Date_paiement ? new Date(p.Date_paiement).toLocaleDateString("fr-FR") : ""
+  }));
+
+  try {
+    const parser = new Parser({
+      fields: ["ID", "Locataire", "Email", "Telephone", "Logement", "Adresse", "Mois", "Montant", "Methode", "Statut", "Date_paiement"]
+    });
+    const csv = parser.parse(data);
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", "attachment; filename=\"paiements-" + Date.now() + ".csv\"");
+    res.send("\uFEFF" + csv); // BOM UTF-8 pour Excel
+  } catch (err) {
+    res.status(500).json({ message: "Erreur lors de la generation" });
+  }
 };

@@ -3,70 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Location App — Trouvez votre logement</title>
+  <title>Location App — Votre logement en toute simplicité</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="home-body">
 
-  <!-- En-tête avec navigation -->
-  <header class="navbar">
-    <div class="logo">🏠 Location App</div>
-    <nav>
-      <a href="index.html" class="active">Accueil</a>
-      <a href="login.html">Connexion</a>
-      <a href="register.html" class="btn-primary">Inscription</a>
-    </nav>
-  </header>
+  <div class="home-hero">
+    <div class="home-glow home-glow-1"></div>
+    <div class="home-glow home-glow-2"></div>
 
-  <!-- Section héro (grande présentation) -->
-  <section class="hero">
-    <h1>Trouvez votre logement en toute simplicité</h1>
-    <p>La plateforme qui connecte bailleurs et locataires en RDC.</p>
-    <div class="hero-buttons">
-      <a href="register.html" class="btn-primary">Créer un compte</a>
-      <a href="login.html" class="btn-secondary">Se connecter</a>
+    <div class="home-content">
+      <div class="home-logo">🏠</div>
+      <h1 class="home-title">Location App</h1>
+      <p class="home-subtitle" id="textBienvenue">
+        Votre logement, géré en toute simplicité.
+      </p>
+
+      <div class="home-actions">
+        <a href="login.html" class="btn-home-primary">
+          🔑 Se connecter
+        </a>
+        <a href="register.html" id="btnInscription" class="btn-home-secondary" style="display:none;">
+          ✨ Créer le compte bailleur
+        </a>
+      </div>
+
+      <div class="home-features">
+        <div class="home-feature">
+          <span>📄</span>
+          <p>Contrats en ligne</p>
+        </div>
+        <div class="home-feature">
+          <span>💳</span>
+          <p>Paiements simplifiés</p>
+        </div>
+        <div class="home-feature">
+          <span>🔧</span>
+          <p>Signalements rapides</p>
+        </div>
+      </div>
     </div>
-  </section>
 
-  <!-- Section des fonctionnalités -->
-  <section class="features">
-    <h2>Pourquoi nous choisir ?</h2>
-    <div class="features-grid">
+    <footer class="home-footer">
+      © 2026 Location App — Tous droits réservés
+    </footer>
+  </div>
 
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <h3>Logements vérifiés</h3>
-        <p>Consultez des annonces fiables avec photos et prix clairs.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">✍️</div>
-        <h3>Contrats en ligne</h3>
-        <p>Signez votre contrat de location à distance, sans imprimer.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">💳</div>
-        <h3>Paiement simplifié</h3>
-        <p>Payez par Mobile Money ou carte bancaire en un clic.</p>
-      </div>
-
-      <div class="feature-card">
-        <div class="feature-icon">🔧</div>
-        <h3>Signalement rapide</h3>
-        <p>Signalez un problème avec photo directement depuis l'app.</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- Pied de page -->
-  <footer>
-    <p>© 2026 Location App — Tous droits réservés</p>
-  </footer>
-
+  <script src="js/index.js"></script>
 </body>
 </html>

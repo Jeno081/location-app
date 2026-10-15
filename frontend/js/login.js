@@ -1,8 +1,8 @@
 // ============================================
-// login.js — Envoi du formulaire de connexion
+// login.js — Connexion + redirection selon état
 // ============================================
 
-const API_URL = "/api"; // plus besoin d'écrire localhost, on est déjà sur le serveur
+const API_URL = "/api";
 
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -24,13 +24,16 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       messageDiv.textContent = "✅ Connexion réussie ! Redirection...";
       messageDiv.className = "message success";
 
-      // --- Sauvegarder le token et les infos utilisateur ---
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
-      // --- Rediriger selon le rôle ---
       setTimeout(() => {
-        if (data.user.role === "bailleur") {
+        // 🎯 Si le locataire doit changer son mot de passe → page dédiée
+        if (data.user.doit_changer_mot_de_passe === 1) {
+          window.location.href = "changer-mot-de-passe.html";
+        }
+        // Sinon redirection normale
+        else if (data.user.role === "bailleur") {
           window.location.href = "bailleur.html";
         } else {
           window.location.href = "locataire.html";
@@ -41,10 +44,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       messageDiv.textContent = "❌ " + (data.message || "Erreur inconnue");
       messageDiv.className = "message error";
     }
-
   } catch (err) {
     messageDiv.textContent = "❌ Impossible de contacter le serveur.";
     messageDiv.className = "message error";
-    console.error(err);
   }
 });

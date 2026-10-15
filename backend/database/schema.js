@@ -1,10 +1,9 @@
 // ============================================
-// schema.js — Création des tables de la base
+// schema.js — Création des tables
 // ============================================
 
 const db = require("./db");
 
-// ----- Table USERS (bailleurs + locataires) -----
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -13,11 +12,13 @@ db.exec(`
     mot_de_passe TEXT NOT NULL,
     telephone TEXT,
     role TEXT NOT NULL CHECK(role IN ('bailleur', 'locataire')),
+    photo_profil TEXT,
+    doit_changer_mot_de_passe INTEGER DEFAULT 0,
+    cree_par_bailleur INTEGER DEFAULT 0,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
-// ----- Table PROPERTIES (logements) -----
 db.exec(`
   CREATE TABLE IF NOT EXISTS properties (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,13 +30,12 @@ db.exec(`
     charges REAL DEFAULT 0,
     description TEXT,
     photos TEXT,
-    statut TEXT DEFAULT 'disponible',
+    statut TEXT DEFAULT 'disponible' CHECK(statut IN ('disponible', 'loue', 'archive')),
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (bailleur_id) REFERENCES users(id)
   )
 `);
 
-// ----- Table CONTRACTS (contrats de location) -----
 db.exec(`
   CREATE TABLE IF NOT EXISTS contracts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -45,15 +45,17 @@ db.exec(`
     date_fin DATE,
     montant_loyer REAL NOT NULL,
     statut TEXT DEFAULT 'en_attente',
-    signature_bailleur TEXT,
+       signature_bailleur TEXT,
     signature_locataire TEXT,
+    clauses_personnalisees TEXT,
+    date_terminaison DATETIME,
+    motif_terminaison TEXT,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (property_id) REFERENCES properties(id),
     FOREIGN KEY (locataire_id) REFERENCES users(id)
   )
 `);
 
-// ----- Table PAYMENTS (paiements) -----
 db.exec(`
   CREATE TABLE IF NOT EXISTS payments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +69,6 @@ db.exec(`
   )
 `);
 
-// ----- Table INCIDENTS (problèmes signalés) -----
 db.exec(`
   CREATE TABLE IF NOT EXISTS incidents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,5 +82,38 @@ db.exec(`
     FOREIGN KEY (locataire_id) REFERENCES users(id)
   )
 `);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS documents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    locataire_id INTEGER NOT NULL,
+    type TEXT NOT NULL CHECK(type IN ('cni', 'passeport', 'fiche_paie', 'autre')),
+    nom_fichier TEXT NOT NULL,
+    chemin TEXT NOT NULL,
+    statut TEXT DEFAULT 'en_attente' CHECK(statut IN ('en_attente', 'valide', 'refuse')),
+    commentaire TEXT,
+    date_upload DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (locataire_id) REFERENCES users(id)
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contract_id INTEGER NOT NULL,
+    message TEXT NOT NULL,
+    statut TEXT DEFAULT 'envoye' CHECK(statut IN ('envoye', 'lu')),
+    date_envoi DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (contract_id) REFERENCES contracts(id)
+  )
+`);
+
+// ⚙️ Migration : ajouter photo_profil si absent (bases existantes)
+try {
+  db.exec("ALTER TABLE users ADD COLUMN photo_profil TEXT");
+  console.log("Colonne photo_profil ajoutee");
+} catch (e) {
+  // Deja presente
+}
 
 console.log("Tables creees avec succes !");

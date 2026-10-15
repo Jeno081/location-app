@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon profil — Location App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <main class="dashboard" style="max-width:700px;">
+
+    <div class="dashboard-header">
+      <h1>👤 Mon profil</h1>
+      <button class="btn-secondary" onclick="retour()">← Retour</button>
+    </div>
+
+    <!-- Photo de profil -->
+    <div class="auth-card" style="max-width:100%;margin-bottom:30px;">
+      <h2 style="margin-bottom:20px;color:var(--dark);">🖼️ Photo de profil</h2>
+      <div class="photo-profil-section">
+        <div class="photo-preview" id="photoPreview"></div>
+        <div>
+          <label for="photoInput" class="btn-primary" style="cursor:pointer;display:inline-block;">
+            📷 Changer la photo
+          </label>
+          <input type="file" id="photoInput" accept="image/*" style="display:none;" onchange="uploadPhoto(this.files[0])">
+          <p style="color:var(--gray-500);font-size:0.85rem;margin-top:10px;">JPG, PNG ou WEBP - max 5 Mo</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Infos générales -->
+    <div class="auth-card" style="max-width:100%;margin-bottom:30px;">
+      <h2 style="margin-bottom:20px;color:var(--dark);">Informations personnelles</h2>
+      <form id="profilForm">
+        <div class="form-group">
+          <label for="nom">Nom complet</label>
+          <input type="text" id="nom" required>
+        </div>
+        <div class="form-group">
+          <label for="email">Email (non modifiable)</label>
+          <input type="email" id="email" disabled style="opacity:0.6;cursor:not-allowed;">
+        </div>
+        <div class="form-group">
+          <label for="telephone">Téléphone</label>
+          <input type="tel" id="telephone" placeholder="0812345678">
+        </div>
+        <button type="submit" class="btn-primary btn-block">Enregistrer les modifications</button>
+      </form>
+    </div>
+
+    <!-- Changement de mot de passe -->
+    <div class="auth-card" style="max-width:100%;">
+      <h2 style="margin-bottom:20px;color:var(--dark);">🔒 Changer mon mot de passe</h2>
+      <form id="mdpForm">
+        <div class="form-group">
+          <label for="ancien">Mot de passe actuel</label>
+          <input type="password" id="ancien" required>
+        </div>
+        <div class="form-group">
+          <label for="nouveau">Nouveau mot de passe (min 6 caractères)</label>
+          <input type="password" id="nouveau" required minlength="6">
+        </div>
+        <div class="form-group">
+          <label for="confirm">Confirmer le nouveau mot de passe</label>
+          <input type="password" id="confirm" required minlength="6">
+        </div>
+        <button type="submit" class="btn-primary btn-block">Changer le mot de passe</button>
+      </form>
+    </div>
+
+  </main>
+
+  <script src="js/navbar.js"></script>
+  <script src="js/profil.js"></script>
+</body>
+</html>

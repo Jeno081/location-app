@@ -1,17 +1,22 @@
 // ============================================
-// incidents.js — Routes pour les incidents
+// incidents.js
 // ============================================
 
 const express = require("express");
 const router = express.Router();
 const incidentController = require("../../controllers/incidentController");
+const upload = require("../../middleware/documentUpload");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 
-// Locataire : créer un incident et voir les siens
-router.post("/", verifyToken, requireRole("locataire"), incidentController.createIncident);
-router.get("/mes-incidents", verifyToken, requireRole("locataire"), incidentController.getMyIncidents);
+router.post(
+  "/",
+  verifyToken,
+  requireRole("locataire"),
+  upload.array("photos", 10),
+  incidentController.createIncident
+);
 
-// Bailleur : voir les incidents reçus et changer leur statut
+router.get("/mes-incidents", verifyToken, requireRole("locataire"), incidentController.getMyIncidents);
 router.get("/recus", verifyToken, requireRole("bailleur"), incidentController.getIncidentsForBailleur);
 router.put("/:id/statut", verifyToken, requireRole("bailleur"), incidentController.updateIncidentStatus);
 
