@@ -39,6 +39,12 @@ app.use("/api/history", historyRoutes);
 const notificationRoutes = require("./routes/api/notifications");
 app.use("/api/notifications", notificationRoutes);
 
+const chartRoutes = require("./routes/api/charts");
+app.use("/api/charts", chartRoutes);
+
+const calendarRoutes = require("./routes/api/calendar");
+app.use("/api/calendar", calendarRoutes);
+
 const documentRoutes = require("./routes/api/documents");
 app.use("/api/documents", documentRoutes);
 

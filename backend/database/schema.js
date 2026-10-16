@@ -14,6 +14,7 @@ db.exec(`
     role TEXT NOT NULL CHECK(role IN ('bailleur', 'locataire')),
     photo_profil TEXT,
     doit_changer_mot_de_passe INTEGER DEFAULT 0,
+    onboarding_vu INTEGER DEFAULT 0,
     cree_par_bailleur INTEGER DEFAULT 0,
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
   )

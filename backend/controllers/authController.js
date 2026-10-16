@@ -58,14 +58,15 @@ exports.login = (req, res) => {
   res.json({
     message: "Connexion reussie",
     token,
-    user: {
+        user: {
       id: user.id,
       nom: user.nom,
       email: user.email,
       role: user.role,
       telephone: user.telephone,
       photo_profil: user.photo_profil,
-      doit_changer_mot_de_passe: user.doit_changer_mot_de_passe
+      doit_changer_mot_de_passe: user.doit_changer_mot_de_passe,
+      onboarding_vu: user.onboarding_vu
     }
   });
 };

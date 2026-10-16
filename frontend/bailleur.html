@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -33,6 +34,22 @@
       <div class="stat-card"><div class="stat-value" id="statRetards">0</div><div class="stat-label">En retard</div></div>
     </div>
 
+        <!-- Graphiques -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>📈 Revenus des 12 derniers mois</h3>
+        <div class="chart-container">
+          <canvas id="chartRevenus"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>🥧 Répartition des logements</h3>
+        <div class="chart-container">
+          <canvas id="chartRepartition"></canvas>
+        </div>
+      </div>
+    </div>
+
     <div class="tabs">
       <button class="tab active" data-tab="suivi">📊 Suivi paiements</button>
       <button class="tab" data-tab="biens">🏠 Mes biens</button>
@@ -40,7 +57,7 @@
       <button class="tab" data-tab="contrats">📄 Contrats</button>
       <button class="tab" data-tab="paiements">💳 Paiements</button>
       <button class="tab" data-tab="incidents">🔧 Incidents</button>
-    </div>
+      <button class="tab" data-tab="calendrier">📅 Calendrier</button>    </div>
 
     <div id="tab-suivi" class="tab-content active">
       <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement...</p></div>
@@ -71,9 +88,24 @@
       <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
-    <div id="tab-incidents" class="tab-content">
+        <div id="tab-incidents" class="tab-content">
       <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
+    <div id="tab-calendrier" class="tab-content">
+      <div id="calendarContent">
+        <p class="empty-message">Chargement...</p>
+      </div>
+    </div>
+
+      <!-- Modale événements du jour -->
+  <div id="dayEventsModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+      <span class="modal-close" onclick="closeDayEventsModal()">&times;</span>
+      <h2 id="dayEventsTitle">Événements</h2>
+      <div id="dayEventsContent"></div>
+    </div>
+  </div>
 
   </main>
 
@@ -172,8 +204,11 @@
     </div>
   </div>
 
+  <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/calendar.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/bailleur.js"></script>
 </body>

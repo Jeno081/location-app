@@ -180,4 +180,20 @@ window.addEventListener("load", () => {
   setTimeout(() => { afficherPhoto(); }, 100);
 });
 
+// ============================================
+// REVOIR LE TUTORIEL
+// ============================================
+function revoirTutoriel() {
+  // Réinitialiser localement
+  user.onboarding_vu = 0;
+  localStorage.setItem("user", JSON.stringify(user));
+
+  // Si la fonction d'onboarding est disponible, la lancer
+  if (typeof window.showOnboarding === "function") {
+    window.showOnboarding();
+  }
+}
+
+window.revoirTutoriel = revoirTutoriel;
+
 loadProfil();

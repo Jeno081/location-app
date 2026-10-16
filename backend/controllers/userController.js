@@ -103,3 +103,13 @@ exports.uploadPhotoProfil = (req, res) => {
 
   res.json({ message: "Photo mise a jour", photo_profil: chemin });
 };
+
+// ============================================
+// MARQUER l'onboarding comme vu
+// PUT /api/users/onboarding-vu
+// ============================================
+exports.marquerOnboardingVu = (req, res) => {
+  const userId = req.user.id;
+  db.prepare("UPDATE users SET onboarding_vu = 1 WHERE id = ?").run(userId);
+  res.json({ message: "Onboarding marque comme vu" });
+};

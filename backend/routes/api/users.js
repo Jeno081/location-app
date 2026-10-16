@@ -8,6 +8,7 @@ router.get("/profil", verifyToken, userController.getProfil);
 router.put("/profil", verifyToken, userController.updateProfil);
 router.post("/photo-profil", verifyToken, upload.single("photo"), userController.uploadPhotoProfil);
 router.put("/changer-mot-de-passe", verifyToken, userController.changerMotDePasse);
+router.put("/onboarding-vu", verifyToken, userController.marquerOnboardingVu);
 
 router.get("/mes-locataires", verifyToken, requireRole("bailleur"), userController.getMesLocataires);
 router.delete("/:id", verifyToken, requireRole("bailleur"), userController.deleteLocataire);
