@@ -1909,3 +1909,45 @@ body {
     text-align: center;
   }
 }
+
+/* ============================================
+   BADGES DE NOTIFICATION sur les onglets
+   ============================================ */
+.tab {
+  position: relative;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+  animation: badgeBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1;
+}
+
+@keyframes badgeBounce {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.tab-badge.pulse {
+  animation: badgePulseEffect 2s ease-in-out infinite;
+}
+
+@keyframes badgePulseEffect {
+  0%, 100% { transform: scale(1); box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4); }
+  50% { transform: scale(1.15); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.7); }
+}

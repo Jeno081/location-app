@@ -12,9 +12,7 @@ if (user && user.role !== "locataire") window.location.href = "bailleur.html";
 let myLocations = [];
 let myContracts = [];
 
-// Toast
-function showToast(message, type) {
-  if (!type) type = "success";
+function showToast(message, type = "success") {
   const toast = document.createElement("div");
   toast.className = "toast toast-" + type;
   const icon = type === "success" ? "✅" : "❌";
@@ -115,6 +113,7 @@ async function loadContracts() {
         '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
         '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : " (durée indéterminée)") + '</p>' +
         (c.date_terminaison ? '<p class="property-charges">⚠️ Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
+        (c.clauses_personnalisees ? '<p class="property-desc">📌 <strong>Clauses :</strong> ' + c.clauses_personnalisees.substring(0, 100) + (c.clauses_personnalisees.length > 100 ? "..." : "") + '</p>' : '') +
         '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' +
           (c.signature_bailleur ? "✅ Signé par le bailleur" : "⏳ En attente du bailleur") +
         '</p>' +
@@ -135,7 +134,11 @@ async function signContract(id) {
       method: "PUT",
       headers: { "Authorization": "Bearer " + token }
     });
-    if (r.ok) { showToast("Contrat signé !", "success"); loadContracts(); loadMesLocations(); }
+    if (r.ok) {
+      showToast("Contrat signé !", "success");
+      loadContracts(); loadMesLocations();
+      if (window.loadNotifications) window.loadNotifications();
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -198,6 +201,7 @@ document.getElementById("paymentForm").addEventListener("submit", async (e) => {
       document.getElementById("paymentForm").reset();
       closePaymentModal();
       loadPayments();
+      if (window.loadNotifications) window.loadNotifications();
     } else showToast(data.message, "error");
   } catch (err) { showToast("Erreur serveur", "error"); }
 });
@@ -277,7 +281,11 @@ async function marquerRappelLu(id) {
       method: "PUT",
       headers: { "Authorization": "Bearer " + token }
     });
-    if (r.ok) { showToast("Rappel lu", "success"); loadRappels(); }
+    if (r.ok) {
+      showToast("Rappel lu", "success");
+      loadRappels();
+      if (window.loadNotifications) window.loadNotifications();
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -351,7 +359,7 @@ async function deleteDocument(id) {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// SIGNALEMENTS
+// SIGNALEMENTS (avec photos multiples)
 function openIncidentModal(propertyId) {
   document.getElementById("incidentPropertyId").value = propertyId;
   document.getElementById("incidentModal").style.display = "flex";
@@ -369,7 +377,6 @@ document.getElementById("incidentForm").addEventListener("submit", async (e) => 
   formData.append("property_id", propertyId);
   formData.append("description", description);
 
-  // Ajouter chaque photo (une par ligne)
   for (let i = 0; i < photos.length; i++) {
     formData.append("photos", photos[i]);
   }
@@ -387,12 +394,9 @@ document.getElementById("incidentForm").addEventListener("submit", async (e) => 
       document.getElementById("incidentForm").reset();
       closeIncidentModal();
       loadMyIncidents();
-    } else {
-      showToast(data.message || "Erreur", "error");
-    }
-  } catch (err) {
-    showToast("Erreur serveur", "error");
-  }
+      if (window.loadNotifications) window.loadNotifications();
+    } else showToast(data.message || "Erreur", "error");
+  } catch (err) { showToast("Erreur serveur", "error"); }
 });
 
 async function loadMyIncidents() {
@@ -419,19 +423,12 @@ async function loadMyIncidents() {
   } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
 }
 
-// DÉCONNEXION
-function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  window.location.href = "index.html";
-}
-
-// ============================================
-// 📊 HISTORIQUE COMPLET
-// ============================================
+// HISTORIQUE COMPLET
 async function loadHistory() {
   const statsContainer = document.getElementById("historyStats");
   const contentContainer = document.getElementById("historyContent");
+
+  if (!statsContainer || !contentContainer) return;
 
   try {
     const response = await fetch(API_URL + "/history", {
@@ -444,16 +441,14 @@ async function loadHistory() {
       return;
     }
 
-    // --- STATISTIQUES ---
     statsContainer.innerHTML =
-      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_contrats + '</div><div class="stat-label">Contrats au total</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_contrats_actifs + '</div><div class="stat-label">Contrats actifs</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_contrats + '</div><div class="stat-label">Contrats</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_contrats_actifs + '</div><div class="stat-label">Actifs</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.stats.total_paye + ' $</div><div class="stat-label">Total payé</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.stats.nb_paiements + '</div><div class="stat-label">Paiements</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.stats.nb_incidents + '</div><div class="stat-label">Signalements</div></div>' +
       '<div class="stat-card"><div class="stat-value">' + data.stats.nb_documents + '</div><div class="stat-label">Documents</div></div>';
 
-    // --- CONTENU ---
     let html = "";
 
     // Contrats
@@ -462,20 +457,17 @@ async function loadHistory() {
       html += '<p class="empty-message">Aucun contrat.</p>';
     } else {
       html += '<div class="properties-grid">';
-      html += data.contrats.map(c => {
-        const estTermine = c.statut === "termine";
-        return '<div class="property-card">' +
+      html += data.contrats.map(c =>
+        '<div class="property-card">' +
           '<span class="contract-status ' + c.statut + '">' + c.statut.replace("_", " ") + '</span>' +
           '<h3>' + c.property_titre + '</h3>' +
-          '<p class="property-address">📍 ' + c.property_adresse + (c.property_ville ? ", " + c.property_ville : "") + '</p>' +
+          '<p class="property-address">📍 ' + c.property_adresse + '</p>' +
           '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
           '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : "") + '</p>' +
-          (estTermine && c.date_terminaison ? '<p class="property-desc">🔚 Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + (c.motif_terminaison ? " (" + c.motif_terminaison + ")" : "") + '</p>' : '') +
-          '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' + (c.signature_bailleur ? "✅ Signé par le bailleur" : "⏳ Non signé par le bailleur") + '</p>' +
-          '<p class="contract-signature ' + (c.signature_locataire ? "signed" : "unsigned") + '">' + (c.signature_locataire ? "✅ Signé par vous" : "⏳ Non signé par vous") + '</p>' +
+          (c.date_terminaison ? '<p class="property-desc">🔚 Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
           '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadContractPDF(' + c.id + ')">📄 Télécharger</button>' +
-          '</div>';
-      }).join("");
+        '</div>'
+      ).join("");
       html += '</div>';
     }
 
@@ -491,7 +483,6 @@ async function loadHistory() {
           '<h3>' + p.property_titre + '</h3>' +
           '<p class="property-price">' + p.montant + ' $</p>' +
           '<p class="property-charges">Mois : ' + p.mois + '</p>' +
-          '<p class="property-charges">Méthode : ' + p.methode + '</p>' +
           '<p class="property-charges">Payé le : ' + new Date(p.date_paiement).toLocaleDateString("fr-FR") + '</p>' +
           '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadReceiptPDF(' + p.id + ')">🧾 Quittance</button>' +
         '</div>'
@@ -540,6 +531,12 @@ async function loadHistory() {
   } catch (err) {
     statsContainer.innerHTML = '<p class="empty-message">Erreur.</p>';
   }
+}
+
+function logout() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+  window.location.href = "index.html";
 }
 
 // CHARGEMENT

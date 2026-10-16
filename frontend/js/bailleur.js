@@ -112,7 +112,12 @@ document.getElementById("rappelForm").addEventListener("submit", async (e) => {
       },
       body: JSON.stringify(body)
     });
-    if (r.ok) { showToast("Rappel envoyé", "success"); closeRappelModal(); loadDashboard(); }
+    if (r.ok) {
+      showToast("Rappel envoyé", "success");
+      closeRappelModal();
+      loadDashboard();
+      if (window.loadNotifications) window.loadNotifications();
+    }
   } catch (err) { showToast("Erreur", "error"); }
 });
 
@@ -266,6 +271,7 @@ document.getElementById("contractForm").addEventListener("submit", async (e) => 
         document.getElementById("passwordModal").style.display = "flex";
       }
       loadProperties(); loadContracts(); loadTenants();
+      if (window.loadNotifications) window.loadNotifications();
     } else showToast(data.message, "error");
   } catch (err) { showToast("Erreur serveur", "error"); }
 });
@@ -309,7 +315,7 @@ async function loadContracts() {
         '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
         '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : "") + '</p>' +
         (c.date_terminaison ? '<p class="property-charges">⚠️ Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
-        (c.clauses_personnalisees ? '<p class="property-desc">📌 <strong>Clauses personnalisées</strong> : ' + c.clauses_personnalisees.substring(0, 100) + (c.clauses_personnalisees.length > 100 ? "..." : "") + '</p>' : '') +
+        (c.clauses_personnalisees ? '<p class="property-desc">📌 <strong>Clauses</strong> : ' + c.clauses_personnalisees.substring(0, 100) + (c.clauses_personnalisees.length > 100 ? "..." : "") + '</p>' : '') +
         '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' +
           (c.signature_bailleur ? "✅ Signé par vous" : "⏳ En attente de votre signature") +
         '</p>' +
@@ -317,7 +323,7 @@ async function loadContracts() {
           (c.signature_locataire ? "✅ Signé par le locataire" : "⏳ En attente du locataire") +
         '</p>' +
         (!c.signature_bailleur && !estTermine ? '<button class="btn-primary btn-block" style="margin-top:12px;" onclick="signContract(' + c.id + ')">✍️ Signer</button>' : '') +
-        (!estTermine && !c.signature_locataire ? '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="editClauses(' + c.id + ', \`' + (c.clauses_personnalisees || "").replace(/\`/g, "") + '\`)">✏️ Modifier les clauses</button>' : '') +
+        (!estTermine && !c.signature_locataire ? '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="editClauses(' + c.id + ', \'' + (c.clauses_personnalisees || "").replace(/'/g, "\\'").replace(/\n/g, "\\n") + '\')">✏️ Modifier les clauses</button>' : '') +
         '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="downloadContractPDF(' + c.id + ')">📄 Contrat PDF</button>' +
         (!estTermine ? '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="terminerContrat(' + c.id + ')">🔚 Mettre fin</button>' : '') +
         '</div>';
@@ -332,7 +338,11 @@ async function signContract(id) {
       method: "PUT",
       headers: { "Authorization": "Bearer " + token }
     });
-    if (r.ok) { showToast("Contrat signé", "success"); loadContracts(); loadProperties(); }
+    if (r.ok) {
+      showToast("Contrat signé", "success");
+      loadContracts(); loadProperties();
+      if (window.loadNotifications) window.loadNotifications();
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -352,11 +362,11 @@ async function terminerContrat(id) {
     if (r.ok) {
       showToast("Contrat terminé", "success");
       loadContracts(); loadProperties(); loadTenants();
+      if (window.loadNotifications) window.loadNotifications();
     } else showToast(data.message, "error");
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// MODIFIER LES CLAUSES
 async function editClauses(contractId, clausesActuelles) {
   const nouvelles = prompt("Modifier les clauses du contrat :", clausesActuelles);
   if (nouvelles === null) return;
@@ -545,7 +555,7 @@ async function downloadReceiptPDF(id) {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// 📊 EXPORT CSV
+// EXPORT CSV
 async function exportCSV() {
   try {
     const response = await fetch(API_URL + "/payments/export-csv", {
@@ -614,7 +624,11 @@ async function updateIncidentStatus(id, statut) {
       },
       body: JSON.stringify({ statut: statut })
     });
-    if (r.ok) { showToast("Statut mis à jour", "success"); loadIncidents(); }
+    if (r.ok) {
+      showToast("Statut mis à jour", "success");
+      loadIncidents();
+      if (window.loadNotifications) window.loadNotifications();
+    }
   } catch (err) { console.error(err); }
 }
 

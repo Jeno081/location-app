@@ -36,6 +36,9 @@ app.use("/api/payments", paymentRoutes);
 const historyRoutes = require("./routes/api/history");
 app.use("/api/history", historyRoutes);
 
+const notificationRoutes = require("./routes/api/notifications");
+app.use("/api/notifications", notificationRoutes);
+
 const documentRoutes = require("./routes/api/documents");
 app.use("/api/documents", documentRoutes);
 
