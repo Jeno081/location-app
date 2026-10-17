@@ -94,11 +94,19 @@ function renderStep() {
 
   const step = steps[currentStep];
 
-  content.innerHTML = `
-    <div class="onboarding-icon">${step.icon}</div>
+    content.innerHTML = `
+    <div class="onboarding-icon" id="onboardingIcon">${step.icon}</div>
     <h2 class="onboarding-title">${step.title}</h2>
     <p class="onboarding-text">${step.text}</p>
   `;
+
+  // Traduire l'icône en SVG après l'injection
+  setTimeout(() => {
+    const iconContainer = document.getElementById("onboardingIcon");
+    if (iconContainer && typeof window.replaceEmojisWithIcons === "function") {
+      window.replaceEmojisWithIcons(iconContainer);
+    }
+  }, 50);
 
   // Dots
   dots.innerHTML = steps.map((_, i) =>
@@ -111,6 +119,13 @@ function renderStep() {
   } else {
     nextBtn.textContent = "Suivant";
   }
+
+  // Traduire l'emoji en icône Lucide
+  setTimeout(() => {
+    if (typeof window.replaceEmojisWithIcons === "function") {
+      window.replaceEmojisWithIcons(document.getElementById("onboardingOverlay"));
+    }
+  }, 50);
 
   // Animation
   content.style.animation = "none";

@@ -9,72 +9,85 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
   <header class="navbar">
-    <div class="logo">🏠 Location App</div>
+    <div class="logo">
+      <i data-lucide="home" style="width:24px;height:24px;vertical-align:-5px;margin-right:6px;color:var(--primary);"></i>Location App
+    </div>
     <nav>
-      <a href="index.html">Accueil</a>
-      <a href="login.html">Connexion</a>
-      <a href="register.html" class="btn-primary">Inscription</a>
+      <a href="index.html"><i data-lucide="arrow-left" style="width:18px;height:18px;vertical-align:-4px;margin-right:4px;"></i>Accueil</a>
     </nav>
   </header>
 
   <main class="auth-container">
     <div class="auth-card">
-      <h1>Créer un compte</h1>
-      <p class="auth-subtitle">Rejoignez Location App en quelques secondes</p>
 
-      <form id="registerForm">
-        <div class="form-group">
-          <label for="nom">Nom complet</label>
-          <input type="text" id="nom" name="nom" placeholder="Ex : Jean Bailleur" required>
-        </div>
+      <!-- Écran 1 : Formulaire d'inscription (si aucun bailleur) -->
+      <div id="formRegister">
+        <h1><i data-lucide="user-plus" style="width:28px;height:28px;vertical-align:-5px;margin-right:8px;color:var(--primary);"></i>Créer le compte bailleur</h1>
+        <p class="auth-subtitle">Créez le compte administrateur de la plateforme</p>
 
-        <div class="form-group">
-          <label for="email">Adresse email</label>
-          <input type="email" id="email" name="email" placeholder="exemple@email.com" required>
-        </div>
-
-        <div class="form-group">
-          <label for="telephone">Téléphone</label>
-          <input type="tel" id="telephone" name="telephone" placeholder="0812345678">
-        </div>
-
-        <div class="form-group">
-          <label for="mot_de_passe">Mot de passe</label>
-          <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Au moins 6 caractères" required minlength="6">
-        </div>
-
-        <div class="form-group">
-          <label>Je suis :</label>
-          <div class="role-choice">
-            <label class="role-option">
-              <input type="radio" name="role" value="bailleur" required>
-              <span>🏠 Bailleur (propriétaire)</span>
-            </label>
-            <label class="role-option">
-              <input type="radio" name="role" value="locataire" required>
-              <span>🔑 Locataire</span>
-            </label>
+        <form id="registerForm">
+          <div class="form-group">
+            <label for="nom">Nom complet</label>
+            <input type="text" id="nom" name="nom" placeholder="Ex : Jean Bailleur" required>
           </div>
+
+          <div class="form-group">
+            <label for="email">Adresse email</label>
+            <input type="email" id="email" name="email" placeholder="exemple@email.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="telephone">Téléphone</label>
+            <input type="tel" id="telephone" name="telephone" placeholder="0812345678">
+          </div>
+
+          <div class="form-group">
+            <label for="mot_de_passe">Mot de passe</label>
+            <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Au moins 6 caractères" required minlength="6">
+          </div>
+
+          <input type="hidden" name="role" value="bailleur">
+
+          <button type="submit" class="btn-primary btn-block">
+            <i data-lucide="check" style="width:20px;height:20px;vertical-align:-5px;margin-right:6px;"></i>Créer mon compte
+          </button>
+        </form>
+
+        <div id="message" class="message"></div>
+      </div>
+
+      <!-- Écran 2 : Inscription désactivée (si bailleur existe déjà) -->
+      <div id="registerDesactive" style="display:none;text-align:center;">
+        <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#eef2ff,#fce7f3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+          <i data-lucide="lock" style="width:40px;height:40px;color:var(--primary);"></i>
         </div>
+        <h1>Inscription désactivée</h1>
+        <p class="auth-subtitle" style="margin-top:15px;">
+          Un compte bailleur existe déjà sur cette plateforme. Les inscriptions publiques sont fermées.
+        </p>
+        <p style="color:var(--gray-500);font-size:0.9rem;margin-top:20px;">
+          <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"></i>
+          Si vous êtes locataire et n'avez pas encore vos identifiants, contactez le bailleur.
+        </p>
+        <a href="login.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-top:30px;padding:14px 28px;">
+          <i data-lucide="log-in" style="width:20px;height:20px;"></i>
+          Aller à la connexion
+        </a>
+      </div>
 
-        <button type="submit" class="btn-primary btn-block">Créer mon compte</button>
-      </form>
-
-      <p class="auth-footer">
-        Vous avez déjà un compte ? <a href="login.html">Se connecter</a>
-      </p>
-
-      <!-- Zone de message (succès / erreur) -->
-      <div id="message" class="message"></div>
     </div>
   </main>
 
+  <script src="js/icons.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/register.js"></script>
+  <script>
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  </script>
 </body>
 </html>

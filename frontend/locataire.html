@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
@@ -25,13 +26,13 @@
     </div>
 
        <div class="tabs">
-      <button class="tab active" data-tab="logement">🏠 Mon logement</button>
-      <button class="tab" data-tab="contrats">📄 Mes contrats</button>
-      <button class="tab" data-tab="paiements">💳 Paiements</button>
-      <button class="tab" data-tab="rappels">🔔 Rappels</button>
-      <button class="tab" data-tab="documents">🪪 Documents</button>
-      <button class="tab" data-tab="signalements">🔧 Signalements</button>
-      <button class="tab" data-tab="historique">📊 Historique</button>
+      <button class="tab active" data-tab="logement"><i data-lucide="home"></i> Mon logement</button>
+      <button class="tab" data-tab="contrats"><i data-lucide="file-text"></i> Mes contrats</button>
+      <button class="tab" data-tab="paiements"><i data-lucide="credit-card"></i> Paiements</button>
+      <button class="tab" data-tab="rappels"><i data-lucide="bell"></i> Rappels</button>
+      <button class="tab" data-tab="documents"><i data-lucide="id-card"></i> Documents</button>
+      <button class="tab" data-tab="signalements"><i data-lucide="wrench"></i> Signalements</button>
+      <button class="tab" data-tab="historique"><i data-lucide="bar-chart-3"></i> Historique</button>
     </div>
 
     <div id="tab-logement" class="tab-content active">
@@ -150,11 +151,14 @@
       </form>
     </div>
   </div>
-
+  <script src="js/icons.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/locataire.js"></script>
+    <script>
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  </script>
 </body>
 </html>

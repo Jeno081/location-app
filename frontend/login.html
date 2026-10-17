@@ -9,22 +9,22 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
 
   <header class="navbar">
-    <div class="logo">🏠 Location App</div>
+    <div class="logo">
+      <i data-lucide="home" style="width:24px;height:24px;vertical-align:-5px;margin-right:6px;color:var(--primary);"></i>Location App
+    </div>
     <nav>
-      <a href="index.html">Accueil</a>
-      <a href="login.html" class="active">Connexion</a>
-      <a href="register.html" class="btn-primary">Inscription</a>
+      <a href="index.html"><i data-lucide="arrow-left" style="width:18px;height:18px;vertical-align:-4px;margin-right:4px;"></i>Accueil</a>
     </nav>
   </header>
 
   <main class="auth-container">
     <div class="auth-card">
-      <h1>Connexion</h1>
+      <h1><i data-lucide="log-in" style="width:28px;height:28px;vertical-align:-5px;margin-right:8px;color:var(--primary);"></i>Connexion</h1>
       <p class="auth-subtitle">Accédez à votre espace personnel</p>
 
       <form id="loginForm">
@@ -38,18 +38,25 @@
           <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" required>
         </div>
 
-        <button type="submit" class="btn-primary btn-block">Se connecter</button>
+        <button type="submit" class="btn-primary btn-block">
+          <i data-lucide="log-in" style="width:20px;height:20px;vertical-align:-5px;margin-right:6px;"></i>Se connecter
+        </button>
       </form>
 
-      <p class="auth-footer">
-        Pas encore de compte ? <a href="register.html">Créer un compte</a>
-      </p>
-
       <div id="message" class="message"></div>
+
+      <p class="auth-footer" style="margin-top:25px;text-align:center;color:var(--gray-500);font-size:0.85rem;">
+        <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"></i>
+        Pas encore de compte ? Contactez le bailleur pour obtenir vos identifiants.
+      </p>
     </div>
   </main>
 
+  <script src="js/icons.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/login.js"></script>
+  <script>
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  </script>
 </body>
 </html>

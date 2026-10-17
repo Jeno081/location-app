@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
@@ -50,15 +51,15 @@
       </div>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="suivi">📊 Suivi paiements</button>
-      <button class="tab" data-tab="biens">🏠 Mes biens</button>
-      <button class="tab" data-tab="locataires">👥 Locataires</button>
-      <button class="tab" data-tab="contrats">📄 Contrats</button>
-      <button class="tab" data-tab="paiements">💳 Paiements</button>
-      <button class="tab" data-tab="incidents">🔧 Incidents</button>
-      <button class="tab" data-tab="calendrier">📅 Calendrier</button>    </div>
-
+        <div class="tabs">
+      <button class="tab active" data-tab="suivi"><i data-lucide="bar-chart-3"></i> Suivi paiements</button>
+      <button class="tab" data-tab="biens"><i data-lucide="home"></i> Mes biens</button>
+      <button class="tab" data-tab="locataires"><i data-lucide="users"></i> Locataires</button>
+      <button class="tab" data-tab="contrats"><i data-lucide="file-text"></i> Contrats</button>
+      <button class="tab" data-tab="paiements"><i data-lucide="credit-card"></i> Paiements</button>
+      <button class="tab" data-tab="incidents"><i data-lucide="wrench"></i> Incidents</button>
+      <button class="tab" data-tab="calendrier"><i data-lucide="calendar"></i> Calendrier</button>
+    </div>
     <div id="tab-suivi" class="tab-content active">
       <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
@@ -203,7 +204,7 @@
       </form>
     </div>
   </div>
-
+  <script src="js/icons.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
@@ -211,5 +212,8 @@
   <script src="js/calendar.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/bailleur.js"></script>
+    <script>
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  </script>
 </body>
 </html>
