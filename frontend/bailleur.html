@@ -21,11 +21,12 @@
     <div class="dashboard-header">
       <h1>Mon espace bailleur</h1>
       <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="openContractModal()">📄 Créer un contrat</button>
-        <button class="btn-primary" onclick="openPropertyModal()">+ Ajouter un logement</button>
+        <button class="btn-secondary" onclick="openContractModal()"><i data-lucide="file-plus" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Créer un contrat</button>
+        <button class="btn-primary" onclick="openPropertyModal()"><i data-lucide="plus" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Ajouter un logement</button>
       </div>
     </div>
 
+    <!-- Statistiques -->
     <div class="stats-grid">
       <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Logements</div></div>
       <div class="stat-card"><div class="stat-value" id="statDispo">0</div><div class="stat-label">Disponibles</div></div>
@@ -35,7 +36,7 @@
       <div class="stat-card"><div class="stat-value" id="statRetards">0</div><div class="stat-label">En retard</div></div>
     </div>
 
-        <!-- Graphiques -->
+    <!-- Graphiques -->
     <div class="charts-grid">
       <div class="chart-card">
         <h3>📈 Revenus des 12 derniers mois</h3>
@@ -51,7 +52,8 @@
       </div>
     </div>
 
-        <div class="tabs">
+    <!-- Onglets -->
+    <div class="tabs">
       <button class="tab active" data-tab="suivi"><i data-lucide="bar-chart-3"></i> Suivi paiements</button>
       <button class="tab" data-tab="biens"><i data-lucide="home"></i> Mes biens</button>
       <button class="tab" data-tab="locataires"><i data-lucide="users"></i> Locataires</button>
@@ -60,53 +62,63 @@
       <button class="tab" data-tab="incidents"><i data-lucide="wrench"></i> Incidents</button>
       <button class="tab" data-tab="calendrier"><i data-lucide="calendar"></i> Calendrier</button>
     </div>
+
+    <!-- Onglet Suivi -->
     <div id="tab-suivi" class="tab-content active">
       <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
+    <!-- Onglet Biens -->
     <div id="tab-biens" class="tab-content">
       <div class="filter-bar">
+        <input type="text" id="searchBiens" class="search-input" placeholder="Rechercher un bien..." style="flex:1;min-width:200px;" oninput="rechercherProprietes()">
         <button class="filter-btn active" data-filter="tous" onclick="filterProperties(this, 'tous')">Tous</button>
-        <button class="filter-btn" data-filter="disponible" onclick="filterProperties(this, 'disponible')">🟢 Disponibles</button>
-        <button class="filter-btn" data-filter="loue" onclick="filterProperties(this, 'loue')">🔴 Loués</button>
-        <button class="filter-btn" data-filter="archive" onclick="filterProperties(this, 'archive')">⚫ Archivés</button>
+        <button class="filter-btn" data-filter="disponible" onclick="filterProperties(this, 'disponible')">Disponibles</button>
+        <button class="filter-btn" data-filter="loue" onclick="filterProperties(this, 'loue')">Loués</button>
+        <button class="filter-btn" data-filter="archive" onclick="filterProperties(this, 'archive')">Archivés</button>
       </div>
       <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
+    <!-- Onglet Locataires -->
     <div id="tab-locataires" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchLocataires" class="search-input" placeholder="Rechercher un locataire (nom, email, logement)..." style="width:100%;" oninput="rechercherLocataires()">
+      </div>
       <div id="tenantsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
+    <!-- Onglet Contrats -->
     <div id="tab-contrats" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchContrats" class="search-input" placeholder="Rechercher un contrat (locataire, bien)..." style="width:100%;" oninput="rechercherContrats()">
+      </div>
       <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
+    <!-- Onglet Paiements -->
     <div id="tab-paiements" class="tab-content">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:20px;">
-        <button class="btn-primary" onclick="exportCSV()">📊 Exporter en Excel</button>
+      <div class="filter-bar" style="margin-bottom:20px; justify-content:space-between; align-items:center;">
+        <input type="text" id="searchPaiements" class="search-input" placeholder="Rechercher un paiement (locataire, mois)..." style="flex:1;max-width:400px;" oninput="rechercherPaiements()">
+        <button class="btn-primary" onclick="exportCSV()"><i data-lucide="download" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Exporter Excel</button>
       </div>
       <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
-        <div id="tab-incidents" class="tab-content">
+    <!-- Onglet Incidents -->
+    <div id="tab-incidents" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchIncidents" class="search-input" placeholder="Rechercher un incident (locataire, description)..." style="width:100%;" oninput="rechercherIncidents()">
+      </div>
       <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
+    <!-- Onglet Calendrier -->
     <div id="tab-calendrier" class="tab-content">
       <div id="calendarContent">
         <p class="empty-message">Chargement...</p>
       </div>
     </div>
-
-      <!-- Modale événements du jour -->
-  <div id="dayEventsModal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-      <span class="modal-close" onclick="closeDayEventsModal()">&times;</span>
-      <h2 id="dayEventsTitle">Événements</h2>
-      <div id="dayEventsContent"></div>
-    </div>
-  </div>
 
   </main>
 
@@ -150,15 +162,10 @@
           <div class="form-group"><label for="contractFin">Date fin</label><input type="date" id="contractFin"></div>
         </div>
         <div class="form-group"><label for="contractMontant">Loyer ($)</label><input type="number" id="contractMontant" required min="0"></div>
-
         <div class="form-group">
           <label for="contractClauses">Clauses personnalisées (optionnel)</label>
-          <textarea id="contractClauses" rows="5" placeholder="Ex :&#10;Le préavis de départ est de 2 mois.&#10;Une caution de 2 mois de loyer est exigée.&#10;Les animaux domestiques ne sont pas autorisés."></textarea>
-          <p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px;">
-            💡 Ces clauses apparaîtront dans le contrat PDF signé.
-          </p>
+          <textarea id="contractClauses" rows="5" placeholder="Ex :&#10;Le préavis de départ est de 2 mois.&#10;Une caution de 2 mois est exigée."></textarea>
         </div>
-
         <button type="submit" class="btn-primary btn-block">Créer le contrat</button>
       </form>
     </div>
@@ -204,6 +211,53 @@
       </form>
     </div>
   </div>
+
+  <!-- Modale événements du jour -->
+  <div id="dayEventsModal" class="modal">
+    <div class="modal-content" style="max-width: 550px;">
+      <span class="modal-close" onclick="closeDayEventsModal()">&times;</span>
+      <h2 id="dayEventsTitle">Événements</h2>
+      <div id="dayEventsContent"></div>
+    </div>
+  </div>
+
+    <!-- Modale pour terminer un contrat -->
+  <div id="terminateContractModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeTerminateModal()">&times;</span>
+      <h2>Mettre fin au contrat</h2>
+      <p style="color:var(--gray-500);margin-bottom:20px;">
+        Êtes-vous sûr de vouloir mettre fin à ce contrat ? Le logement redeviendra disponible.
+      </p>
+      <form id="terminateForm">
+        <input type="hidden" id="terminateContractId">
+        <div class="form-group">
+          <label for="terminateMotif">Motif de la fin (optionnel)</label>
+          <input type="text" id="terminateMotif" placeholder="Ex : Déménagement du locataire">
+        </div>
+        <button type="submit" class="btn-primary btn-block" style="background:var(--danger);">Confirmer la fin du contrat</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale pour valider/refuser un paiement -->
+  <div id="validatePaymentModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeValidatePaymentModal()">&times;</span>
+      <h2 id="validatePaymentTitle">Valider le paiement</h2>
+      <p id="validatePaymentText" style="color:var(--gray-500);margin-bottom:20px;">
+        Confirmez-vous avoir bien reçu ce paiement sur votre compte ?
+      </p>
+      <input type="hidden" id="validatePaymentId">
+      <input type="hidden" id="validatePaymentAction">
+      
+      <div style="display:flex; gap:10px;">
+        <button class="btn-secondary btn-block" onclick="closeValidatePaymentModal()">Annuler</button>
+        <button class="btn-primary btn-block" id="validatePaymentBtn" onclick="confirmValidatePayment()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/icons.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
@@ -212,7 +266,7 @@
   <script src="js/calendar.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/bailleur.js"></script>
-    <script>
+  <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>
 </body>

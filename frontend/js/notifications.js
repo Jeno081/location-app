@@ -18,10 +18,11 @@ async function loadNotifications() {
     const data = await response.json();
     if (!response.ok) return;
 
-    if (notifUser.role === "bailleur") {
+        if (notifUser.role === "bailleur") {
       updateTabBadge("incidents", data.incidents);
       updateTabBadge("contrats", data.contrats);
-      updateTabBadge("suivi", data.paiements);
+      updateTabBadge("paiements", data.paiements); // 👈 Ajout du badge sur l'onglet Paiements
+      updateTabBadge("suivi", data.retards); // 👈 Le badge Suivi affiche maintenant les retards
     } else {
       updateTabBadge("rappels", data.rappels);
       updateTabBadge("signalements", data.incidents);

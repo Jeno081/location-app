@@ -12,9 +12,6 @@ function genererMotDePasse() {
   return mdp;
 }
 
-// ============================================
-// CRÉER un contrat
-// ============================================
 exports.createContract = (req, res) => {
   const {
     property_id, locataire_email, locataire_nom, locataire_telephone,
@@ -55,12 +52,7 @@ exports.createContract = (req, res) => {
     INSERT INTO contracts (property_id, locataire_id, date_debut, date_fin, montant_loyer, clauses_personnalisees, statut)
     VALUES (?, ?, ?, ?, ?, ?, 'en_attente')
   `).run(
-    property_id,
-    locataire.id,
-    date_debut,
-    date_fin || null,
-    montant_loyer,
-    clauses_personnalisees || null
+    property_id, locataire.id, date_debut, date_fin || null, montant_loyer, clauses_personnalisees || null
   );
 
   res.status(201).json({
@@ -71,9 +63,6 @@ exports.createContract = (req, res) => {
   });
 };
 
-// ============================================
-// LISTER contrats du bailleur
-// ============================================
 exports.getMyContractsAsBailleur = (req, res) => {
   const bailleur_id = req.user.id;
   const contracts = db.prepare(`
@@ -88,9 +77,6 @@ exports.getMyContractsAsBailleur = (req, res) => {
   res.json({ contracts });
 };
 
-// ============================================
-// LISTER contrats du locataire
-// ============================================
 exports.getMyContractsAsLocataire = (req, res) => {
   const locataire_id = req.user.id;
   const contracts = db.prepare(`
@@ -105,9 +91,6 @@ exports.getMyContractsAsLocataire = (req, res) => {
   res.json({ contracts });
 };
 
-// ============================================
-// SIGNER un contrat
-// ============================================
 exports.signContract = (req, res) => {
   const { id } = req.params;
   const { role } = req.user;
@@ -141,7 +124,7 @@ exports.signContract = (req, res) => {
 };
 
 // ============================================
-// TERMINER un contrat
+// TERMINER un contrat + Suppression du compte si 0 contrat actif
 // ============================================
 exports.terminerContrat = (req, res) => {
   const { id } = req.params;
@@ -156,26 +139,46 @@ exports.terminerContrat = (req, res) => {
 
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
   if (contract.bailleur_id !== bailleur_id) return res.status(403).json({ message: "Non autorise" });
+  if (contract.statut === "termine") return res.status(400).json({ message: "Ce contrat est deja termine" });
 
-  if (contract.statut === "termine") {
-    return res.status(400).json({ message: "Ce contrat est deja termine" });
-  }
-
+  // 1. Terminer le contrat
   const now = new Date().toISOString();
   db.prepare(`
     UPDATE contracts SET statut = 'termine', date_terminaison = ?, motif_terminaison = ? WHERE id = ?
   `).run(now, motif || "Non precise", id);
 
+  // 2. Rendre le logement disponible
   db.prepare("UPDATE properties SET statut = 'disponible' WHERE id = ?").run(contract.property_id);
 
-  res.json({ message: "Contrat termine avec succes" });
+  // 3. Vérifier si le locataire a d'autres contrats actifs (ou en attente)
+  const autresContrats = db.prepare(`
+    SELECT COUNT(*) AS nb FROM contracts
+    WHERE locataire_id = ? AND id != ? AND statut IN ('actif', 'en_attente')
+  `).get(contract.locataire_id, id).nb;
+
+  let compteSupprime = false;
+
+  // 4. Si aucun autre contrat, supprimer le compte
+  if (autresContrats === 0) {
+    // Supprimer tous les incidents liés à ce locataire
+    db.prepare("DELETE FROM incidents WHERE locataire_id = ?").run(contract.locataire_id);
+    
+    // Supprimer tous les documents liés à ce locataire
+    db.prepare("DELETE FROM documents WHERE locataire_id = ?").run(contract.locataire_id);
+
+    // Supprimer le compte utilisateur
+    db.prepare("DELETE FROM users WHERE id = ?").run(contract.locataire_id);
+    
+    compteSupprime = true;
+  }
+
+  res.json({ 
+    message: compteSupprime 
+      ? "Contrat terminé et compte locataire supprimé (aucun autre contrat)."
+      : "Contrat terminé. Le locataire conserve son compte (autres contrats actifs)." 
+  });
 };
 
-// ============================================
-// MODIFIER les clauses d'un contrat
-// PUT /api/contracts/:id/clauses
-// (bailleur uniquement, avant signature du locataire)
-// ============================================
 exports.updateClauses = (req, res) => {
   const { id } = req.params;
   const { clauses_personnalisees } = req.body;
@@ -189,10 +192,7 @@ exports.updateClauses = (req, res) => {
 
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
   if (contract.bailleur_id !== bailleur_id) return res.status(403).json({ message: "Non autorise" });
-
-  if (contract.statut === "termine") {
-    return res.status(400).json({ message: "Impossible de modifier un contrat termine" });
-  }
+  if (contract.statut === "termine") return res.status(400).json({ message: "Impossible de modifier un contrat termine" });
 
   db.prepare("UPDATE contracts SET clauses_personnalisees = ? WHERE id = ?")
     .run(clauses_personnalisees || null, id);

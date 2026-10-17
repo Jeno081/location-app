@@ -25,7 +25,7 @@
       </div>
     </div>
 
-       <div class="tabs">
+    <div class="tabs">
       <button class="tab active" data-tab="logement"><i data-lucide="home"></i> Mon logement</button>
       <button class="tab" data-tab="contrats"><i data-lucide="file-text"></i> Mes contrats</button>
       <button class="tab" data-tab="paiements"><i data-lucide="credit-card"></i> Paiements</button>
@@ -38,15 +38,25 @@
     <div id="tab-logement" class="tab-content active">
       <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
     <div id="tab-contrats" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchContrats" class="search-input" placeholder="🔍 Rechercher un contrat..." style="width:100%;" oninput="rechercherContrats()">
+      </div>
       <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
     <div id="tab-paiements" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchPaiements" class="search-input" placeholder="🔍 Rechercher un paiement..." style="width:100%;" oninput="rechercherPaiements()">
+      </div>
       <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
     <div id="tab-rappels" class="tab-content">
       <div id="rappelsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
     <div id="tab-documents" class="tab-content">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap;gap:15px;">
         <h2 class="section-title" style="margin:0;">Mes pièces d'identité</h2>
@@ -54,7 +64,11 @@
       </div>
       <div id="documentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
+
     <div id="tab-signalements" class="tab-content">
+      <div class="filter-bar" style="margin-bottom:20px;">
+        <input type="text" id="searchIncidents" class="search-input" placeholder="🔍 Rechercher un signalement..." style="width:100%;" oninput="rechercherIncidents()">
+      </div>
       <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
     </div>
 
@@ -67,8 +81,7 @@
 
   </main>
 
-  <!-- Modale incident -->
-    <!-- Modale incident -->
+  <!-- Modales existantes inchangées -->
   <div id="incidentModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeIncidentModal()">&times;</span>
@@ -76,20 +89,12 @@
       <form id="incidentForm">
         <div class="form-group">
           <label for="incidentDescription">Décrivez chaque problème sur une ligne séparée</label>
-          <textarea id="incidentDescription" rows="6" placeholder="Ex :&#10;Fuite d'eau dans la salle de bain&#10;Porte cassée&#10;Électricité défaillante" required></textarea>
-          <p style="font-size:0.85rem;color:var(--gray-500);margin-top:8px;">
-            💡 <strong>1 ligne = 1 signalement.</strong> Vous pouvez joindre jusqu'à 10 photos, une par problème (dans l'ordre).
-          </p>
+          <textarea id="incidentDescription" rows="6" placeholder="Ex :&#10;Fuite d'eau&#10;Porte cassée" required></textarea>
         </div>
-
         <div class="form-group">
-          <label for="incidentPhotos">Photos (optionnel — une par problème)</label>
+          <label for="incidentPhotos">Photos (optionnel)</label>
           <input type="file" id="incidentPhotos" accept="image/*" multiple>
-          <p style="font-size:0.8rem;color:var(--gray-500);margin-top:6px;">
-            📸 La <strong>1ʳᵉ photo</strong> correspond au <strong>1ᵉʳ problème</strong>, la 2ᵉ au 2ᵉ, etc.
-          </p>
         </div>
-
         <input type="hidden" id="incidentPropertyId">
         <button type="submit" class="btn-primary btn-block">Envoyer</button>
       </form>
@@ -97,11 +102,10 @@
     </div>
   </div>
 
-  <!-- Modale paiement -->
   <div id="paymentModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closePaymentModal()">&times;</span>
-      <h2>Effectuer un paiement</h2>
+      <h2>Déclarer un paiement</h2>
       <form id="paymentForm">
         <div class="form-group">
           <label for="paymentContract">Contrat</label>
@@ -116,18 +120,23 @@
           <input type="number" id="paymentMontant" required min="0">
         </div>
         <div class="form-group">
-          <label>Méthode</label>
+          <label>Méthode utilisée</label>
           <div class="role-choice">
-            <label class="role-option"><input type="radio" name="methode" value="mobile_money" checked><span>📱 Mobile Money (M-Pesa)</span></label>
+            <label class="role-option"><input type="radio" name="methode" value="mobile_money" checked><span>📱 Mobile Money (M-Pesa, Orange...)</span></label>
             <label class="role-option"><input type="radio" name="methode" value="carte"><span>💳 Carte bancaire</span></label>
+            <label class="role-option"><input type="radio" name="methode" value="cash"><span>💵 Espèces (Cash)</span></label>
           </div>
         </div>
-        <button type="submit" class="btn-primary btn-block">Payer maintenant</button>
+        <div class="form-group">
+          <label for="paymentPreuve">Preuve de paiement (Capture d'écran, reçu ou photo)</label>
+          <input type="file" id="paymentPreuve" accept="image/*,.pdf">
+          <p style="font-size:0.8rem;color:var(--gray-500);margin-top:5px;">⚠️ Requis pour que le bailleur valide.</p>
+        </div>
+        <button type="submit" class="btn-primary btn-block">Envoyer le paiement</button>
       </form>
     </div>
   </div>
 
-  <!-- Modale upload document -->
   <div id="uploadModal" class="modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeUploadModal()">&times;</span>
@@ -151,13 +160,14 @@
       </form>
     </div>
   </div>
+
   <script src="js/icons.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/locataire.js"></script>
-    <script>
+  <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>
 </body>

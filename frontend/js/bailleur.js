@@ -9,8 +9,15 @@ const user = JSON.parse(localStorage.getItem("user") || "null");
 if (!token || !user) window.location.href = "login.html";
 if (user && user.role !== "bailleur") window.location.href = "locataire.html";
 
-let myProperties = [];
-let allProperties = [];
+let globalData = {
+  properties: [],
+  tenants: [],
+  contracts: [],
+  payments: [],
+  incidents: []
+};
+
+let currentFilter = "tous";
 let currentPassword = "";
 
 function showToast(message, type = "success") {
@@ -37,15 +44,154 @@ document.querySelectorAll(".tab").forEach(btn => {
   });
 });
 
-// FILTRES
+// ============================================
+// 1. FILTRES & RECHERCHES
+// ============================================
 function filterProperties(btn, filtre) {
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  const filtered = filtre === "tous" ? allProperties : allProperties.filter(p => p.statut === filtre);
+  currentFilter = filtre;
+  rechercherProprietes();
+}
+
+function rechercherProprietes() {
+  const q = document.getElementById("searchBiens").value.toLowerCase().trim();
+  let filtered = globalData.properties;
+  if (currentFilter !== "tous") filtered = filtered.filter(p => p.statut === currentFilter);
+  if (q) {
+    filtered = filtered.filter(p => 
+      p.titre.toLowerCase().includes(q) || 
+      p.adresse.toLowerCase().includes(q) || 
+      (p.ville && p.ville.toLowerCase().includes(q))
+    );
+  }
   renderProperties(filtered);
 }
 
-// SUIVI PAIEMENTS
+function rechercherLocataires() {
+  const q = document.getElementById("searchLocataires").value.toLowerCase().trim();
+  let filtered = globalData.tenants;
+  if (q) {
+    filtered = filtered.filter(l => 
+      l.nom.toLowerCase().includes(q) || 
+      l.email.toLowerCase().includes(q) || 
+      l.property_titre.toLowerCase().includes(q)
+    );
+  }
+  renderTenants(filtered);
+}
+
+function rechercherContrats() {
+  const q = document.getElementById("searchContrats").value.toLowerCase().trim();
+  let filtered = globalData.contracts;
+  if (q) {
+    filtered = filtered.filter(c => 
+      c.property_titre.toLowerCase().includes(q) || 
+      c.locataire_nom.toLowerCase().includes(q) || 
+      c.locataire_email.toLowerCase().includes(q)
+    );
+  }
+  renderContracts(filtered);
+}
+
+function rechercherPaiements() {
+  const q = document.getElementById("searchPaiements").value.toLowerCase().trim();
+  let filtered = globalData.payments;
+  if (q) {
+    filtered = filtered.filter(p => 
+      p.property_titre.toLowerCase().includes(q) || 
+      p.locataire_nom.toLowerCase().includes(q) || 
+      p.mois.toLowerCase().includes(q)
+    );
+  }
+  renderPayments(filtered);
+}
+
+function rechercherIncidents() {
+  const q = document.getElementById("searchIncidents").value.toLowerCase().trim();
+  let filtered = globalData.incidents;
+  if (q) {
+    filtered = filtered.filter(i => 
+      i.property_titre.toLowerCase().includes(q) || 
+      i.locataire_nom.toLowerCase().includes(q) || 
+      i.description.toLowerCase().includes(q)
+    );
+  }
+  renderIncidents(filtered);
+}
+
+// ============================================
+// 2. CHARGEMENT DES DONNÉES
+// ============================================
+async function loadProperties() {
+  try {
+    const response = await fetch(API_URL + "/properties/mes-logements/liste", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+
+    globalData.properties = data.properties;
+    document.getElementById("statTotal").textContent = globalData.properties.length;
+    document.getElementById("statDispo").textContent = globalData.properties.filter(p => p.statut === "disponible").length;
+    document.getElementById("statLoues").textContent = globalData.properties.filter(p => p.statut === "loue").length;
+    document.getElementById("statLoyer").textContent =
+      globalData.properties.filter(p => p.statut === "loue").reduce((sum, p) => sum + (p.loyer || 0), 0) + " $";
+
+    rechercherProprietes();
+  } catch (err) { console.error(err); }
+}
+
+async function loadTenants() {
+  try {
+    const response = await fetch(API_URL + "/users/mes-locataires", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+    globalData.tenants = data.locataires;
+    rechercherLocataires();
+  } catch (err) { console.error(err); }
+}
+
+async function loadContracts() {
+  try {
+    const response = await fetch(API_URL + "/contracts/mes-contrats", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+    globalData.contracts = data.contracts;
+    rechercherContrats();
+  } catch (err) { console.error(err); }
+}
+
+async function loadPayments() {
+  try {
+    const response = await fetch(API_URL + "/payments/recus", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+    globalData.payments = data.payments;
+    const total = globalData.payments.reduce((s, p) => s + p.montant, 0);
+    document.getElementById("statEncaisse").textContent = total + " $";
+    rechercherPaiements();
+  } catch (err) { console.error(err); }
+}
+
+async function loadIncidents() {
+  try {
+    const response = await fetch(API_URL + "/incidents/recus", {
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+    globalData.incidents = data.incidents;
+    rechercherIncidents();
+  } catch (err) { console.error(err); }
+}
+
 async function loadDashboard() {
   const container = document.getElementById("dashboardPaiements");
   try {
@@ -53,8 +199,7 @@ async function loadDashboard() {
       headers: { "Authorization": "Bearer " + token }
     });
     const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
+    if (!response.ok) return;
 
     const enRetard = data.dashboard.filter(d => d.statut_paiement === "retard" || d.statut_paiement === "retard_grave").length;
     document.getElementById("statRetards").textContent = enRetard;
@@ -87,67 +232,15 @@ async function loadDashboard() {
         (!d.paye_ce_mois ? '<button class="btn-secondary btn-block" style="margin-top:12px; color:#dc2626; border-color:#dc2626;" onclick="openRappelModal(' + d.contract_id + ', \'' + d.locataire_nom + '\')">🔔 Envoyer un rappel</button>' : '') +
         '</div>';
     }).join("");
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
+  } catch (err) { console.error(err); }
 }
 
-function openRappelModal(contractId, nom) {
-  document.getElementById("rappelContractId").value = contractId;
-  document.getElementById("rappelMessage").value = "Cher(e) " + nom + ", nous vous rappelons que votre loyer est en retard. Merci de bien vouloir régulariser votre situation dans les plus brefs délais.";
-  document.getElementById("rappelModal").style.display = "flex";
-}
-function closeRappelModal() { document.getElementById("rappelModal").style.display = "none"; }
-
-document.getElementById("rappelForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const body = {
-    contract_id: parseInt(document.getElementById("rappelContractId").value),
-    message: document.getElementById("rappelMessage").value
-  };
-  try {
-    const r = await fetch(API_URL + "/payments/rappel", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
-      body: JSON.stringify(body)
-    });
-    if (r.ok) {
-      showToast("Rappel envoyé", "success");
-      closeRappelModal();
-      loadDashboard();
-      if (window.loadNotifications) window.loadNotifications();
-    }
-  } catch (err) { showToast("Erreur", "error"); }
-});
-
-// LOGEMENTS
-async function loadProperties() {
-  const container = document.getElementById("propertiesList");
-  try {
-    const response = await fetch(API_URL + "/properties/mes-logements/liste", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
-
-    allProperties = data.properties;
-    myProperties = allProperties;
-
-    document.getElementById("statTotal").textContent = allProperties.length;
-    document.getElementById("statDispo").textContent = allProperties.filter(p => p.statut === "disponible").length;
-    document.getElementById("statLoues").textContent = allProperties.filter(p => p.statut === "loue").length;
-    document.getElementById("statLoyer").textContent =
-      allProperties.filter(p => p.statut === "loue").reduce((sum, p) => sum + (p.loyer || 0), 0) + " $";
-
-    renderProperties(allProperties);
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
-}
-
+// ============================================
+// 3. RENDERERS
+// ============================================
 function renderProperties(properties) {
   const container = document.getElementById("propertiesList");
-  if (properties.length === 0) { container.innerHTML = '<p class="empty-message">Aucun logement.</p>'; return; }
+  if (properties.length === 0) { container.innerHTML = '<p class="empty-message">Aucun logement trouvé.</p>'; return; }
 
   container.innerHTML = properties.map(p => {
     const photos = p.photos ? JSON.parse(p.photos) : [];
@@ -170,6 +263,167 @@ function renderProperties(properties) {
   }).join("");
 }
 
+function renderTenants(tenants) {
+  const container = document.getElementById("tenantsList");
+  if (tenants.length === 0) { container.innerHTML = '<p class="empty-message">Aucun locataire trouvé.</p>'; return; }
+
+  container.innerHTML = tenants.map(l => {
+    const avatarHtml = l.photo_profil
+      ? '<img src="' + l.photo_profil + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:10px;">'
+      : '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:1.5rem;margin-bottom:10px;">' + l.nom.charAt(0).toUpperCase() + '</div>';
+
+    return '<div class="property-card">' +
+      '<span class="contract-status ' + l.contract_statut + '">' + l.contract_statut.replace("_", " ") + '</span>' +
+      avatarHtml +
+      '<h3>👤 ' + l.nom + '</h3>' +
+      '<p class="property-charges">✉️ ' + l.email + '</p>' +
+      '<p class="property-charges">📞 ' + (l.telephone || "—") + '</p>' +
+      '<p class="property-address">🏠 ' + l.property_titre + '</p>' +
+      '<p class="property-price">' + l.montant_loyer + ' $ <small>/ mois</small></p>' +
+      '<p class="property-charges">Du ' + l.date_debut + (l.date_fin ? " au " + l.date_fin : "") + '</p>' +
+      (l.doit_changer_mot_de_passe === 1 ? '<p class="contract-signature unsigned">⚠️ N\'a pas changé son mdp</p>' : '<p class="contract-signature signed">✅ Mdp personnalisé</p>') +
+      '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="openDocsModal(' + l.id + ', \'' + l.nom + '\')">🪪 Documents</button>' +
+      '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="deleteTenant(' + l.id + ', \'' + l.nom + '\')">🗑️ Supprimer</button>' +
+      '</div>';
+  }).join("");
+}
+
+function renderContracts(contracts) {
+  const container = document.getElementById("contractsList");
+  if (contracts.length === 0) { container.innerHTML = '<p class="empty-message">Aucun contrat trouvé.</p>'; return; }
+
+  container.innerHTML = contracts.map(c => {
+    const estTermine = c.statut === "termine";
+    return '<div class="property-card">' +
+      '<span class="contract-status ' + c.statut + '">' + c.statut.replace("_", " ") + '</span>' +
+      '<h3>' + c.property_titre + '</h3>' +
+      '<p class="property-address">📍 ' + c.property_adresse + '</p>' +
+      '<p class="property-charges">👤 ' + c.locataire_nom + ' (' + c.locataire_email + ')</p>' +
+      '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
+      '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : "") + '</p>' +
+      (c.date_terminaison ? '<p class="property-charges">⚠️ Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
+      (c.clauses_personnalisees ? '<p class="property-desc">📌 <strong>Clauses</strong> : ' + c.clauses_personnalisees.substring(0, 100) + (c.clauses_personnalisees.length > 100 ? "..." : "") + '</p>' : '') +
+      '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' +
+        (c.signature_bailleur ? "✅ Signé par vous" : "⏳ En attente de votre signature") +
+      '</p>' +
+      '<p class="contract-signature ' + (c.signature_locataire ? "signed" : "unsigned") + '">' +
+        (c.signature_locataire ? "✅ Signé par le locataire" : "⏳ En attente du locataire") +
+      '</p>' +
+      (!c.signature_bailleur && !estTermine ? '<button class="btn-primary btn-block" style="margin-top:12px;" onclick="signContract(' + c.id + ')">✍️ Signer</button>' : '') +
+      (!estTermine && !c.signature_locataire ? '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="editClauses(' + c.id + ', \'' + (c.clauses_personnalisees || "").replace(/'/g, "\\'").replace(/\n/g, "\\n") + '\')">✏️ Modifier les clauses</button>' : '') +
+      '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="downloadContractPDF(' + c.id + ')">📄 Contrat PDF</button>' +
+      (!estTermine ? '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="terminerContrat(' + c.id + ')">🔚 Mettre fin</button>' : '') +
+      '</div>';
+  }).join("");
+}
+
+function renderPayments(payments) {
+  const container = document.getElementById("paymentsList");
+  if (payments.length === 0) { container.innerHTML = '<p class="empty-message">Aucun paiement trouvé.</p>'; return; }
+
+  container.innerHTML = payments.map(p => {
+    let statutBadge = "";
+    let actions = "";
+    
+    if (p.statut_bailleur === 'valide') {
+      statutBadge = '<span class="contract-status actif" style="background:#d1fae5;color:#065f46;">✅ Validé</span>';
+    } else if (p.statut_bailleur === 'refuse') {
+      statutBadge = '<span class="contract-status en_attente" style="background:#fee2e2;color:#991b1b;">❌ Refusé</span>';
+    } else {
+      statutBadge = '<span class="contract-status en_attente" style="background:#fef3c7;color:#92400e;">⏳ En attente de validation</span>';
+      actions = '<div style="display:flex;gap:8px;margin-top:12px;">' +
+        '<button class="btn-primary btn-block" style="background:var(--success);" onclick="validerPaiement(' + p.id + ', \'valide\')">✅ Valider</button>' +
+        '<button class="btn-secondary btn-block" style="color:var(--danger);border-color:var(--danger);" onclick="validerPaiement(' + p.id + ', \'refuse\')">❌ Refuser</button>' +
+        '</div>';
+    }
+
+    return '<div class="property-card">' +
+      statutBadge +
+      '<h3>' + p.property_titre + '</h3>' +
+      '<p class="property-address">📍 ' + p.property_adresse + '</p>' +
+      '<p class="property-charges">👤 ' + p.locataire_nom + '</p>' +
+      '<p class="property-price">' + p.montant + ' $</p>' +
+      '<p class="property-charges">Mois : ' + p.mois + '</p>' +
+      '<p class="property-charges">Méthode : ' + p.methode + '</p>' +
+      '<p class="property-charges">Déclaré le : ' + new Date(p.date_paiement).toLocaleDateString("fr-FR") + '</p>' +
+      (p.preuve_paiement ? '<a href="' + p.preuve_paiement + '" target="_blank" class="btn-secondary btn-block" style="margin-top:12px;display:block;text-align:center;text-decoration:none;">👁️ Voir la preuve</a>' : '') +
+      actions +
+      '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="downloadReceiptPDF(' + p.id + ')">🧾 Quittance</button>' +
+    '</div>';
+  }).join("");
+}
+
+function validerPaiement(id, statut) {
+  document.getElementById("validatePaymentId").value = id;
+  document.getElementById("validatePaymentAction").value = statut;
+  
+  if (statut === "valide") {
+    document.getElementById("validatePaymentTitle").textContent = "Valider le paiement";
+    document.getElementById("validatePaymentText").textContent = "Confirmez-vous avoir bien reçu ce paiement sur votre compte ?";
+    document.getElementById("validatePaymentBtn").style.background = "var(--success)";
+    document.getElementById("validatePaymentBtn").textContent = "Oui, valider";
+  } else {
+    document.getElementById("validatePaymentTitle").textContent = "Refuser le paiement";
+    document.getElementById("validatePaymentText").textContent = "Êtes-vous sûr de vouloir refuser cette preuve de paiement ? Le locataire sera notifié.";
+    document.getElementById("validatePaymentBtn").style.background = "var(--danger)";
+    document.getElementById("validatePaymentBtn").textContent = "Oui, refuser";
+  }
+  
+  document.getElementById("validatePaymentModal").style.display = "flex";
+}
+
+function closeValidatePaymentModal() {
+  document.getElementById("validatePaymentModal").style.display = "none";
+}
+
+async function confirmValidatePayment() {
+  const id = document.getElementById("validatePaymentId").value;
+  const statut = document.getElementById("validatePaymentAction").value;
+
+  try {
+    const r = await fetch(API_URL + "/payments/" + id + "/valider", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify({ statut_bailleur: statut })
+    });
+    
+    if (r.ok) {
+      showToast(statut === "valide" ? "Paiement validé !" : "Paiement refusé.", "success");
+      closeValidatePaymentModal();
+      loadPayments();
+      loadDashboard();
+      if (window.loadNotifications) window.loadNotifications();
+    } else {
+      const data = await r.json();
+      showToast(data.message, "error");
+    }
+  } catch (err) { showToast("Erreur", "error"); }
+}
+
+function renderIncidents(incidents) {
+  const container = document.getElementById("incidentsList");
+  if (incidents.length === 0) { container.innerHTML = '<p class="empty-message">Aucun incident trouvé.</p>'; return; }
+
+  container.innerHTML = incidents.map(i =>
+    '<div class="property-card">' +
+      '<div class="property-status ' + (i.statut === "resolu" ? "disponible" : "loue") + '">' + i.statut + '</div>' +
+      '<h3>' + i.property_titre + '</h3>' +
+      '<p class="property-address">👤 ' + i.locataire_nom + ' — ' + (i.locataire_tel || "—") + '</p>' +
+      '<p class="property-desc">' + i.description + '</p>' +
+      (i.photo ? '<img src="' + i.photo + '" alt="photo" style="width:100%;border-radius:8px;margin:12px 0;max-height:200px;object-fit:cover;">' : '') +
+      '<p class="property-charges">Signalé le : ' + new Date(i.date_creation).toLocaleDateString("fr-FR") + '</p>' +
+      '<select onchange="updateIncidentStatus(' + i.id + ', this.value)" class="search-input" style="width:100%;margin-top:10px;">' +
+        '<option value="ouvert" ' + (i.statut === "ouvert" ? "selected" : "") + '>Ouvert</option>' +
+        '<option value="en_cours" ' + (i.statut === "en_cours" ? "selected" : "") + '>En cours</option>' +
+        '<option value="resolu" ' + (i.statut === "resolu" ? "selected" : "") + '>Résolu</option>' +
+      '</select>' +
+    '</div>'
+  ).join("");
+}
+
+// ============================================
+// 4. ACTIONS
+// ============================================
 function openPropertyModal() { document.getElementById("propertyModal").style.display = "flex"; }
 function closePropertyModal() { document.getElementById("propertyModal").style.display = "none"; }
 
@@ -187,10 +441,7 @@ document.getElementById("propertyForm").addEventListener("submit", async (e) => 
   try {
     const response = await fetch(API_URL + "/properties", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify(body)
     });
     const data = await response.json();
@@ -221,11 +472,10 @@ async function uploadPhotos(propertyId, files) {
   } catch (err) { showToast("Erreur upload", "error"); }
 }
 
-// CONTRATS
 function openContractModal() {
   const select = document.getElementById("contractProperty");
   select.innerHTML = '<option value="">-- Choisir --</option>';
-  myProperties.filter(p => p.statut === "disponible").forEach(p => {
+  globalData.properties.filter(p => p.statut === "disponible").forEach(p => {
     select.innerHTML += '<option value="' + p.id + '" data-loyer="' + p.loyer + '">' + p.titre + ' — ' + p.adresse + '</option>';
   });
   select.onchange = () => {
@@ -234,7 +484,6 @@ function openContractModal() {
   };
   document.getElementById("contractModal").style.display = "flex";
 }
-
 function closeContractModal() { document.getElementById("contractModal").style.display = "none"; }
 
 document.getElementById("contractForm").addEventListener("submit", async (e) => {
@@ -253,10 +502,7 @@ document.getElementById("contractForm").addEventListener("submit", async (e) => 
   try {
     const response = await fetch(API_URL + "/contracts", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify(body)
     });
     const data = await response.json();
@@ -294,43 +540,6 @@ function copyPassword() {
   });
 }
 
-async function loadContracts() {
-  const container = document.getElementById("contractsList");
-  try {
-    const response = await fetch(API_URL + "/contracts/mes-contrats", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
-    if (data.contracts.length === 0) { container.innerHTML = '<p class="empty-message">Aucun contrat.</p>'; return; }
-
-    container.innerHTML = data.contracts.map(c => {
-      const estTermine = c.statut === "termine";
-      return '<div class="property-card">' +
-        '<span class="contract-status ' + c.statut + '">' + c.statut.replace("_", " ") + '</span>' +
-        '<h3>' + c.property_titre + '</h3>' +
-        '<p class="property-address">📍 ' + c.property_adresse + '</p>' +
-        '<p class="property-charges">👤 ' + c.locataire_nom + ' (' + c.locataire_email + ')</p>' +
-        '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
-        '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : "") + '</p>' +
-        (c.date_terminaison ? '<p class="property-charges">⚠️ Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
-        (c.clauses_personnalisees ? '<p class="property-desc">📌 <strong>Clauses</strong> : ' + c.clauses_personnalisees.substring(0, 100) + (c.clauses_personnalisees.length > 100 ? "..." : "") + '</p>' : '') +
-        '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' +
-          (c.signature_bailleur ? "✅ Signé par vous" : "⏳ En attente de votre signature") +
-        '</p>' +
-        '<p class="contract-signature ' + (c.signature_locataire ? "signed" : "unsigned") + '">' +
-          (c.signature_locataire ? "✅ Signé par le locataire" : "⏳ En attente du locataire") +
-        '</p>' +
-        (!c.signature_bailleur && !estTermine ? '<button class="btn-primary btn-block" style="margin-top:12px;" onclick="signContract(' + c.id + ')">✍️ Signer</button>' : '') +
-        (!estTermine && !c.signature_locataire ? '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="editClauses(' + c.id + ', \'' + (c.clauses_personnalisees || "").replace(/'/g, "\\'").replace(/\n/g, "\\n") + '\')">✏️ Modifier les clauses</button>' : '') +
-        '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="downloadContractPDF(' + c.id + ')">📄 Contrat PDF</button>' +
-        (!estTermine ? '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="terminerContrat(' + c.id + ')">🔚 Mettre fin</button>' : '') +
-        '</div>';
-    }).join("");
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
-}
-
 async function signContract(id) {
   if (!confirm("Confirmez-vous accepter ce contrat ?")) return;
   try {
@@ -346,26 +555,38 @@ async function signContract(id) {
   } catch (err) { console.error(err); }
 }
 
-async function terminerContrat(id) {
-  const motif = prompt("Motif de fin de contrat (optionnel) :");
-  if (motif === null) return;
+function terminerContrat(id) {
+  document.getElementById("terminateContractId").value = id;
+  document.getElementById("terminateMotif").value = "";
+  document.getElementById("terminateContractModal").style.display = "flex";
+}
+
+function closeTerminateModal() {
+  document.getElementById("terminateContractModal").style.display = "none";
+}
+
+document.getElementById("terminateForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("terminateContractId").value;
+  const motif = document.getElementById("terminateMotif").value;
+
   try {
     const r = await fetch(API_URL + "/contracts/" + id + "/terminer", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ motif: motif || "Non precise" })
     });
-    const data = await r.json();
     if (r.ok) {
       showToast("Contrat terminé", "success");
+      closeTerminateModal();
       loadContracts(); loadProperties(); loadTenants();
       if (window.loadNotifications) window.loadNotifications();
-    } else showToast(data.message, "error");
+    } else {
+      const data = await r.json();
+      showToast(data.message, "error");
+    }
   } catch (err) { showToast("Erreur", "error"); }
-}
+});
 
 async function editClauses(contractId, clausesActuelles) {
   const nouvelles = prompt("Modifier les clauses du contrat :", clausesActuelles);
@@ -374,10 +595,7 @@ async function editClauses(contractId, clausesActuelles) {
   try {
     const r = await fetch(API_URL + "/contracts/" + contractId + "/clauses", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ clauses_personnalisees: nouvelles })
     });
     const data = await r.json();
@@ -406,40 +624,6 @@ async function downloadContractPDF(id) {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// LOCATAIRES
-async function loadTenants() {
-  const container = document.getElementById("tenantsList");
-  try {
-    const response = await fetch(API_URL + "/users/mes-locataires", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
-    if (data.locataires.length === 0) { container.innerHTML = '<p class="empty-message">Aucun locataire.</p>'; return; }
-
-    container.innerHTML = data.locataires.map(l => {
-      const avatarHtml = l.photo_profil
-        ? '<img src="' + l.photo_profil + '" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:10px;">'
-        : '<div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:1.5rem;margin-bottom:10px;">' + l.nom.charAt(0).toUpperCase() + '</div>';
-
-      return '<div class="property-card">' +
-        '<span class="contract-status ' + l.contract_statut + '">' + l.contract_statut.replace("_", " ") + '</span>' +
-        avatarHtml +
-        '<h3>👤 ' + l.nom + '</h3>' +
-        '<p class="property-charges">✉️ ' + l.email + '</p>' +
-        '<p class="property-charges">📞 ' + (l.telephone || "—") + '</p>' +
-        '<p class="property-address">🏠 ' + l.property_titre + '</p>' +
-        '<p class="property-price">' + l.montant_loyer + ' $ <small>/ mois</small></p>' +
-        '<p class="property-charges">Du ' + l.date_debut + (l.date_fin ? " au " + l.date_fin : "") + '</p>' +
-        (l.doit_changer_mot_de_passe === 1 ? '<p class="contract-signature unsigned">⚠️ N\'a pas changé son mdp</p>' : '<p class="contract-signature signed">✅ Mdp personnalisé</p>') +
-        '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="openDocsModal(' + l.id + ', \'' + l.nom + '\')">🪪 Documents</button>' +
-        '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="deleteTenant(' + l.id + ', \'' + l.nom + '\')">🗑️ Supprimer</button>' +
-        '</div>';
-    }).join("");
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
-}
-
 async function deleteTenant(id, nom) {
   if (!confirm("Supprimer " + nom + " ?")) return;
   try {
@@ -453,7 +637,6 @@ async function deleteTenant(id, nom) {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// DOCUMENTS LOCATAIRE
 async function openDocsModal(locataireId, nom) {
   document.getElementById("docsModalTitle").textContent = "Documents de " + nom;
   document.getElementById("docsModalContent").innerHTML = '<p class="empty-message">Chargement...</p>';
@@ -496,66 +679,13 @@ async function updateDocStatut(docId, statut, locataireId, nom) {
   try {
     const r = await fetch(API_URL + "/documents/" + docId + "/statut", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ statut: statut, commentaire: commentaire })
     });
     if (r.ok) { showToast("Statut mis à jour", "success"); openDocsModal(locataireId, nom); }
   } catch (err) { showToast("Erreur", "error"); }
 }
 
-// PAIEMENTS
-async function loadPayments() {
-  const container = document.getElementById("paymentsList");
-  try {
-    const response = await fetch(API_URL + "/payments/recus", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
-    if (data.payments.length === 0) { container.innerHTML = '<p class="empty-message">Aucun paiement.</p>'; return; }
-
-    const total = data.payments.reduce((s, p) => s + p.montant, 0);
-    document.getElementById("statEncaisse").textContent = total + " $";
-
-    container.innerHTML = data.payments.map(p =>
-      '<div class="property-card">' +
-        '<span class="contract-status actif">' + p.statut + '</span>' +
-        '<h3>' + p.property_titre + '</h3>' +
-        '<p class="property-address">📍 ' + p.property_adresse + '</p>' +
-        '<p class="property-charges">👤 ' + p.locataire_nom + '</p>' +
-        '<p class="property-price">' + p.montant + ' $</p>' +
-        '<p class="property-charges">Mois : ' + p.mois + '</p>' +
-        '<p class="property-charges">Méthode : ' + p.methode + '</p>' +
-        '<p class="property-charges">Payé le : ' + new Date(p.date_paiement).toLocaleDateString("fr-FR") + '</p>' +
-        '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadReceiptPDF(' + p.id + ')">🧾 Quittance</button>' +
-      '</div>'
-    ).join("");
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
-}
-
-async function downloadReceiptPDF(id) {
-  try {
-    const response = await fetch(API_URL + "/payments/" + id + "/quittance", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    if (!response.ok) { showToast("Erreur", "error"); return; }
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "quittance-" + id + ".pdf";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (err) { showToast("Erreur", "error"); }
-}
-
-// EXPORT CSV
 async function exportCSV() {
   try {
     const response = await fetch(API_URL + "/payments/export-csv", {
@@ -577,51 +707,17 @@ async function exportCSV() {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
-
     showToast("Fichier CSV téléchargé !", "success");
   } catch (err) {
     showToast("Erreur lors de l'export", "error");
   }
 }
 
-// INCIDENTS
-async function loadIncidents() {
-  const container = document.getElementById("incidentsList");
-  try {
-    const response = await fetch(API_URL + "/incidents/recus", {
-      headers: { "Authorization": "Bearer " + token }
-    });
-    const data = await response.json();
-
-    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
-    if (data.incidents.length === 0) { container.innerHTML = '<p class="empty-message">Aucun incident.</p>'; return; }
-
-    container.innerHTML = data.incidents.map(i =>
-      '<div class="property-card">' +
-        '<div class="property-status ' + (i.statut === "resolu" ? "disponible" : "loue") + '">' + i.statut + '</div>' +
-        '<h3>' + i.property_titre + '</h3>' +
-        '<p class="property-address">👤 ' + i.locataire_nom + ' — ' + (i.locataire_tel || "—") + '</p>' +
-        '<p class="property-desc">' + i.description + '</p>' +
-        (i.photo ? '<img src="' + i.photo + '" alt="photo" style="width:100%;border-radius:8px;margin:12px 0;max-height:200px;object-fit:cover;">' : '') +
-        '<p class="property-charges">Signalé le : ' + new Date(i.date_creation).toLocaleDateString("fr-FR") + '</p>' +
-        '<select onchange="updateIncidentStatus(' + i.id + ', this.value)" class="search-input" style="width:100%;margin-top:10px;">' +
-          '<option value="ouvert" ' + (i.statut === "ouvert" ? "selected" : "") + '>Ouvert</option>' +
-          '<option value="en_cours" ' + (i.statut === "en_cours" ? "selected" : "") + '>En cours</option>' +
-          '<option value="resolu" ' + (i.statut === "resolu" ? "selected" : "") + '>Résolu</option>' +
-        '</select>' +
-      '</div>'
-    ).join("");
-  } catch (err) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; }
-}
-
 async function updateIncidentStatus(id, statut) {
   try {
     const r = await fetch(API_URL + "/incidents/" + id + "/statut", {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token
-      },
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ statut: statut })
     });
     if (r.ok) {
@@ -632,15 +728,52 @@ async function updateIncidentStatus(id, statut) {
   } catch (err) { console.error(err); }
 }
 
+function openRappelModal(contractId, nom) {
+  document.getElementById("rappelContractId").value = contractId;
+  document.getElementById("rappelMessage").value = "Cher(e) " + nom + ", nous vous rappelons que votre loyer est en retard.";
+  document.getElementById("rappelModal").style.display = "flex";
+}
+function closeRappelModal() { document.getElementById("rappelModal").style.display = "none"; }
+
+document.getElementById("rappelForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = {
+    contract_id: parseInt(document.getElementById("rappelContractId").value),
+    message: document.getElementById("rappelMessage").value
+  };
+  try {
+    const r = await fetch(API_URL + "/payments/rappel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      body: JSON.stringify(body)
+    });
+    if (r.ok) {
+      showToast("Rappel envoyé", "success");
+      closeRappelModal();
+      loadDashboard();
+      if (window.loadNotifications) window.loadNotifications();
+    }
+  } catch (err) { showToast("Erreur", "error"); }
+});
+
 function logout() {
   localStorage.removeItem("token");
   localStorage.removeItem("user");
   window.location.href = "index.html";
 }
 
+// INITIALISATION
 loadDashboard();
 loadProperties();
 loadContracts();
 loadTenants();
 loadPayments();
 loadIncidents();
+
+// LANCEMENT DES GRAPHIQUES
+if (typeof window.loadChartRevenus === "function") {
+  setTimeout(() => {
+    window.loadChartRevenus();
+    window.loadChartRepartition();
+  }, 500);
+}
