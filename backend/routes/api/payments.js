@@ -31,6 +31,7 @@ router.get("/export-csv", verifyToken, requireRole("bailleur"), paymentControlle
 router.put("/:id/valider", verifyToken, requireRole("bailleur"), paymentController.validerPaiement);
 
 // Détail (avec :id en dernier)
+router.get("/:id/preuve", verifyToken, paymentController.getPaymentProof);
 router.get("/:id", verifyToken, paymentController.getPaymentById);
 router.get("/:id/quittance", verifyToken, receiptPDFController.downloadReceiptPDF);
 

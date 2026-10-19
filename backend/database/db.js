@@ -2,19 +2,21 @@
 // db.js — Configuration de la base de données
 // ============================================
 
-const Database = require("better-sqlite3");
+const fs = require("fs");
 const path = require("path");
+const Database = require("better-sqlite3");
+const config = require("../config");
 
-// Le fichier de base de données sera créé dans le dossier database/
-const dbPath = path.join(__dirname, "location.sqlite");
+fs.mkdirSync(path.dirname(config.DB_PATH), { recursive: true });
 
-// On ouvre (ou crée) la base de données
-const db = new Database(dbPath);
+const db = new Database(config.DB_PATH);
 
-// On active les clés étrangères (pour lier les tables entre elles)
+// Intégrité et comportement en cas de concurrence.
 db.pragma("foreign_keys = ON");
+db.pragma("journal_mode = WAL");
+db.pragma("busy_timeout = 5000");
+db.pragma("synchronous = NORMAL");
 
-console.log("Base de donnees connectee :", dbPath);
+console.log("Base de donnees connectee :", config.DB_PATH);
 
-// On exporte db pour pouvoir l'utiliser ailleurs
 module.exports = db;

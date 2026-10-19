@@ -1,19 +1,19 @@
 // ============================================
-// documentUpload.js
+// documentUpload.js — Documents privés
 // ============================================
 
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const config = require("../config");
 
-const dossier = path.join(__dirname, "../uploads/documents");
-if (!fs.existsSync(dossier)) fs.mkdirSync(dossier, { recursive: true });
+fs.mkdirSync(config.DOCUMENT_DIR, { recursive: true });
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, dossier),
+  destination: (req, file, cb) => cb(null, config.DOCUMENT_DIR),
   filename: (req, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
-    cb(null, unique);
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
   }
 });
 
@@ -21,18 +21,14 @@ const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|webp|pdf/;
   const ext = path.extname(file.originalname).toLowerCase();
   const mime = file.mimetype;
-
-  if (allowed.test(ext) && (mime.startsWith("image/") || mime === "application/pdf")) {
-    cb(null, true);
-  } else {
-    cb(new Error("Seuls les fichiers JPG, PNG, WEBP et PDF sont autorises"));
+  if (allowed.test(ext) && (/^image\/(jpeg|png|webp)$/.test(mime) || mime === "application/pdf")) {
+    return cb(null, true);
   }
+  cb(new Error("Seuls les fichiers JPG, PNG, WEBP et PDF sont autorisés"));
 };
 
-const upload = multer({
+module.exports = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }
+  limits: { fileSize: config.MAX_UPLOAD_BYTES }
 });
-
-module.exports = upload;

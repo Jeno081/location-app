@@ -1,8 +1,12 @@
 // ============================================
-// notificationController.js
+// notificationController.js — Badges de notification
 // ============================================
 
 const db = require("../database/db");
+
+function currentMonthKey(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 exports.getNotificationsLocataire = (req, res) => {
   const locataire_id = req.user.id;
@@ -18,21 +22,18 @@ exports.getNotificationsLocataire = (req, res) => {
     WHERE locataire_id = ? AND statut != 'resolu'
   `).get(locataire_id).nb;
 
-  const maintenant = new Date();
-  const moisActuel = maintenant.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  const moisActuelCap = moisActuel.charAt(0).toUpperCase() + moisActuel.slice(1);
-
+  const moisCle = currentMonthKey();
   const contratsActifs = db.prepare(`
     SELECT id FROM contracts WHERE locataire_id = ? AND statut = 'actif'
   `).all(locataire_id);
 
   let paiementsEnAttente = 0;
-  contratsActifs.forEach(c => {
-    const paye = db.prepare(`
-      SELECT id FROM payments WHERE contract_id = ? AND mois = ? AND statut_bailleur = 'valide'
-    `).get(c.id, moisActuelCap);
-    if (!paye) paiementsEnAttente++;
-  });
+  const payeStmt = db.prepare(`
+    SELECT id FROM payments WHERE contract_id = ? AND mois = ? AND statut_bailleur = 'valide'
+  `);
+  for (const c of contratsActifs) {
+    if (!payeStmt.get(c.id, moisCle)) paiementsEnAttente++;
+  }
 
   res.json({ rappels, incidents, paiements: paiementsEnAttente });
 };
@@ -59,30 +60,26 @@ exports.getNotificationsBailleur = (req, res) => {
     WHERE p.bailleur_id = ? AND pay.statut_bailleur = 'en_attente'
   `).get(bailleur_id).nb;
 
-  const maintenant = new Date();
-  const moisActuel = maintenant.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
-  const moisActuelCap = moisActuel.charAt(0).toUpperCase() + moisActuel.slice(1);
-
+  const now = new Date();
   const contratsActifs = db.prepare(`
     SELECT c.id, c.date_debut FROM contracts c
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ? AND c.statut = 'actif'
   `).all(bailleur_id);
 
-  let retards = 0;
-  contratsActifs.forEach(c => {
-    const debut = new Date(c.date_debut);
-    const moisEcoules = Math.max(0, (maintenant.getFullYear() - debut.getFullYear()) * 12 + (maintenant.getMonth() - debut.getMonth()) + 1);
-    const totalPayeMois = db.prepare(`
-      SELECT COUNT(DISTINCT mois) AS nb FROM payments WHERE contract_id = ? AND statut_bailleur = 'valide'
-    `).get(c.id).nb;
-    if (moisEcoules - totalPayeMois >= 1) retards++;
-  });
+  const countPaid = db.prepare(`
+    SELECT COUNT(DISTINCT mois) AS nb FROM payments
+    WHERE contract_id = ? AND statut_bailleur = 'valide'
+  `);
 
-  res.json({
-    incidents: incidents,
-    contrats: contrats,
-    paiements: paiementsAttente,
-    retards: retards
-  });
+  let retards = 0;
+  for (const c of contratsActifs) {
+    const [annee, mois] = String(c.date_debut).slice(0, 10).split("-").map(Number);
+    const debut = new Date(annee, (mois || 1) - 1, 1);
+    const moisEcoules = Math.max(0, (now.getFullYear() - debut.getFullYear()) * 12 + (now.getMonth() - debut.getMonth()) + 1);
+    const payes = countPaid.get(c.id).nb;
+    if (moisEcoules - payes >= 1) retards++;
+  }
+
+  res.json({ incidents, contrats, paiements: paiementsAttente, retards });
 };

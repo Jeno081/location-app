@@ -3,23 +3,10 @@
 // ============================================
 
 const API_URL = "/api";
-const token = localStorage.getItem("token");
+let token = localStorage.getItem("token");
 let user = JSON.parse(localStorage.getItem("user") || "null");
 
 if (!token || !user) window.location.href = "login.html";
-
-function showToast(message, type = "success") {
-  const toast = document.createElement("div");
-  toast.className = "toast toast-" + type;
-  const icon = type === "success" ? "✅" : "❌";
-  toast.innerHTML = '<span class="toast-icon">' + icon + '</span><span>' + message + '</span>';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
 
 // ============================================
 // BOUTON RETOUR
@@ -38,10 +25,10 @@ function afficherPhoto() {
   const preview = document.getElementById("photoPreview");
   if (!preview) return;
   if (user.photo_profil) {
-    preview.innerHTML = '<img src="' + user.photo_profil + '" alt="profil">';
+    preview.innerHTML = '<img src="' + escapeHtml(user.photo_profil) + '" alt="Profil">';
   } else {
     const initiale = (user.nom || "?").charAt(0).toUpperCase();
-    preview.innerHTML = '<div class="avatar-initials-big">' + initiale + '</div>';
+    preview.innerHTML = '<div class="avatar-initials-big">' + escapeHtml(initiale) + '</div>';
   }
 }
 
@@ -89,6 +76,10 @@ async function loadProfil() {
       document.getElementById("nom").value = data.user.nom;
       document.getElementById("email").value = data.user.email;
       document.getElementById("telephone").value = data.user.telephone || "";
+      const profileName = document.getElementById("profileName");
+      if (profileName) profileName.textContent = data.user.nom;
+      const profileMeta = document.getElementById("profileMeta");
+      if (profileMeta) profileMeta.textContent = data.user.email + " · " + (data.user.role === "bailleur" ? "Bailleur" : "Locataire");
       user.photo_profil = data.user.photo_profil;
       localStorage.setItem("user", JSON.stringify(user));
       afficherPhoto();
@@ -156,22 +147,25 @@ document.getElementById("mdpForm").addEventListener("submit", async (e) => {
     const data = await r.json();
 
     if (r.ok) {
+      if (data.token) {
+        token = data.token;
+        localStorage.setItem("token", data.token);
+      }
+      const updatedUser = data.user || {};
+      user.nom = updatedUser.nom || user.nom;
+      user.email = updatedUser.email || user.email;
+      user.telephone = updatedUser.telephone;
+      user.photo_profil = updatedUser.photo_profil;
+      user.doit_changer_mot_de_passe = 0;
+      localStorage.setItem("user", JSON.stringify(user));
       showToast("Mot de passe changé !", "success");
       document.getElementById("mdpForm").reset();
+      if (typeof renderNavbar === "function") renderNavbar();
     } else {
       showToast(data.message, "error");
     }
   } catch (err) { showToast("Erreur serveur", "error"); }
 });
-
-// ============================================
-// DÉCONNEXION
-// ============================================
-function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  window.location.href = "index.html";
-}
 
 // ============================================
 // INITIALISATION

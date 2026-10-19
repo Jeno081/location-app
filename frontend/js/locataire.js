@@ -4,7 +4,8 @@
 
 const API_URL = "/api";
 const token = localStorage.getItem("token");
-const user = JSON.parse(localStorage.getItem("user") || "null");
+let user = null;
+try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch (err) { user = null; }
 
 if (!token || !user) window.location.href = "login.html";
 if (user && user.role !== "locataire") window.location.href = "bailleur.html";
@@ -16,19 +17,6 @@ let globalData = {
   incidents: []
 };
 
-function showToast(message, type = "success") {
-  const toast = document.createElement("div");
-  toast.className = "toast toast-" + type;
-  const icon = type === "success" ? "✅" : "❌";
-  toast.innerHTML = '<span class="toast-icon">' + icon + '</span><span>' + message + '</span>';
-  document.body.appendChild(toast);
-  setTimeout(() => toast.classList.add("show"), 10);
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
-
 document.querySelectorAll(".tab").forEach(btn => {
   btn.addEventListener("click", () => {
     const cible = btn.dataset.tab;
@@ -37,6 +25,8 @@ document.querySelectorAll(".tab").forEach(btn => {
     btn.classList.add("active");
     const content = document.getElementById("tab-" + cible);
     if (content) content.classList.add("active");
+    setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
+    if (window.innerWidth < 1024) closeSidebar();
   });
 });
 
@@ -71,35 +61,68 @@ async function loadMesLocations() {
     if (!response.ok) return;
     globalData.locations = data.properties;
     if (globalData.locations.length === 0) {
-      container.innerHTML = '<p class="empty-message">Aucun logement attribué.</p>';
+      container.innerHTML = '<div class="empty-state"><i data-lucide="home"></i><h3>Aucun logement attribué</h3><p>Votre bailleur doit créer et activer un contrat.</p></div>';
       const banner = document.getElementById("infoVide");
       if (banner) banner.style.display = "flex";
+      if (typeof lucide !== "undefined") lucide.createIcons();
       return;
     }
     const banner = document.getElementById("infoVide");
     if (banner) banner.style.display = "none";
-    
+
     container.innerHTML = globalData.locations.map(p => {
-      const photos = p.photos ? JSON.parse(p.photos) : [];
-      const photosHtml = photos.length > 0 ? '<div class="property-photos">' + photos.map(ph => '<img src="' + ph + '" alt="photo">').join("") + '</div>' : '<div class="property-no-photo">📷 Aucune photo</div>';
-      return '<div class="property-card">' +
-        '<div class="property-status loue">🔴 Loué</div>' + photosHtml +
-        '<h3>' + p.titre + '</h3>' +
-        '<p class="property-address">📍 ' + p.adresse + (p.ville ? ", " + p.ville : "") + '</p>' +
-        '<p class="property-price">' + p.loyer + ' $ <small>/ mois</small></p>' +
-        '<p class="property-charges">Charges : ' + p.charges + ' $</p>' +
-        (p.description ? '<p class="property-desc">' + p.description + '</p>' : '') +
-        '<div style="border-top:1px solid var(--gray-100); padding-top:14px; margin-top:14px;">' +
-          '<p class="property-charges"><strong>👤 Bailleur :</strong> ' + p.bailleur_nom + '</p>' +
-          '<p class="property-charges">✉️ ' + p.bailleur_email + '</p>' +
-          '<p class="property-charges">📞 ' + (p.bailleur_telephone || "—") + '</p>' +
-        '</div>' +
-        '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadContractPDF(' + p.contract_id + ')">📄 Télécharger mon contrat</button>' +
-        '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="openIncidentModal(' + p.id + ')">🔧 Signaler un problème</button>' +
-        '<button class="btn-primary btn-block" style="margin-top:8px;" onclick="openPaymentModal(' + p.contract_id + ', ' + p.montant_loyer + ')">💳 Payer le loyer</button>' +
-        '</div>';
+      let photos = [];
+      try { photos = p.photos ? JSON.parse(p.photos) : []; } catch (err) { photos = []; }
+      const photosHtml = photos.length > 0
+        ? `<div class="property-photos" onclick="openPropertyGallery(${p.id})" role="button" tabindex="0" aria-label="Voir les photos de ${escapeHtml(p.titre)}">
+             <img src="${escapeHtml(photos[0])}" alt="${escapeHtml(p.titre)}">
+             <span class="photo-count"><i data-lucide="image"></i> ${photos.length}</span>
+             <span class="photo-zoom"><i data-lucide="maximize-2"></i></span>
+           </div>`
+        : '<div class="property-no-photo"><i data-lucide="image"></i><span>Aucune photo</span></div>';
+
+      return `<article class="property-card card">
+        <div class="card-top">
+          <span class="badge badge-success">Loué</span>
+          <span class="card-id">${escapeHtml(p.titre)}</span>
+        </div>
+        ${photosHtml}
+        <h3 class="card-title">${escapeHtml(p.titre)}</h3>
+        <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(p.adresse)}${p.ville ? ` · ${escapeHtml(p.ville)}` : ""}</p>
+        <div class="card-metrics">
+          <div><span>Loyer</span><strong>${formatMoney(p.loyer)}</strong></div>
+          <div><span>Charges</span><strong>${formatMoney(p.charges)}</strong></div>
+        </div>
+        ${p.description ? `<p class="card-desc">${escapeHtml(p.description)}</p>` : ""}
+        <div class="landlord-box">
+          <span class="avatar avatar-sm avatar-initials">${escapeHtml(String(p.bailleur_nom || "?").charAt(0).toUpperCase())}</span>
+          <div>
+            <span class="landlord-label">Votre bailleur</span>
+            <strong>${escapeHtml(p.bailleur_nom)}</strong>
+            <small>${escapeHtml(p.bailleur_email)} · ${escapeHtml(p.bailleur_telephone || "—")}</small>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-secondary btn-sm" onclick="downloadContractPDF(${p.contract_id})"><i data-lucide="file-down"></i> Contrat PDF</button>
+          <button class="btn-secondary btn-sm" onclick="openIncidentModal(${p.id})"><i data-lucide="wrench"></i> Signaler un problème</button>
+          <button class="btn-primary btn-sm" onclick="openPaymentModal(${p.contract_id}, ${Number(p.montant_loyer) || 0})"><i data-lucide="wallet"></i> Payer le loyer</button>
+        </div>
+      </article>`;
     }).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
   } catch (err) { container.innerHTML = '<p class="empty-message">Erreur serveur.</p>'; }
+}
+
+function openPropertyGallery(propertyId) {
+  const property = globalData.locations.find((p) => Number(p.id) === Number(propertyId));
+  if (!property) return;
+  let photos = [];
+  try { photos = property.photos ? JSON.parse(property.photos) : []; } catch (err) { photos = []; }
+  if (photos.length === 0) {
+    showToast("Aucune photo pour ce logement", "info");
+    return;
+  }
+  openImageLightbox(photos, 0, property.titre);
 }
 
 async function loadContracts() {
@@ -135,66 +158,116 @@ async function loadMyIncidents() {
 // RENDERERS
 function renderContracts(contracts) {
   const container = document.getElementById("contractsList");
-  if (contracts.length === 0) { container.innerHTML = '<p class="empty-message">Aucun contrat trouvé.</p>'; return; }
+  if (contracts.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i data-lucide="file-text"></i><h3>Aucun contrat</h3><p>Votre bailleur n\'a pas encore créé de contrat.</p></div>';
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    return;
+  }
   container.innerHTML = contracts.map(c => {
     const estTermine = c.statut === "termine";
-    return '<div class="property-card">' +
-      '<span class="contract-status ' + c.statut + '">' + c.statut.replace("_", " ") + '</span>' +
-      '<h3>' + c.property_titre + '</h3>' +
-      '<p class="property-address">📍 ' + c.property_adresse + (c.property_ville ? ", " + c.property_ville : "") + '</p>' +
-      '<p class="property-charges">👤 Bailleur : ' + c.bailleur_nom + '</p>' +
-      '<p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p>' +
-      '<p class="property-charges">Du ' + c.date_debut + (c.date_fin ? " au " + c.date_fin : " (durée indéterminée)") + '</p>' +
-      (c.date_terminaison ? '<p class="property-charges">⚠️ Terminé le ' + new Date(c.date_terminaison).toLocaleDateString("fr-FR") + '</p>' : '') +
-      '<p class="contract-signature ' + (c.signature_bailleur ? "signed" : "unsigned") + '">' + (c.signature_bailleur ? "✅ Signé par le bailleur" : "⏳ En attente du bailleur") + '</p>' +
-      '<p class="contract-signature ' + (c.signature_locataire ? "signed" : "unsigned") + '">' + (c.signature_locataire ? "✅ Signé par vous" : "⏳ En attente de votre signature") + '</p>' +
-      (!c.signature_locataire && !estTermine ? '<button class="btn-primary btn-block" style="margin-top:12px;" onclick="signContract(' + c.id + ')">✍️ Signer</button>' : '') +
-      '<button class="btn-secondary btn-block" style="margin-top:8px;" onclick="downloadContractPDF(' + c.id + ')">📄 Contrat PDF</button>' +
-      '</div>';
+    const tone = c.statut === "actif" ? "success" : (c.statut === "en_attente" ? "warning" : "neutral");
+    const label = c.statut === "actif" ? "Actif" : (c.statut === "en_attente" ? "À signer" : "Terminé");
+
+    return `<article class="property-card card">
+      <div class="card-top">
+        <span class="badge badge-${tone}">${label}</span>
+        <span class="card-id">CTR-${String(c.id).padStart(4, "0")}</span>
+      </div>
+      <h3 class="card-title">${escapeHtml(c.property_titre)}</h3>
+      <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(c.property_adresse)}${c.property_ville ? ` · ${escapeHtml(c.property_ville)}` : ""}</p>
+      <p class="card-sub"><i data-lucide="user"></i> ${escapeHtml(c.bailleur_nom)}</p>
+      <div class="card-metrics">
+        <div><span>Loyer</span><strong>${formatMoney(c.montant_loyer)}</strong></div>
+        <div><span>Début</span><strong>${formatDate(c.date_debut)}</strong></div>
+        <div><span>Fin</span><strong>${c.date_fin ? formatDate(c.date_fin) : "Indéterminée"}</strong></div>
+      </div>
+      ${c.date_terminaison ? `<p class="card-note">Terminé le ${formatDate(c.date_terminaison)}</p>` : ""}
+      <p class="contract-signature ${c.signature_bailleur ? "signed" : "unsigned"}">${c.signature_bailleur ? "Signé par le bailleur" : "En attente du bailleur"}</p>
+      <p class="contract-signature ${c.signature_locataire ? "signed" : "unsigned"}">${c.signature_locataire ? "Signé par vous" : "En attente de votre signature"}</p>
+      <div class="card-actions">
+        ${!c.signature_locataire && !estTermine ? `<button class="btn-primary btn-sm" onclick="signContract(${c.id})"><i data-lucide="pen-line"></i> Signer</button>` : ""}
+        <button class="btn-secondary btn-sm" onclick="downloadContractPDF(${c.id})"><i data-lucide="file-down"></i> Contrat PDF</button>
+      </div>
+    </article>`;
   }).join("");
+  if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 function renderPayments(payments) {
   const container = document.getElementById("paymentsList");
-  if (payments.length === 0) { container.innerHTML = '<p class="empty-message">Aucun paiement trouvé.</p>'; return; }
-  container.innerHTML = payments.map(p =>
-    '<div class="property-card">' +
-      '<span class="contract-status actif">' + p.statut + '</span>' +
-      '<h3>' + p.property_titre + '</h3>' +
-      '<p class="property-address">📍 ' + p.property_adresse + '</p>' +
-      '<p class="property-price">' + p.montant + ' $</p>' +
-      '<p class="property-charges">Mois : ' + p.mois + '</p>' +
-      '<p class="property-charges">Méthode : ' + p.methode + '</p>' +
-      '<p class="property-charges">Payé le : ' + new Date(p.date_paiement).toLocaleDateString("fr-FR") + '</p>' +
-      '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadReceiptPDF(' + p.id + ')">🧾 Quittance</button>' +
-    '</div>'
-  ).join("");
+  if (payments.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i data-lucide="credit-card"></i><h3>Aucun paiement</h3><p>Déclarez votre premier loyer depuis votre logement.</p></div>';
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    return;
+  }
+  container.innerHTML = payments.map(p => {
+    const tone = p.statut_bailleur === "valide" ? "success" : (p.statut_bailleur === "refuse" ? "danger" : "warning");
+    const label = p.statut_bailleur === "valide" ? "Validé" : (p.statut_bailleur === "refuse" ? "Refusé" : "En attente");
+    return `<article class="property-card card">
+      <div class="card-top">
+        <span class="badge badge-${tone}">${label}</span>
+        <span class="card-id">${escapeHtml(formatMonth(p.mois_label || p.mois))}</span>
+      </div>
+      <h3 class="card-title">${escapeHtml(p.property_titre)}</h3>
+      <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(p.property_adresse)}</p>
+      <div class="card-metrics">
+        <div><span>Montant</span><strong>${formatMoney(p.montant)}</strong></div>
+        <div><span>Méthode</span><strong>${escapeHtml((p.methode || "—").replace("_", " "))}</strong></div>
+        <div><span>Déclaré le</span><strong>${formatDate(p.date_paiement)}</strong></div>
+      </div>
+      <div class="card-actions">
+        <button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button>
+      </div>
+    </article>`;
+  }).join("");
+  if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 function renderIncidents(incidents) {
   const container = document.getElementById("incidentsList");
-  if (incidents.length === 0) { container.innerHTML = '<p class="empty-message">Aucun signalement trouvé.</p>'; return; }
-  container.innerHTML = incidents.map(i =>
-    '<div class="property-card">' +
-      '<div class="property-status ' + (i.statut === "resolu" ? "disponible" : "loue") + '">' + i.statut + '</div>' +
-      '<h3>' + i.property_titre + '</h3>' +
-      '<p class="property-address">📍 ' + i.property_adresse + '</p>' +
-      '<p class="property-desc">' + i.description + '</p>' +
-      (i.photo ? '<img src="' + i.photo + '" alt="photo" style="width:100%;border-radius:8px;margin-top:12px;max-height:200px;object-fit:cover;">' : '') +
-      '<p class="property-charges">Signalé le : ' + new Date(i.date_creation).toLocaleDateString("fr-FR") + '</p>' +
-    '</div>'
-  ).join("");
+  if (incidents.length === 0) {
+    container.innerHTML = '<div class="empty-state"><i data-lucide="wrench"></i><h3>Aucun signalement</h3><p>Tout va bien dans votre logement.</p></div>';
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    return;
+  }
+  container.innerHTML = incidents.map(i => {
+    const tone = i.statut === "resolu" ? "success" : (i.statut === "en_cours" ? "info" : "warning");
+    const label = i.statut === "resolu" ? "Résolu" : (i.statut === "en_cours" ? "En cours" : "Ouvert");
+    return `<article class="property-card card">
+      <div class="card-top">
+        <span class="badge badge-${tone}">${label}</span>
+        <span class="card-id">#${i.id}</span>
+      </div>
+      <h3 class="card-title">${escapeHtml(i.property_titre)}</h3>
+      <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(i.property_adresse)}</p>
+      <p class="card-desc">${escapeHtml(i.description)}</p>
+      <p class="card-note">Signalé le ${formatDate(i.date_creation)}</p>
+      <div class="card-actions">
+        ${i.photo ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/incidents/${i.id}/photo', 'Photo du signalement')"><i data-lucide="image"></i> Voir la photo</button>` : ""}
+      </div>
+    </article>`;
+  }).join("");
+  if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
 // ACTIONS
 function openPaymentModal(contractId, montant) {
+  if (globalData.locations.length === 0) {
+    showToast("Aucun logement actif pour déclarer un paiement", "error");
+    return;
+  }
   const select = document.getElementById("paymentContract");
-  select.innerHTML = '<option value="">-- Choisir --</option>';
-  globalData.locations.forEach(p => {
-    select.innerHTML += '<option value="' + p.contract_id + '">' + p.titre + ' — ' + p.montant_loyer + ' $</option>';
-  });
-  select.value = contractId;
-  document.getElementById("paymentMontant").value = montant;
+  select.innerHTML = '<option value="">-- Choisir --</option>' + globalData.locations.map(p =>
+    `<option value="${p.contract_id}">${escapeHtml(p.titre)} — ${formatMoney(p.montant_loyer)}</option>`
+  ).join("");
+  if (contractId) select.value = String(contractId);
+  if (montant !== undefined && montant !== null) document.getElementById("paymentMontant").value = montant;
+
+  const mois = document.getElementById("paymentMois");
+  if (!mois.value) {
+    const now = new Date();
+    mois.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  }
   document.getElementById("paymentModal").style.display = "flex";
 }
 function closePaymentModal() { document.getElementById("paymentModal").style.display = "none"; }
@@ -262,19 +335,30 @@ async function loadDocuments() {
     const response = await fetch(API_URL + "/documents/mes-documents", { headers: { "Authorization": "Bearer " + token } });
     const data = await response.json();
     if (!response.ok) return;
-    if (data.documents.length === 0) { container.innerHTML = '<p class="empty-message">Aucun document.</p>'; return; }
-    const labels = { cni: "🪪 CNI", passeport: "📕 Passeport", fiche_paie: "💼 Fiche de paie", autre: "📎 Autre" };
-    container.innerHTML = data.documents.map(d =>
-      '<div class="property-card">' +
-        '<span class="contract-status ' + (d.statut === "valide" ? "actif" : "en_attente") + '">' + d.statut.replace("_", " ") + '</span>' +
-        '<h3>' + (labels[d.type] || d.type) + '</h3>' +
-        '<p class="property-charges">📄 ' + d.nom_fichier + '</p>' +
-        '<p class="property-charges">Ajouté le : ' + new Date(d.date_upload).toLocaleDateString("fr-FR") + '</p>' +
-        (d.commentaire ? '<p class="property-desc">💬 ' + d.commentaire + '</p>' : '') +
-        '<a href="' + d.chemin + '" target="_blank" class="btn-secondary btn-block" style="margin-top:12px; display:block; text-align:center; text-decoration:none;">👁️ Voir</a>' +
-        '<button class="btn-secondary btn-block" style="margin-top:8px; color:#dc2626; border-color:#dc2626;" onclick="deleteDocument(' + d.id + ')">🗑️ Supprimer</button>' +
-      '</div>'
-    ).join("");
+    if (data.documents.length === 0) {
+      container.innerHTML = '<div class="empty-state"><i data-lucide="id-card"></i><h3>Aucun document</h3><p>Ajoutez votre CNI, passeport ou fiche de paie.</p></div>';
+      if (typeof lucide !== "undefined") lucide.createIcons();
+      return;
+    }
+    const labels = { cni: "Carte d'identité", passeport: "Passeport", fiche_paie: "Fiche de paie", autre: "Autre" };
+    const tone = { valide: "success", refuse: "danger", en_attente: "warning" };
+
+    container.innerHTML = data.documents.map(d => `
+      <article class="property-card card">
+        <div class="card-top">
+          <span class="badge badge-${tone[d.statut] || "neutral"}">${escapeHtml((d.statut || "").replace("_", " "))}</span>
+          <span class="card-id">${escapeHtml(labels[d.type] || d.type)}</span>
+        </div>
+        <h3 class="card-title">${escapeHtml(d.nom_fichier)}</h3>
+        <p class="card-note">Ajouté le ${formatDate(d.date_upload)}</p>
+        ${d.commentaire ? `<p class="card-desc">${escapeHtml(d.commentaire)}</p>` : ""}
+        <div class="card-actions">
+          <button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/documents/${d.id}/file', 'Document')"><i data-lucide="eye"></i> Voir</button>
+          <button class="btn-ghost btn-sm danger-text" onclick="deleteDocument(${d.id})"><i data-lucide="trash-2"></i> Supprimer</button>
+        </div>
+      </article>
+    `).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
   } catch (err) { console.error(err); }
 }
 
@@ -314,36 +398,51 @@ document.getElementById("incidentForm").addEventListener("submit", async (e) => 
   } catch (err) { showToast("Erreur serveur", "error"); }
 });
 
-async function signContract(id) {
-  if (!confirm("Confirmez-vous accepter ce contrat ?")) return;
+function signContract(id) {
+  document.getElementById("signatureContractId").value = id;
+  document.getElementById("signatureModal").style.display = "flex";
+}
+
+function closeSignatureModal() {
+  document.getElementById("signatureModal").style.display = "none";
+  document.getElementById("signatureContractId").value = "";
+}
+
+async function confirmSignature() {
+  const id = document.getElementById("signatureContractId").value;
+  if (!id) return;
+
+  const btn = document.getElementById("signatureConfirmBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Signature..."; }
+
   try {
-    const r = await fetch(API_URL + "/contracts/" + id + "/signer", { method: "PUT", headers: { "Authorization": "Bearer " + token } });
-    if (r.ok) { showToast("Contrat signé !", "success"); loadContracts(); loadMesLocations(); if (window.loadNotifications) window.loadNotifications(); }
-  } catch (err) { console.error(err); }
+    const r = await fetch(API_URL + "/contracts/" + id + "/signer", {
+      method: "PUT",
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      showToast(data.message || "Contrat signé !", "success");
+      closeSignatureModal();
+      loadContracts();
+      loadMesLocations();
+      if (window.loadNotifications) window.loadNotifications();
+    } else {
+      showToast(data.message || "Erreur lors de la signature", "error");
+    }
+  } catch (err) {
+    showToast("Erreur serveur", "error");
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "Signer le contrat"; }
+  }
 }
 
 async function downloadContractPDF(id) {
-  try {
-    const response = await fetch(API_URL + "/contracts/" + id + "/pdf", { headers: { "Authorization": "Bearer " + token } });
-    if (!response.ok) { showToast("Erreur", "error"); return; }
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "contrat-" + id + ".pdf";
-    document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-  } catch (err) { showToast("Erreur", "error"); }
+  await downloadProtectedFile(`/api/contracts/${id}/pdf`, `contrat-${id}.pdf`);
 }
 
 async function downloadReceiptPDF(id) {
-  try {
-    const response = await fetch(API_URL + "/payments/" + id + "/quittance", { headers: { "Authorization": "Bearer " + token } });
-    if (!response.ok) { showToast("Erreur", "error"); return; }
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = "quittance-" + id + ".pdf";
-    document.body.appendChild(a); a.click(); a.remove(); window.URL.revokeObjectURL(url);
-  } catch (err) { showToast("Erreur", "error"); }
+  await downloadProtectedFile(`/api/payments/${id}/quittance`, `quittance-${id}.pdf`);
 }
 
 async function loadRappels() {
@@ -352,24 +451,30 @@ async function loadRappels() {
     const response = await fetch(API_URL + "/payments/mes-rappels", { headers: { "Authorization": "Bearer " + token } });
     const data = await response.json();
     if (!response.ok) return;
-    if (data.rappels.length === 0) { container.innerHTML = '<p class="empty-message">Aucun rappel.</p>'; return; }
-    container.innerHTML = data.rappels.map(r => {
-      const style = r.statut === "envoye" ? 'style="border-left: 4px solid var(--danger);"' : '';
-      return '<div class="property-card" ' + style + '>' +
-        '<span class="contract-status ' + (r.statut === "lu" ? "actif" : "en_attente") + '">' + (r.statut === "lu" ? "✓ Lu" : "🔔 Nouveau") + '</span>' +
-        '<h3>' + r.property_titre + '</h3>' +
-        '<p class="property-desc">' + r.message + '</p>' +
-        '<p class="property-charges">Reçu le : ' + new Date(r.date_envoi).toLocaleDateString("fr-FR") + '</p>' +
-        (r.statut === "envoye" ? '<button class="btn-secondary btn-block" style="margin-top:12px;" onclick="marquerRappelLu(' + r.id + ')">✓ Marquer comme lu</button>' : '') +
-        '</div>';
-    }).join("");
+    if (data.rappels.length === 0) {
+      container.innerHTML = '<div class="empty-state"><i data-lucide="bell"></i><h3>Aucun rappel</h3><p>Vous n\'avez aucun message de votre bailleur.</p></div>';
+      if (typeof lucide !== "undefined") lucide.createIcons();
+      return;
+    }
+    container.innerHTML = data.rappels.map(r => `
+      <article class="property-card card ${r.statut === "envoye" ? "card-alert" : ""}">
+        <div class="card-top">
+          <span class="badge badge-${r.statut === "lu" ? "neutral" : "danger"}">${r.statut === "lu" ? "Lu" : "Nouveau"}</span>
+          <span class="card-id">${formatDate(r.date_envoi)}</span>
+        </div>
+        <h3 class="card-title">${escapeHtml(r.property_titre)}</h3>
+        <p class="card-desc">${escapeHtml(r.message)}</p>
+        ${r.statut === "envoye" ? `<div class="card-actions"><button class="btn-secondary btn-sm" onclick="marquerRappelLu(${r.id})"><i data-lucide="check"></i> Marquer comme lu</button></div>` : ""}
+      </article>
+    `).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
   } catch (err) { console.error(err); }
 }
 
 async function marquerRappelLu(id) {
   try {
     const r = await fetch(API_URL + "/payments/rappels/" + id + "/lu", { method: "PUT", headers: { "Authorization": "Bearer " + token } });
-    if (r.ok) { showToast("Rappel lu", "success"); loadRappels(); if (window.loadNotifications) window.loadNotifications(); }
+    if (r.ok) { showToast("Rappel marqué comme lu", "success"); loadRappels(); if (window.loadNotifications) window.loadNotifications(); }
   } catch (err) { console.error(err); }
 }
 
@@ -381,23 +486,43 @@ async function loadHistory() {
     const response = await fetch(API_URL + "/history", { headers: { "Authorization": "Bearer " + token } });
     const data = await response.json();
     if (!response.ok) return;
-    statsContainer.innerHTML =
-      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_contrats + '</div><div class="stat-label">Contrats</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.stats.total_paye + ' $</div><div class="stat-label">Total payé</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_paiements + '</div><div class="stat-label">Paiements</div></div>' +
-      '<div class="stat-card"><div class="stat-value">' + data.stats.nb_incidents + '</div><div class="stat-label">Signalements</div></div>';
-    let html = '<h2 class="section-title" style="margin-top:40px;">📄 Historique des contrats</h2>';
-    html += '<div class="properties-grid">' + data.contrats.map(c => '<div class="property-card"><span class="contract-status ' + c.statut + '">' + c.statut.replace("_", " ") + '</span><h3>' + c.property_titre + '</h3><p class="property-address">📍 ' + c.property_adresse + '</p><p class="property-price">' + c.montant_loyer + ' $ <small>/ mois</small></p><button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadContractPDF(' + c.id + ')">📄 Télécharger</button></div>').join("") + '</div>';
-    html += '<h2 class="section-title" style="margin-top:60px;">💳 Historique des paiements</h2>';
-    html += '<div class="properties-grid">' + data.paiements.map(p => '<div class="property-card"><span class="contract-status actif">' + p.statut + '</span><h3>' + p.property_titre + '</h3><p class="property-price">' + p.montant + ' $</p><p class="property-charges">Mois : ' + p.mois + '</p><button class="btn-secondary btn-block" style="margin-top:12px;" onclick="downloadReceiptPDF(' + p.id + ')">🧾 Quittance</button></div>').join("") + '</div>';
-    contentContainer.innerHTML = html;
-  } catch (err) { console.error(err); }
-}
 
-function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
-  window.location.href = "index.html";
+    statsContainer.innerHTML = `
+      <article class="stat-card"><span class="stat-icon tone-indigo"><i data-lucide="file-text"></i></span><div><div class="stat-value">${data.stats.nb_contrats}</div><div class="stat-label">Contrats</div></div></article>
+      <article class="stat-card"><span class="stat-icon tone-emerald"><i data-lucide="wallet"></i></span><div><div class="stat-value">${formatMoney(data.stats.total_paye)}</div><div class="stat-label">Total payé</div></div></article>
+      <article class="stat-card"><span class="stat-icon tone-sky"><i data-lucide="credit-card"></i></span><div><div class="stat-value">${data.stats.nb_paiements}</div><div class="stat-label">Paiements</div></div></article>
+      <article class="stat-card"><span class="stat-icon tone-amber"><i data-lucide="wrench"></i></span><div><div class="stat-value">${data.stats.nb_incidents}</div><div class="stat-label">Signalements</div></div></article>
+    `;
+
+    const contratsHtml = data.contrats.length === 0
+      ? '<p class="empty-message">Aucun contrat.</p>'
+      : `<div class="properties-grid">${data.contrats.map(c => `
+          <article class="property-card card">
+            <div class="card-top"><span class="badge badge-${c.statut === "actif" ? "success" : "neutral"}">${c.statut === "actif" ? "Actif" : (c.statut === "termine" ? "Terminé" : "En attente")}</span><span class="card-id">CTR-${String(c.id).padStart(4, "0")}</span></div>
+            <h3 class="card-title">${escapeHtml(c.property_titre)}</h3>
+            <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(c.property_adresse)}</p>
+            <div class="card-metrics"><div><span>Loyer</span><strong>${formatMoney(c.montant_loyer)}</strong></div><div><span>Début</span><strong>${formatDate(c.date_debut)}</strong></div></div>
+            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="downloadContractPDF(${c.id})"><i data-lucide="file-down"></i> Télécharger</button></div>
+          </article>`).join("")}</div>`;
+
+    const paiementsHtml = data.paiements.length === 0
+      ? '<p class="empty-message">Aucun paiement.</p>'
+      : `<div class="properties-grid">${data.paiements.map(p => `
+          <article class="property-card card">
+            <div class="card-top"><span class="badge badge-${p.statut === "valide" ? "success" : "warning"}">${escapeHtml(p.statut)}</span><span class="card-id">${escapeHtml(formatMonth(p.mois))}</span></div>
+            <h3 class="card-title">${escapeHtml(p.property_titre)}</h3>
+            <div class="card-metrics"><div><span>Montant</span><strong>${formatMoney(p.montant)}</strong></div><div><span>Mois</span><strong>${escapeHtml(formatMonth(p.mois))}</strong></div></div>
+            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button></div>
+          </article>`).join("")}</div>`;
+
+    contentContainer.innerHTML = `
+      <div class="section-head"><div><h2 class="section-title">Historique des contrats</h2><p class="section-sub">Vos locations passées et actuelles.</p></div></div>
+      ${contratsHtml}
+      <div class="section-head" style="margin-top:40px;"><div><h2 class="section-title">Historique des paiements</h2><p class="section-sub">Tous vos règlements et reçus.</p></div></div>
+      ${paiementsHtml}
+    `;
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  } catch (err) { console.error(err); }
 }
 
 // INITIALISATION

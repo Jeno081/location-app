@@ -1,70 +1,169 @@
 // ============================================
-// navbar.js — Navbar universelle avec menu déroulant
+// navbar.js — Coquille applicative et navigation
 // ============================================
 
-function renderNavbar() {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+function readUser() {
+  try { return JSON.parse(localStorage.getItem("user") || "null"); } catch (err) { return null; }
+}
+
+function initials(name) {
+  const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).map((p) => p.charAt(0).toUpperCase()).join("") || "?";
+}
+
+function renderSidebarUser() {
+  const container = document.getElementById("sidebarUser");
+  if (!container) return;
+
+  const user = readUser();
   if (!user) return;
 
-  const photoUrl = user.photo_profil || null;
-  const initiale = (user.nom || "?").charAt(0).toUpperCase();
+  const photo = user.photo_profil
+    ? `<img class="avatar avatar-lg" src="${escapeHtml(user.photo_profil)}" alt="">`
+    : `<span class="avatar avatar-lg avatar-initials">${escapeHtml(initials(user.nom))}</span>`;
+  const role = user.role === "bailleur" ? "Bailleur" : "Locataire";
 
-  const avatarSmall = photoUrl
-    ? '<img src="' + photoUrl + '" class="avatar-small" alt="profil">'
-    : '<div class="avatar-small avatar-initials">' + initiale + '</div>';
+  container.innerHTML = `
+    <a class="sidebar-user" href="profil.html" title="Mon profil">
+      ${photo}
+      <span class="sidebar-user-info">
+        <strong>${escapeHtml(user.nom || "Utilisateur")}</strong>
+        <small>${escapeHtml(role)}</small>
+      </span>
+    </a>
+    <button class="sidebar-logout" type="button" onclick="logout()">
+      <i data-lucide="log-out"></i><span>Déconnexion</span>
+    </button>
+  `;
+  if (typeof lucide !== "undefined") lucide.createIcons();
+}
 
-  const avatarBig = photoUrl
-    ? '<img src="' + photoUrl + '" class="avatar-big" alt="profil">'
-    : '<div class="avatar-big avatar-initials">' + initiale + '</div>';
+function renderSimpleNavbar() {
+  const container = document.getElementById("navbar");
+  if (!container) return;
 
-  const navbar = document.getElementById("navbar");
-  if (!navbar) return;
+  const user = readUser();
+  if (!user) return;
 
-    navbar.innerHTML =
-    '<header class="navbar-modern">' +
-      '<div class="nav-side"></div>' +
-      '<div class="logo-center"><i data-lucide="home" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;"></i>Location App</div>' +
-      '<div class="nav-side nav-right">' +
-        '<button class="user-menu-btn" onclick="toggleUserMenu(event)">' +
-          avatarSmall +
-          '<span class="user-name-btn">' + user.nom + '</span>' +
-          '<i data-lucide="chevron-down" class="chevron-icon" style="width:16px;height:16px;"></i>' +
-        '</button>' +
-        '<div class="user-menu-dropdown" id="userMenuDropdown">' +
-          '<div class="user-menu-header">' +
-            avatarBig +
-            '<div class="user-menu-info">' +
-              '<strong>' + user.nom + '</strong>' +
-              '<span class="user-email">' + user.email + '</span>' +
-              '<span class="user-role-badge">' + user.role + '</span>' +
-            '</div>' +
-          '</div>' +
-          '<a href="profil.html" class="user-menu-item"><i data-lucide="user" style="width:18px;height:18px;"></i> Mon profil</a>' +
-          '<button onclick="logout()" class="user-menu-item user-menu-logout"><i data-lucide="log-out" style="width:18px;height:18px;"></i> Déconnexion</button>' +
-        '</div>' +
-      '</div>' +
-    '</header>';
+  const photo = user.photo_profil
+    ? `<img class="avatar" src="${escapeHtml(user.photo_profil)}" alt="">`
+    : `<span class="avatar avatar-initials">${escapeHtml(initials(user.nom))}</span>`;
+  const back = user.role === "bailleur" ? "bailleur.html" : "locataire.html";
 
-  // Créer les icônes après l'injection HTML
-  if (typeof lucide !== "undefined") {
-    setTimeout(() => lucide.createIcons(), 10);
+  container.innerHTML = `
+    <header class="simple-nav">
+      <a class="simple-brand" href="${back}">
+        <span class="brand-mark"><i data-lucide="building-2"></i></span>
+        <span class="brand-text"><strong>Location<span>.</span></strong><small>Gestion locative</small></span>
+      </a>
+      <div class="simple-nav-actions">
+        <a class="btn-ghost btn-sm" href="${back}"><i data-lucide="arrow-left"></i> Retour</a>
+        <div class="user-menu">
+          <button class="user-menu-btn" type="button" onclick="toggleUserMenu(event)" aria-haspopup="true">
+            ${photo}<span>${escapeHtml(user.nom || "Mon compte")}</span><i data-lucide="chevron-down" class="chevron-icon"></i>
+          </button>
+          <div class="user-menu-dropdown" id="userMenuDropdown">
+            <div class="user-menu-header">
+              ${photo}
+              <div class="user-menu-info">
+                <strong>${escapeHtml(user.nom || "")}</strong>
+                <span class="user-email">${escapeHtml(user.email || "")}</span>
+              </div>
+            </div>
+            <a href="profil.html" class="user-menu-item"><i data-lucide="user"></i> Mon profil</a>
+            <button type="button" class="user-menu-item user-menu-logout" onclick="logout()"><i data-lucide="log-out"></i> Déconnexion</button>
+          </div>
+        </div>
+      </div>
+    </header>
+  `;
+  if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function renderNavbar() {
+  if (document.body.classList.contains("app-page")) {
+    renderSidebarUser();
+    fillUserIdentity();
+  } else {
+    renderSimpleNavbar();
   }
 }
 
-function toggleUserMenu(e) {
-  e.stopPropagation();
+function toggleUserMenu(event) {
+  if (event) event.stopPropagation();
   const menu = document.getElementById("userMenuDropdown");
   if (menu) menu.classList.toggle("show");
 }
 
-document.addEventListener("click", (e) => {
-  const menu = document.getElementById("userMenuDropdown");
-  if (menu && menu.classList.contains("show")) {
-    const btn = document.querySelector(".user-menu-btn");
-    if (btn && !btn.contains(e.target)) {
-      menu.classList.remove("show");
+function toggleSidebar() {
+  document.body.classList.toggle("sidebar-open");
+}
+
+function closeSidebar() {
+  document.body.classList.remove("sidebar-open");
+}
+
+async function logout() {
+  const token = localStorage.getItem("token");
+  try {
+    if (token) {
+      await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     }
+  } catch (err) {
+    // La déconnexion locale reste valable même si le serveur est indisponible.
+  } finally {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    window.location.href = "login.html";
+  }
+}
+
+async function checkSession() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+  if (document.body.classList.contains("app-page") || document.body.classList.contains("auth-required")) {
+    try {
+      const response = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+      if (response.status === 401) {
+        localStorage.clear();
+        window.location.href = "login.html";
+        return;
+      }
+      if (response.status === 403) {
+        const data = await response.json().catch(() => ({}));
+        if (data.code === "PASSWORD_CHANGE_REQUIRED") window.location.href = "changer-mot-de-passe.html";
+      }
+    } catch (err) {
+      // Hors ligne : on laisse la page se charger.
+    }
+  }
+}
+
+document.addEventListener("click", (event) => {
+  const menu = document.getElementById("userMenuDropdown");
+  if (menu && menu.classList.contains("show") && !event.target.closest(".user-menu")) {
+    menu.classList.remove("show");
+  }
+  if (document.body.classList.contains("sidebar-open") && !event.target.closest(".sidebar") && !event.target.closest(".menu-toggle")) {
+    closeSidebar();
   }
 });
 
-document.addEventListener("DOMContentLoaded", renderNavbar);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeSidebar();
+    const menu = document.getElementById("userMenuDropdown");
+    if (menu) menu.classList.remove("show");
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderNavbar();
+  checkSession();
+});
+
+window.renderNavbar = renderNavbar;
+window.toggleUserMenu = toggleUserMenu;
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+window.logout = logout;

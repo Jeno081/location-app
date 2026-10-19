@@ -3,139 +3,235 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Espace Bailleur — Location App</title>
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Location App — gérez vos biens, contrats, loyers et locataires depuis un espace unique.">
+  <title>Espace bailleur — Location App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/theme.css">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
-<body>
+<body class="app-page">
 
-  <div id="navbar"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="index.html" aria-label="Location App, accueil">
+        <span class="brand-mark"><i data-lucide="building-2"></i></span>
+        <span class="brand-text"><strong>Location<span>.</span></strong><small>Gestion locative</small></span>
+      </a>
 
-  <main class="dashboard">
+      <p class="sidebar-section-label">Pilotage</p>
+      <nav class="tabs sidebar-nav" aria-label="Navigation bailleur">
+        <button class="tab active" data-tab="suivi" data-title="Tableau de bord" data-sub="Vue d'ensemble de votre portefeuille locatif.">
+          <i data-lucide="layout-dashboard"></i><span>Tableau de bord</span>
+        </button>
+        <button class="tab" data-tab="biens" data-title="Mes biens" data-sub="Gérez vos logements et leur disponibilité.">
+          <i data-lucide="home"></i><span>Mes biens</span>
+        </button>
+        <button class="tab" data-tab="locataires" data-title="Locataires" data-sub="Tous les locataires liés à vos contrats en cours.">
+          <i data-lucide="users"></i><span>Locataires</span>
+        </button>
+        <button class="tab" data-tab="contrats" data-title="Contrats" data-sub="Suivez les signatures et l'état de vos contrats.">
+          <i data-lucide="file-text"></i><span>Contrats</span>
+        </button>
+        <button class="tab" data-tab="paiements" data-title="Paiements" data-sub="Validez les preuves et suivez les encaissements.">
+          <i data-lucide="credit-card"></i><span>Paiements</span>
+        </button>
+        <button class="tab" data-tab="incidents" data-title="Incidents" data-sub="Traitez les signalements de vos locataires.">
+          <i data-lucide="wrench"></i><span>Incidents</span>
+        </button>
+        <button class="tab" data-tab="calendrier" data-title="Calendrier" data-sub="Loyers, échéances et incidents du mois.">
+          <i data-lucide="calendar-days"></i><span>Calendrier</span>
+        </button>
+      </nav>
 
-    <div class="dashboard-header">
-      <h1>Mon espace bailleur</h1>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;">
-        <button class="btn-secondary" onclick="openContractModal()"><i data-lucide="file-plus" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Créer un contrat</button>
-        <button class="btn-primary" onclick="openPropertyModal()"><i data-lucide="plus" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Ajouter un logement</button>
-      </div>
-    </div>
+      <div class="sidebar-footer" id="sidebarUser"></div>
+    </aside>
 
-    <!-- Statistiques -->
-    <div class="stats-grid">
-      <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Logements</div></div>
-      <div class="stat-card"><div class="stat-value" id="statDispo">0</div><div class="stat-label">Disponibles</div></div>
-      <div class="stat-card"><div class="stat-value" id="statLoues">0</div><div class="stat-label">Loués</div></div>
-      <div class="stat-card"><div class="stat-value" id="statLoyer">0 $</div><div class="stat-label">Revenu mensuel</div></div>
-      <div class="stat-card"><div class="stat-value" id="statEncaisse">0 $</div><div class="stat-label">Total encaissé</div></div>
-      <div class="stat-card"><div class="stat-value" id="statRetards">0</div><div class="stat-label">En retard</div></div>
-    </div>
-
-    <!-- Graphiques -->
-    <div class="charts-grid">
-      <div class="chart-card">
-        <h3>📈 Revenus des 12 derniers mois</h3>
-        <div class="chart-container">
-          <canvas id="chartRevenus"></canvas>
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn menu-toggle" type="button" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="topbar-heading">
+            <span class="topbar-eyebrow">Espace bailleur</span>
+            <strong class="topbar-title">Location App</strong>
+          </div>
         </div>
-      </div>
-      <div class="chart-card">
-        <h3>🥧 Répartition des logements</h3>
-        <div class="chart-container">
-          <canvas id="chartRepartition"></canvas>
+        <div class="topbar-actions">
+          <button class="btn-secondary btn-sm" onclick="openContractModal()">
+            <i data-lucide="file-plus"></i><span>Créer un contrat</span>
+          </button>
+          <button class="btn-primary btn-sm" onclick="openPropertyModal()">
+            <i data-lucide="plus"></i><span>Ajouter un logement</span>
+          </button>
         </div>
-      </div>
-    </div>
+      </header>
 
-    <!-- Onglets -->
-    <div class="tabs">
-      <button class="tab active" data-tab="suivi"><i data-lucide="bar-chart-3"></i> Suivi paiements</button>
-      <button class="tab" data-tab="biens"><i data-lucide="home"></i> Mes biens</button>
-      <button class="tab" data-tab="locataires"><i data-lucide="users"></i> Locataires</button>
-      <button class="tab" data-tab="contrats"><i data-lucide="file-text"></i> Contrats</button>
-      <button class="tab" data-tab="paiements"><i data-lucide="credit-card"></i> Paiements</button>
-      <button class="tab" data-tab="incidents"><i data-lucide="wrench"></i> Incidents</button>
-      <button class="tab" data-tab="calendrier"><i data-lucide="calendar"></i> Calendrier</button>
-    </div>
+      <main class="page">
+        <div class="page-head">
+          <div>
+            <p class="page-kicker">Vue d'ensemble</p>
+            <h1 class="page-title" id="pageTitle">Bonjour <span id="userFirstName">!</span></h1>
+            <p class="page-sub" id="pageSubtitle">Suivez vos loyers, vos biens et vos locataires en un coup d'œil.</p>
+          </div>
+          <div class="page-date" id="pageDate"></div>
+        </div>
 
-    <!-- Onglet Suivi -->
-    <div id="tab-suivi" class="tab-content active">
-      <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+        <div id="overviewSection">
+          <section class="stats-grid" aria-label="Indicateurs clés">
+            <article class="stat-card">
+              <span class="stat-icon tone-indigo"><i data-lucide="building-2"></i></span>
+              <div><div class="stat-value" id="statTotal">0</div><div class="stat-label">Logements</div></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon tone-emerald"><i data-lucide="door-open"></i></span>
+              <div><div class="stat-value" id="statDispo">0</div><div class="stat-label">Disponibles</div></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon tone-sky"><i data-lucide="key-round"></i></span>
+              <div><div class="stat-value" id="statLoues">0</div><div class="stat-label">Loués</div></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon tone-violet"><i data-lucide="wallet"></i></span>
+              <div><div class="stat-value" id="statLoyer">0 $</div><div class="stat-label">Revenu mensuel</div></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon tone-teal"><i data-lucide="trending-up"></i></span>
+              <div><div class="stat-value" id="statEncaisse">0 $</div><div class="stat-label">Total encaissé</div></div>
+            </article>
+            <article class="stat-card">
+              <span class="stat-icon tone-rose"><i data-lucide="alarm-clock"></i></span>
+              <div><div class="stat-value" id="statRetards">0</div><div class="stat-label">En retard</div></div>
+            </article>
+          </section>
 
-    <!-- Onglet Biens -->
-    <div id="tab-biens" class="tab-content">
-      <div class="filter-bar">
-        <input type="text" id="searchBiens" class="search-input" placeholder="Rechercher un bien..." style="flex:1;min-width:200px;" oninput="rechercherProprietes()">
-        <button class="filter-btn active" data-filter="tous" onclick="filterProperties(this, 'tous')">Tous</button>
-        <button class="filter-btn" data-filter="disponible" onclick="filterProperties(this, 'disponible')">Disponibles</button>
-        <button class="filter-btn" data-filter="loue" onclick="filterProperties(this, 'loue')">Loués</button>
-        <button class="filter-btn" data-filter="archive" onclick="filterProperties(this, 'archive')">Archivés</button>
-      </div>
-      <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+          <section class="charts-grid" aria-label="Graphiques">
+            <article class="panel chart-card">
+              <header class="panel-head">
+                <div>
+                  <h3 class="panel-title">Revenus encaissés</h3>
+                  <p class="panel-sub">12 derniers mois, paiements validés</p>
+                </div>
+                <span class="badge badge-neutral"><i data-lucide="activity"></i> Annuel</span>
+              </header>
+              <div class="chart-container"><canvas id="chartRevenus"></canvas></div>
+            </article>
+            <article class="panel chart-card">
+              <header class="panel-head">
+                <div>
+                  <h3 class="panel-title">Répartition du portefeuille</h3>
+                  <p class="panel-sub">Statut de vos logements</p>
+                </div>
+              </header>
+              <div class="chart-container chart-container-sm"><canvas id="chartRepartition"></canvas></div>
+            </article>
+          </section>
+        </div>
 
-    <!-- Onglet Locataires -->
-    <div id="tab-locataires" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchLocataires" class="search-input" placeholder="Rechercher un locataire (nom, email, logement)..." style="width:100%;" oninput="rechercherLocataires()">
-      </div>
-      <div id="tenantsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+        <!-- Tableau de bord -->
+        <section id="tab-suivi" class="tab-content active">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Suivi des paiements</h2>
+              <p class="section-sub">Locataires à jour, en attente ou en retard.</p>
+            </div>
+            <a class="btn-ghost btn-sm" href="#paiements" onclick="document.querySelector('[data-tab=paiements]').click(); return false;">
+              Voir tous les paiements <i data-lucide="arrow-right"></i>
+            </a>
+          </div>
+          <div id="dashboardPaiements" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
 
-    <!-- Onglet Contrats -->
-    <div id="tab-contrats" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchContrats" class="search-input" placeholder="Rechercher un contrat (locataire, bien)..." style="width:100%;" oninput="rechercherContrats()">
-      </div>
-      <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+        <!-- Biens -->
+        <section id="tab-biens" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchBiens" class="search-input" placeholder="Rechercher un bien…" oninput="rechercherProprietes()">
+            </div>
+            <div class="filter-group" role="group" aria-label="Filtrer les biens">
+              <button class="filter-btn active" data-filter="tous" onclick="filterProperties(this, 'tous')">Tous</button>
+              <button class="filter-btn" data-filter="disponible" onclick="filterProperties(this, 'disponible')">Disponibles</button>
+              <button class="filter-btn" data-filter="loue" onclick="filterProperties(this, 'loue')">Loués</button>
+              <button class="filter-btn" data-filter="archive" onclick="filterProperties(this, 'archive')">Archivés</button>
+            </div>
+          </div>
+          <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
 
-    <!-- Onglet Paiements -->
-    <div id="tab-paiements" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px; justify-content:space-between; align-items:center;">
-        <input type="text" id="searchPaiements" class="search-input" placeholder="Rechercher un paiement (locataire, mois)..." style="flex:1;max-width:400px;" oninput="rechercherPaiements()">
-        <button class="btn-primary" onclick="exportCSV()"><i data-lucide="download" style="width:18px;height:18px;vertical-align:-3px;margin-right:5px;"></i> Exporter Excel</button>
-      </div>
-      <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+        <!-- Locataires -->
+        <section id="tab-locataires" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchLocataires" class="search-input" placeholder="Rechercher un locataire (nom, email, logement)…" oninput="rechercherLocataires()">
+            </div>
+          </div>
+          <div id="tenantsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
 
-    <!-- Onglet Incidents -->
-    <div id="tab-incidents" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchIncidents" class="search-input" placeholder="Rechercher un incident (locataire, description)..." style="width:100%;" oninput="rechercherIncidents()">
-      </div>
-      <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
+        <!-- Contrats -->
+        <section id="tab-contrats" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchContrats" class="search-input" placeholder="Rechercher un contrat (locataire, bien)…" oninput="rechercherContrats()">
+            </div>
+          </div>
+          <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
 
-    <!-- Onglet Calendrier -->
-    <div id="tab-calendrier" class="tab-content">
-      <div id="calendarContent">
-        <p class="empty-message">Chargement...</p>
-      </div>
-    </div>
+        <!-- Paiements -->
+        <section id="tab-paiements" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchPaiements" class="search-input" placeholder="Rechercher un paiement (locataire, mois)…" oninput="rechercherPaiements()">
+            </div>
+            <button class="btn-secondary btn-sm" onclick="exportCSV()"><i data-lucide="download"></i> Exporter en CSV</button>
+          </div>
+          <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
 
-  </main>
+        <!-- Incidents -->
+        <section id="tab-incidents" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchIncidents" class="search-input" placeholder="Rechercher un incident (locataire, description)…" oninput="rechercherIncidents()">
+            </div>
+          </div>
+          <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Calendrier -->
+        <section id="tab-calendrier" class="tab-content">
+          <div id="calendarContent"><p class="empty-message">Chargement…</p></div>
+        </section>
+      </main>
+    </div>
+  </div>
 
   <!-- Modale logement -->
   <div id="propertyModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closePropertyModal()">&times;</span>
+      <span class="modal-close" onclick="closePropertyModal()" aria-label="Fermer">&times;</span>
       <h2>Ajouter un logement</h2>
       <form id="propertyForm">
-        <div class="form-group"><label for="titre">Titre</label><input type="text" id="titre" required></div>
-        <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" required></div>
-        <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville"></div>
+        <div class="form-group"><label for="titre">Titre</label><input type="text" id="titre" placeholder="Ex : Appartement 3 pièces" required></div>
+        <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" placeholder="Ex : 12, avenue de la Paix" required></div>
+        <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" placeholder="Kinshasa"></div>
         <div class="form-row">
-          <div class="form-group"><label for="loyer">Loyer ($)</label><input type="number" id="loyer" required min="0"></div>
-          <div class="form-group"><label for="charges">Charges ($)</label><input type="number" id="charges" min="0" value="0"></div>
+          <div class="form-group"><label for="loyer">Loyer ($)</label><input type="number" id="loyer" required min="0" step="0.01"></div>
+          <div class="form-group"><label for="charges">Charges ($)</label><input type="number" id="charges" min="0" step="0.01" value="0"></div>
         </div>
-        <div class="form-group"><label for="description">Description</label><textarea id="description" rows="3"></textarea></div>
+        <div class="form-group"><label for="description">Description</label><textarea id="description" rows="3" placeholder="Points forts, équipements, conditions…"></textarea></div>
         <div class="form-group"><label for="photos">Photos (max 5)</label><input type="file" id="photos" accept="image/*" multiple></div>
         <button type="submit" class="btn-primary btn-block">Créer le logement</button>
       </form>
@@ -145,23 +241,23 @@
   <!-- Modale contrat -->
   <div id="contractModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeContractModal()">&times;</span>
+      <span class="modal-close" onclick="closeContractModal()" aria-label="Fermer">&times;</span>
       <h2>Créer un contrat</h2>
       <form id="contractForm">
         <div class="form-group">
           <label for="contractProperty">Logement (uniquement disponibles)</label>
           <select id="contractProperty" required><option value="">-- Choisir --</option></select>
         </div>
-        <div class="form-group"><label for="contractLocataire">Email du locataire</label><input type="email" id="contractLocataire" required></div>
+        <div class="form-group"><label for="contractLocataire">Email du locataire</label><input type="email" id="contractLocataire" placeholder="locataire@email.com" required></div>
         <div class="form-row">
-          <div class="form-group"><label for="contractLocataireNom">Nom du locataire</label><input type="text" id="contractLocataireNom"></div>
-          <div class="form-group"><label for="contractLocataireTel">Téléphone</label><input type="tel" id="contractLocataireTel"></div>
+          <div class="form-group"><label for="contractLocataireNom">Nom du locataire</label><input type="text" id="contractLocataireNom" placeholder="Nom complet"></div>
+          <div class="form-group"><label for="contractLocataireTel">Téléphone</label><input type="tel" id="contractLocataireTel" placeholder="0812345678"></div>
         </div>
         <div class="form-row">
           <div class="form-group"><label for="contractDebut">Date début</label><input type="date" id="contractDebut" required></div>
           <div class="form-group"><label for="contractFin">Date fin</label><input type="date" id="contractFin"></div>
         </div>
-        <div class="form-group"><label for="contractMontant">Loyer ($)</label><input type="number" id="contractMontant" required min="0"></div>
+        <div class="form-group"><label for="contractMontant">Loyer ($)</label><input type="number" id="contractMontant" required min="0" step="0.01"></div>
         <div class="form-group">
           <label for="contractClauses">Clauses personnalisées (optionnel)</label>
           <textarea id="contractClauses" rows="5" placeholder="Ex :&#10;Le préavis de départ est de 2 mois.&#10;Une caution de 2 mois est exigée."></textarea>
@@ -174,14 +270,14 @@
   <!-- Modale mot de passe -->
   <div id="passwordModal" class="modal">
     <div class="modal-content">
-      <h2>🔑 Compte locataire créé</h2>
-      <p style="color: var(--gray-700); margin-bottom: 20px;">Notez ce mot de passe et communiquez-le au locataire.</p>
-      <div style="background: linear-gradient(135deg, #eef2ff 0%, #fce7f3 100%); padding: 25px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
-        <div style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 8px; text-transform: uppercase;">Mot de passe temporaire</div>
-        <div id="passwordDisplay" style="font-size: 2rem; font-weight: 800; letter-spacing: 4px; color: var(--primary); font-family: monospace;"></div>
+      <h2>Compte locataire créé</h2>
+      <p class="muted">Notez ce mot de passe et communiquez-le au locataire. Il devra le changer à la première connexion.</p>
+      <div class="password-reveal">
+        <span>Mot de passe temporaire</span>
+        <div id="passwordDisplay"></div>
       </div>
-      <div style="display:flex; gap:10px;">
-        <button class="btn-secondary btn-block" onclick="copyPassword()">📋 Copier</button>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="copyPassword()"><i data-lucide="copy"></i> Copier</button>
         <button class="btn-primary btn-block" onclick="closePasswordModal()">J'ai noté</button>
       </div>
     </div>
@@ -189,69 +285,78 @@
 
   <!-- Modale documents locataire -->
   <div id="docsModal" class="modal">
-    <div class="modal-content" style="max-width: 700px;">
-      <span class="modal-close" onclick="closeDocsModal()">&times;</span>
+    <div class="modal-content modal-lg">
+      <span class="modal-close" onclick="closeDocsModal()" aria-label="Fermer">&times;</span>
       <h2 id="docsModalTitle">Documents du locataire</h2>
-      <div id="docsModalContent" class="properties-grid"><p class="empty-message">Chargement...</p></div>
+      <div id="docsModalContent" class="properties-grid"><p class="empty-message">Chargement…</p></div>
     </div>
   </div>
 
   <!-- Modale rappel -->
   <div id="rappelModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeRappelModal()">&times;</span>
-      <h2>🔔 Envoyer un rappel</h2>
+      <span class="modal-close" onclick="closeRappelModal()" aria-label="Fermer">&times;</span>
+      <h2>Envoyer un rappel</h2>
       <form id="rappelForm">
         <input type="hidden" id="rappelContractId">
         <div class="form-group">
           <label for="rappelMessage">Message</label>
-          <textarea id="rappelMessage" rows="4" required></textarea>
+          <textarea id="rappelMessage" rows="4" placeholder="Ex : Le loyer du mois est en attente." required></textarea>
         </div>
-        <button type="submit" class="btn-primary btn-block">Envoyer</button>
+        <button type="submit" class="btn-primary btn-block">Envoyer le rappel</button>
       </form>
     </div>
   </div>
 
   <!-- Modale événements du jour -->
   <div id="dayEventsModal" class="modal">
-    <div class="modal-content" style="max-width: 550px;">
-      <span class="modal-close" onclick="closeDayEventsModal()">&times;</span>
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeDayEventsModal()" aria-label="Fermer">&times;</span>
       <h2 id="dayEventsTitle">Événements</h2>
       <div id="dayEventsContent"></div>
     </div>
   </div>
 
-    <!-- Modale pour terminer un contrat -->
+  <!-- Modale terminer un contrat -->
   <div id="terminateContractModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeTerminateModal()">&times;</span>
+      <span class="modal-close" onclick="closeTerminateModal()" aria-label="Fermer">&times;</span>
       <h2>Mettre fin au contrat</h2>
-      <p style="color:var(--gray-500);margin-bottom:20px;">
-        Êtes-vous sûr de vouloir mettre fin à ce contrat ? Le logement redeviendra disponible.
-      </p>
+      <p class="muted">Le logement redeviendra disponible. Si le locataire n'a plus d'autre contrat, son compte sera supprimé.</p>
       <form id="terminateForm">
         <input type="hidden" id="terminateContractId">
         <div class="form-group">
           <label for="terminateMotif">Motif de la fin (optionnel)</label>
           <input type="text" id="terminateMotif" placeholder="Ex : Déménagement du locataire">
         </div>
-        <button type="submit" class="btn-primary btn-block" style="background:var(--danger);">Confirmer la fin du contrat</button>
+        <button type="submit" class="btn-danger btn-block">Confirmer la fin du contrat</button>
       </form>
     </div>
   </div>
 
-  <!-- Modale pour valider/refuser un paiement -->
+  <!-- Modale signature -->
+  <div id="signatureModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeSignatureModal()" aria-label="Fermer">&times;</span>
+      <h2>Signer le contrat</h2>
+      <p class="muted">En confirmant, vous acceptez les termes de ce contrat. Cette action est définitive.</p>
+      <input type="hidden" id="signatureContractId">
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="closeSignatureModal()">Annuler</button>
+        <button class="btn-primary btn-block" id="signatureConfirmBtn" onclick="confirmSignature()">Signer le contrat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale valider/refuser un paiement -->
   <div id="validatePaymentModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeValidatePaymentModal()">&times;</span>
+      <span class="modal-close" onclick="closeValidatePaymentModal()" aria-label="Fermer">&times;</span>
       <h2 id="validatePaymentTitle">Valider le paiement</h2>
-      <p id="validatePaymentText" style="color:var(--gray-500);margin-bottom:20px;">
-        Confirmez-vous avoir bien reçu ce paiement sur votre compte ?
-      </p>
+      <p id="validatePaymentText" class="muted">Confirmez-vous avoir bien reçu ce paiement ?</p>
       <input type="hidden" id="validatePaymentId">
       <input type="hidden" id="validatePaymentAction">
-      
-      <div style="display:flex; gap:10px;">
+      <div class="modal-actions">
         <button class="btn-secondary btn-block" onclick="closeValidatePaymentModal()">Annuler</button>
         <button class="btn-primary btn-block" id="validatePaymentBtn" onclick="confirmValidatePayment()">Confirmer</button>
       </div>
@@ -259,13 +364,14 @@
   </div>
 
   <script src="js/icons.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/navbar.js"></script>
-  <script src="js/bailleur.js"></script>
+  <script src="js/bailleur.js?v=3"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

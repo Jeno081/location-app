@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const userController = require("../../controllers/userController");
-const upload = require("../../middleware/documentUpload");
+const upload = require("../../middleware/avatarUpload");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 
 router.get("/profil", verifyToken, userController.getProfil);

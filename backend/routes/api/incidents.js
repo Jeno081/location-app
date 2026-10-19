@@ -18,6 +18,7 @@ router.post(
 
 router.get("/mes-incidents", verifyToken, requireRole("locataire"), incidentController.getMyIncidents);
 router.get("/recus", verifyToken, requireRole("bailleur"), incidentController.getIncidentsForBailleur);
+router.get("/:id/photo", verifyToken, incidentController.getIncidentPhoto);
 router.put("/:id/statut", verifyToken, requireRole("bailleur"), incidentController.updateIncidentStatus);
 
 module.exports = router;

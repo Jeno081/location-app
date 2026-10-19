@@ -3,88 +3,154 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Espace Locataire — Location App</title>
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="Location App — votre espace locataire : contrats, loyers, documents et signalements.">
+  <title>Espace locataire — Location App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/theme.css">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
-<body>
+<body class="app-page">
 
-  <div id="navbar"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="sidebar-brand" href="index.html" aria-label="Location App, accueil">
+        <span class="brand-mark"><i data-lucide="building-2"></i></span>
+        <span class="brand-text"><strong>Location<span>.</span></strong><small>Espace locataire</small></span>
+      </a>
 
-  <main class="dashboard">
+      <p class="sidebar-section-label">Mon espace</p>
+      <nav class="tabs sidebar-nav" aria-label="Navigation locataire">
+        <button class="tab active" data-tab="logement" data-title="Mon logement" data-sub="Les informations de votre location actuelle.">
+          <i data-lucide="home"></i><span>Mon logement</span>
+        </button>
+        <button class="tab" data-tab="contrats" data-title="Mes contrats" data-sub="Consultez et signez vos contrats.">
+          <i data-lucide="file-text"></i><span>Mes contrats</span>
+        </button>
+        <button class="tab" data-tab="paiements" data-title="Paiements" data-sub="Déclarez vos loyers et suivez leur validation.">
+          <i data-lucide="credit-card"></i><span>Paiements</span>
+        </button>
+        <button class="tab" data-tab="rappels" data-title="Rappels" data-sub="Les messages de votre bailleur.">
+          <i data-lucide="bell"></i><span>Rappels</span>
+        </button>
+        <button class="tab" data-tab="documents" data-title="Documents" data-sub="Vos pièces justificatives, en sécurité.">
+          <i data-lucide="id-card"></i><span>Documents</span>
+        </button>
+        <button class="tab" data-tab="signalements" data-title="Signalements" data-sub="Signalez et suivez les problèmes de votre logement.">
+          <i data-lucide="wrench"></i><span>Signalements</span>
+        </button>
+        <button class="tab" data-tab="historique" data-title="Historique" data-sub="Tout votre parcours locatif en un coup d'œil.">
+          <i data-lucide="history"></i><span>Historique</span>
+        </button>
+      </nav>
 
-    <div id="infoVide" class="info-banner" style="display:none;">
-      <div class="info-icon">📄</div>
-      <div>
-        <h3>Vous n'avez pas encore de logement attribué</h3>
-        <p>Consultez l'onglet <strong>"Mes contrats"</strong> pour signer vos contrats en attente.</p>
-      </div>
+      <div class="sidebar-footer" id="sidebarUser"></div>
+    </aside>
+
+    <div class="app-main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn menu-toggle" type="button" onclick="toggleSidebar()" aria-label="Ouvrir le menu">
+            <i data-lucide="menu"></i>
+          </button>
+          <div class="topbar-heading">
+            <span class="topbar-eyebrow">Espace locataire</span>
+            <strong class="topbar-title">Location App</strong>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn-secondary btn-sm" onclick="openUploadModal()">
+            <i data-lucide="upload"></i><span>Ajouter un document</span>
+          </button>
+          <button class="btn-primary btn-sm" onclick="openPaymentModal()">
+            <i data-lucide="wallet"></i><span>Déclarer un paiement</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="page">
+        <div class="page-head">
+          <div>
+            <p class="page-kicker">Votre espace</p>
+            <h1 class="page-title" id="pageTitle">Bonjour <span id="userFirstName">!</span></h1>
+            <p class="page-sub" id="pageSubtitle">Retrouvez votre logement, vos contrats et vos paiements.</p>
+          </div>
+          <div class="page-date" id="pageDate"></div>
+        </div>
+
+        <div id="infoVide" class="info-banner" style="display:none;">
+          <div class="info-icon"><i data-lucide="file-search"></i></div>
+          <div>
+            <h3>Aucun logement attribué pour le moment</h3>
+            <p>Consultez l'onglet <strong>Mes contrats</strong> pour signer un contrat en attente.</p>
+          </div>
+        </div>
+
+        <section id="tab-logement" class="tab-content active">
+          <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-contrats" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchContrats" class="search-input" placeholder="Rechercher un contrat…" oninput="rechercherContrats()">
+            </div>
+          </div>
+          <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-paiements" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchPaiements" class="search-input" placeholder="Rechercher un paiement…" oninput="rechercherPaiements()">
+            </div>
+          </div>
+          <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-rappels" class="tab-content">
+          <div id="rappelsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-documents" class="tab-content">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Mes pièces justificatives</h2>
+              <p class="section-sub">Vos documents sont privés et consultables uniquement par votre bailleur.</p>
+            </div>
+            <button class="btn-primary btn-sm" onclick="openUploadModal()"><i data-lucide="plus"></i> Ajouter un document</button>
+          </div>
+          <div id="documentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-signalements" class="tab-content">
+          <div class="toolbar">
+            <div class="search-field">
+              <i data-lucide="search"></i>
+              <input type="text" id="searchIncidents" class="search-input" placeholder="Rechercher un signalement…" oninput="rechercherIncidents()">
+            </div>
+          </div>
+          <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <section id="tab-historique" class="tab-content">
+          <div id="historyStats" class="stats-grid"><p class="empty-message">Chargement…</p></div>
+          <div id="historyContent"></div>
+        </section>
+      </main>
     </div>
+  </div>
 
-    <div class="tabs">
-      <button class="tab active" data-tab="logement"><i data-lucide="home"></i> Mon logement</button>
-      <button class="tab" data-tab="contrats"><i data-lucide="file-text"></i> Mes contrats</button>
-      <button class="tab" data-tab="paiements"><i data-lucide="credit-card"></i> Paiements</button>
-      <button class="tab" data-tab="rappels"><i data-lucide="bell"></i> Rappels</button>
-      <button class="tab" data-tab="documents"><i data-lucide="id-card"></i> Documents</button>
-      <button class="tab" data-tab="signalements"><i data-lucide="wrench"></i> Signalements</button>
-      <button class="tab" data-tab="historique"><i data-lucide="bar-chart-3"></i> Historique</button>
-    </div>
-
-    <div id="tab-logement" class="tab-content active">
-      <div id="propertiesList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-contrats" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchContrats" class="search-input" placeholder="🔍 Rechercher un contrat..." style="width:100%;" oninput="rechercherContrats()">
-      </div>
-      <div id="contractsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-paiements" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchPaiements" class="search-input" placeholder="🔍 Rechercher un paiement..." style="width:100%;" oninput="rechercherPaiements()">
-      </div>
-      <div id="paymentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-rappels" class="tab-content">
-      <div id="rappelsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-documents" class="tab-content">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap;gap:15px;">
-        <h2 class="section-title" style="margin:0;">Mes pièces d'identité</h2>
-        <button class="btn-primary" onclick="openUploadModal()">+ Ajouter un document</button>
-      </div>
-      <div id="documentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-signalements" class="tab-content">
-      <div class="filter-bar" style="margin-bottom:20px;">
-        <input type="text" id="searchIncidents" class="search-input" placeholder="🔍 Rechercher un signalement..." style="width:100%;" oninput="rechercherIncidents()">
-      </div>
-      <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement...</p></div>
-    </div>
-
-    <div id="tab-historique" class="tab-content">
-      <div id="historyStats" class="stats-grid" style="margin-bottom:40px;">
-        <p class="empty-message">Chargement...</p>
-      </div>
-      <div id="historyContent"></div>
-    </div>
-
-  </main>
-
-  <!-- Modales existantes inchangées -->
+  <!-- Modale incident -->
   <div id="incidentModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeIncidentModal()">&times;</span>
+      <span class="modal-close" onclick="closeIncidentModal()" aria-label="Fermer">&times;</span>
       <h2>Signaler un problème</h2>
       <form id="incidentForm">
         <div class="form-group">
@@ -96,77 +162,96 @@
           <input type="file" id="incidentPhotos" accept="image/*" multiple>
         </div>
         <input type="hidden" id="incidentPropertyId">
-        <button type="submit" class="btn-primary btn-block">Envoyer</button>
+        <button type="submit" class="btn-primary btn-block">Envoyer le signalement</button>
       </form>
       <div id="incidentMessage" class="message"></div>
     </div>
   </div>
 
+  <!-- Modale paiement -->
   <div id="paymentModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closePaymentModal()">&times;</span>
+      <span class="modal-close" onclick="closePaymentModal()" aria-label="Fermer">&times;</span>
       <h2>Déclarer un paiement</h2>
       <form id="paymentForm">
         <div class="form-group">
           <label for="paymentContract">Contrat</label>
           <select id="paymentContract" required><option value="">-- Choisir --</option></select>
         </div>
-        <div class="form-group">
-          <label for="paymentMois">Mois concerné</label>
-          <input type="text" id="paymentMois" placeholder="Ex : Octobre 2026" required>
-        </div>
-        <div class="form-group">
-          <label for="paymentMontant">Montant ($)</label>
-          <input type="number" id="paymentMontant" required min="0">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="paymentMois">Mois concerné</label>
+            <input type="month" id="paymentMois" required>
+          </div>
+          <div class="form-group">
+            <label for="paymentMontant">Montant ($)</label>
+            <input type="number" id="paymentMontant" required min="0" step="0.01">
+          </div>
         </div>
         <div class="form-group">
           <label>Méthode utilisée</label>
           <div class="role-choice">
-            <label class="role-option"><input type="radio" name="methode" value="mobile_money" checked><span>📱 Mobile Money (M-Pesa, Orange...)</span></label>
-            <label class="role-option"><input type="radio" name="methode" value="carte"><span>💳 Carte bancaire</span></label>
-            <label class="role-option"><input type="radio" name="methode" value="cash"><span>💵 Espèces (Cash)</span></label>
+            <label class="role-option"><input type="radio" name="methode" value="mobile_money" checked><span>Mobile Money (M-Pesa, Orange…)</span></label>
+            <label class="role-option"><input type="radio" name="methode" value="carte"><span>Carte bancaire</span></label>
+            <label class="role-option"><input type="radio" name="methode" value="cash"><span>Espèces</span></label>
           </div>
         </div>
         <div class="form-group">
-          <label for="paymentPreuve">Preuve de paiement (Capture d'écran, reçu ou photo)</label>
-          <input type="file" id="paymentPreuve" accept="image/*,.pdf">
-          <p style="font-size:0.8rem;color:var(--gray-500);margin-top:5px;">⚠️ Requis pour que le bailleur valide.</p>
+          <label for="paymentPreuve">Preuve de paiement</label>
+          <input type="file" id="paymentPreuve" accept="image/*,.pdf" required>
+          <p class="form-hint">Capture d'écran, reçu ou photo — obligatoire pour la validation.</p>
         </div>
         <button type="submit" class="btn-primary btn-block">Envoyer le paiement</button>
       </form>
     </div>
   </div>
 
+  <!-- Modale signature -->
+  <div id="signatureModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeSignatureModal()" aria-label="Fermer">&times;</span>
+      <h2>Signer le contrat</h2>
+      <p class="muted">En confirmant, vous acceptez les termes de ce contrat. Cette action est définitive.</p>
+      <input type="hidden" id="signatureContractId">
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="closeSignatureModal()">Annuler</button>
+        <button class="btn-primary btn-block" id="signatureConfirmBtn" onclick="confirmSignature()">Signer le contrat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale document -->
   <div id="uploadModal" class="modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeUploadModal()">&times;</span>
+      <span class="modal-close" onclick="closeUploadModal()" aria-label="Fermer">&times;</span>
       <h2>Ajouter un document</h2>
       <form id="uploadForm">
         <div class="form-group">
           <label for="docType">Type de document</label>
           <select id="docType" required>
             <option value="">-- Choisir --</option>
-            <option value="cni">🪪 Carte d'identité (CNI)</option>
-            <option value="passeport">📕 Passeport</option>
-            <option value="fiche_paie">💼 Fiche de paie</option>
-            <option value="autre">📎 Autre</option>
+            <option value="cni">Carte d'identité (CNI)</option>
+            <option value="passeport">Passeport</option>
+            <option value="fiche_paie">Fiche de paie</option>
+            <option value="autre">Autre</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="docFichier">Fichier (JPG, PNG, PDF - max 10 Mo)</label>
+          <label for="docFichier">Fichier (JPG, PNG, PDF — max 10 Mo)</label>
           <input type="file" id="docFichier" accept="image/*,.pdf" required>
         </div>
-        <button type="submit" class="btn-primary btn-block">Uploader</button>
+        <button type="submit" class="btn-primary btn-block">Envoyer le document</button>
       </form>
     </div>
   </div>
 
   <script src="js/icons.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js"></script>
   <script src="js/navbar.js"></script>
-  <script src="js/locataire.js"></script>
+  <script src="js/locataire.js?v=3"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

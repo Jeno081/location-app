@@ -1,21 +1,23 @@
 // ============================================
-// index.js — Page d'accueil : détection bailleur
+// index.js — Entrée privée
 // ============================================
 
 fetch("/api/auth/bailleur-existe")
-  .then(r => r.json())
-  .then(data => {
+  .then((r) => r.json())
+  .then((data) => {
     const btnInscription = document.getElementById("btnInscription");
     const textBienvenue = document.getElementById("textBienvenue");
 
     if (data.existe) {
-      // Un bailleur existe déjà → on cache le bouton inscription
       if (btnInscription) btnInscription.style.display = "none";
-      if (textBienvenue) textBienvenue.textContent = "Connectez-vous pour accéder à votre espace";
+      if (textBienvenue) {
+        textBienvenue.textContent = "Votre espace est prêt. Connectez-vous pour retrouver vos biens, vos contrats et vos loyers.";
+      }
     } else {
-      // Aucun bailleur → on affiche le bouton de création
-      if (btnInscription) btnInscription.style.display = "inline-block";
-      if (textBienvenue) textBienvenue.textContent = "Créez le compte bailleur pour démarrer";
+      if (btnInscription) btnInscription.style.display = "inline-flex";
+      if (textBienvenue) {
+        textBienvenue.textContent = "Créez l'espace bailleur et invitez vos locataires. Tout le reste se passe ici, en privé.";
+      }
     }
   })
-  .catch(err => console.error(err));
+  .catch((err) => console.error(err));

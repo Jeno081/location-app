@@ -3,60 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
   <title>Connexion — Location App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/theme.css">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
-<body>
+<body class="auth-body">
 
-  <header class="navbar">
-    <div class="logo">
-      <i data-lucide="home" style="width:24px;height:24px;vertical-align:-5px;margin-right:6px;color:var(--primary);"></i>Location App
-    </div>
-    <nav>
-      <a href="index.html"><i data-lucide="arrow-left" style="width:18px;height:18px;vertical-align:-4px;margin-right:4px;"></i>Accueil</a>
-    </nav>
-  </header>
-
-  <main class="auth-container">
-    <div class="auth-card">
-      <h1><i data-lucide="log-in" style="width:28px;height:28px;vertical-align:-5px;margin-right:8px;color:var(--primary);"></i>Connexion</h1>
-      <p class="auth-subtitle">Accédez à votre espace personnel</p>
-
-      <form id="loginForm">
-        <div class="form-group">
-          <label for="email">Adresse email</label>
-          <input type="email" id="email" name="email" placeholder="exemple@email.com" required>
+  <div class="auth-shell">
+    <aside class="auth-brand">
+      <div class="auth-brand-inner">
+        <a class="landing-brand" href="index.html" style="text-decoration:none;">
+          <span class="brand-mark"><i data-lucide="building-2"></i></span>
+          <span class="brand-text"><strong>Location<span>.</span></strong><small>Gestion locative</small></span>
+        </a>
+        <h2>La gestion locative,<br><span>enfin simple.</span></h2>
+        <p>Un espace unique pour vos biens, vos contrats, vos loyers et vos locataires — sans cahier ni tableur.</p>
+        <div class="auth-points">
+          <div class="auth-point"><span><i data-lucide="check"></i></span> Contrats signés en ligne et archivés</div>
+          <div class="auth-point"><span><i data-lucide="check"></i></span> Paiements validés avec preuve</div>
+          <div class="auth-point"><span><i data-lucide="check"></i></span> Documents personnels protégés</div>
         </div>
+      </div>
+      <p class="auth-brand-footer">© <span id="year"></span> Location App. Conçu pour les bailleurs et leurs locataires.</p>
+    </aside>
 
-        <div class="form-group">
-          <label for="mot_de_passe">Mot de passe</label>
-          <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" required>
-        </div>
+    <main class="auth-panel">
+      <div class="auth-card">
+        <a class="auth-logo" href="index.html" aria-label="Accueil"><i data-lucide="building-2"></i></a>
+        <h1>Bon retour parmi nous</h1>
+        <p class="auth-subtitle">Connectez-vous à votre espace personnel.</p>
 
-        <button type="submit" class="btn-primary btn-block">
-          <i data-lucide="log-in" style="width:20px;height:20px;vertical-align:-5px;margin-right:6px;"></i>Se connecter
-        </button>
-      </form>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="email">Adresse email</label>
+            <input type="email" id="email" name="email" placeholder="vous@exemple.com" autocomplete="email" required>
+          </div>
+          <div class="form-group">
+            <label for="mot_de_passe">Mot de passe</label>
+            <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="btn-primary btn-block">
+            <i data-lucide="log-in"></i> Se connecter
+          </button>
+        </form>
 
-      <div id="message" class="message"></div>
+        <div id="message" class="message" role="status"></div>
 
-      <p class="auth-footer" style="margin-top:25px;text-align:center;color:var(--gray-500);font-size:0.85rem;">
-        <i data-lucide="info" style="width:16px;height:16px;vertical-align:-3px;margin-right:5px;"></i>
-        Pas encore de compte ? Contactez le bailleur pour obtenir vos identifiants.
-      </p>
-    </div>
-  </main>
+        <p class="auth-footer">
+          Pas encore de compte ? Contactez votre bailleur pour obtenir vos identifiants.<br>
+          <a href="index.html">← Retour à l'accueil</a>
+        </p>
+      </div>
+    </main>
+  </div>
 
   <script src="js/icons.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/login.js"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
+    document.getElementById("year").textContent = new Date().getFullYear();
   </script>
 </body>
 </html>

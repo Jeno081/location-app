@@ -3,55 +3,76 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
   <title>Changer le mot de passe — Location App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
+  <link rel="stylesheet" href="css/theme.css">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-
 </head>
-<body>
+<body class="auth-body auth-required">
 
-  <header class="navbar">
-    <div class="logo">🏠 Location App</div>
-    <nav>
-      <button onclick="logout()" class="btn-secondary">Déconnexion</button>
-    </nav>
-  </header>
-
-  <main class="auth-container">
-    <div class="auth-card">
-      <h1>🔒 Changez votre mot de passe</h1>
-      <p class="auth-subtitle">
-        Pour votre sécurité, vous devez définir un mot de passe personnel avant de continuer.
-      </p>
-
-      <form id="changeForm">
-        <div class="form-group">
-          <label for="ancien">Mot de passe temporaire (reçu du bailleur)</label>
-          <input type="password" id="ancien" placeholder="Votre mot de passe actuel" required>
+  <div class="auth-shell">
+    <aside class="auth-brand">
+      <div class="auth-brand-inner">
+        <a class="landing-brand" href="index.html" style="text-decoration:none;">
+          <span class="brand-mark"><i data-lucide="building-2"></i></span>
+          <span class="brand-text"><strong>Location<span>.</span></strong><small>Gestion locative</small></span>
+        </a>
+        <h2>Un mot de passe<br><span>rien qu'à vous.</span></h2>
+        <p>Votre bailleur vous a remis un mot de passe temporaire. Définissez maintenant un mot de passe personnel pour sécuriser votre espace.</p>
+        <div class="auth-points">
+          <div class="auth-point"><span><i data-lucide="check"></i></span> 8 caractères minimum</div>
+          <div class="auth-point"><span><i data-lucide="check"></i></span> Une lettre et un chiffre</div>
+          <div class="auth-point"><span><i data-lucide="check"></i></span> Vos anciennes sessions sont déconnectées</div>
         </div>
+      </div>
+      <p class="auth-brand-footer">© <span id="year"></span> Location App. Votre compte, vos accès.</p>
+    </aside>
 
-        <div class="form-group">
-          <label for="nouveau">Nouveau mot de passe</label>
-          <input type="password" id="nouveau" placeholder="Au moins 6 caractères" required minlength="6">
-        </div>
+    <main class="auth-panel">
+      <div class="auth-card">
+        <a class="auth-logo" href="index.html" aria-label="Accueil"><i data-lucide="lock"></i></a>
+        <h1>Changez votre mot de passe</h1>
+        <p class="auth-subtitle">Pour votre sécurité, définissez un mot de passe personnel avant de continuer.</p>
 
-        <div class="form-group">
-          <label for="confirm">Confirmer le nouveau mot de passe</label>
-          <input type="password" id="confirm" placeholder="Retapez le nouveau mot de passe" required minlength="6">
-        </div>
+        <form id="changeForm">
+          <div class="form-group">
+            <label for="ancien">Mot de passe temporaire</label>
+            <input type="password" id="ancien" placeholder="Le mot de passe reçu du bailleur" autocomplete="current-password" required>
+          </div>
+          <div class="form-group">
+            <label for="nouveau">Nouveau mot de passe</label>
+            <input type="password" id="nouveau" placeholder="8 caractères minimum" autocomplete="new-password" minlength="8" required>
+          </div>
+          <div class="form-group">
+            <label for="confirm">Confirmer le nouveau mot de passe</label>
+            <input type="password" id="confirm" placeholder="Retapez le nouveau mot de passe" autocomplete="new-password" minlength="8" required>
+          </div>
+          <p class="form-hint" style="margin-bottom:16px;">Au moins 8 caractères, avec une lettre et un chiffre.</p>
+          <button type="submit" class="btn-primary btn-block"><i data-lucide="check"></i> Valider le nouveau mot de passe</button>
+        </form>
 
-        <button type="submit" class="btn-primary btn-block">Valider le nouveau mot de passe</button>
-      </form>
+        <div id="message" class="message" role="status"></div>
 
-      <div id="message" class="message"></div>
-    </div>
-  </main>
+        <p class="auth-footer">
+          <button type="button" class="btn-ghost btn-sm" onclick="logout()"><i data-lucide="log-out"></i> Se déconnecter</button>
+        </p>
+      </div>
+    </main>
+  </div>
+
   <script src="js/icons.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/animations.js"></script>
+  <script src="js/navbar.js"></script>
   <script src="js/changer-mot-de-passe.js"></script>
+  <script>
+    if (typeof lucide !== "undefined") lucide.createIcons();
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>

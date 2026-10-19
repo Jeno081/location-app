@@ -4,168 +4,127 @@
 
 const db = require("../database/db");
 
-// ============================================
-// CRÉER un logement — POST /api/properties
-// (réservé au bailleur)
-// ============================================
-exports.createProperty = (req, res) => {
-  const { titre, adresse, ville, loyer, charges, description, photos } = req.body;
-  const bailleur_id = req.user.id; // Récupéré depuis le token JWT
+const STATUTS = ["disponible", "loue", "archive"];
 
-  // Vérification des champs obligatoires
-  if (!titre || !adresse || !loyer) {
+function nombrePositif(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
+}
+
+exports.createProperty = (req, res) => {
+  const titre = String(req.body.titre || "").trim();
+  const adresse = String(req.body.adresse || "").trim();
+  const ville = req.body.ville ? String(req.body.ville).trim() : null;
+  const description = req.body.description ? String(req.body.description).slice(0, 2000) : null;
+  const loyer = Number(req.body.loyer);
+  const charges = nombrePositif(req.body.charges, 0);
+  const photos = Array.isArray(req.body.photos) ? req.body.photos.slice(0, 10) : null;
+
+  if (!titre || !adresse || !Number.isFinite(loyer)) {
     return res.status(400).json({ message: "Titre, adresse et loyer sont obligatoires" });
   }
+  if (titre.length > 120 || adresse.length > 200) {
+    return res.status(400).json({ message: "Titre ou adresse trop long." });
+  }
+  if (loyer <= 0) return res.status(400).json({ message: "Le loyer doit être positif." });
 
-  // Insertion en base
   const result = db.prepare(`
     INSERT INTO properties (bailleur_id, titre, adresse, ville, loyer, charges, description, photos)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    bailleur_id,
-    titre,
-    adresse,
-    ville || null,
-    loyer,
-    charges || 0,
-    description || null,
-    photos ? JSON.stringify(photos) : null
-  );
+  `).run(req.user.id, titre, adresse, ville, loyer, charges, description, photos ? JSON.stringify(photos) : null);
 
-  res.status(201).json({
-    message: "Logement cree avec succes",
-    propertyId: result.lastInsertRowid
-  });
+  res.status(201).json({ message: "Logement créé avec succès", propertyId: result.lastInsertRowid });
 };
 
-// ============================================
-// LISTER mes logements — GET /api/properties/mes-logements
-// (réservé au bailleur connecté)
-// ============================================
 exports.getMyProperties = (req, res) => {
-  const bailleur_id = req.user.id;
-
   const properties = db.prepare(`
     SELECT * FROM properties WHERE bailleur_id = ? ORDER BY date_creation DESC
-  `).all(bailleur_id);
-
+  `).all(req.user.id);
   res.json({ properties });
 };
 
-// ============================================
-// LISTER tous les logements — GET /api/properties
-// (public : tout le monde peut voir les logements disponibles)
-// ============================================
 exports.getAllProperties = (req, res) => {
   const properties = db.prepare(`
-    SELECT p.*, u.nom AS bailleur_nom
+    SELECT p.id, p.titre, p.adresse, p.ville, p.loyer, p.charges, p.description, p.photos, p.statut,
+           p.date_creation, u.nom AS bailleur_nom
     FROM properties p
     JOIN users u ON p.bailleur_id = u.id
     WHERE p.statut = 'disponible'
     ORDER BY p.date_creation DESC
   `).all();
-
   res.json({ properties });
 };
 
-// ============================================
-// VOIR un logement précis — GET /api/properties/:id
-// ============================================
 exports.getPropertyById = (req, res) => {
-  const { id } = req.params;
-
   const property = db.prepare(`
     SELECT p.*, u.nom AS bailleur_nom, u.telephone AS bailleur_telephone
     FROM properties p
     JOIN users u ON p.bailleur_id = u.id
     WHERE p.id = ?
-  `).get(id);
+  `).get(req.params.id);
 
-  if (!property) {
-    return res.status(404).json({ message: "Logement introuvable" });
-  }
-
+  if (!property) return res.status(404).json({ message: "Logement introuvable" });
   res.json({ property });
 };
 
-// ============================================
-// MODIFIER un logement — PUT /api/properties/:id
-// (réservé au bailleur propriétaire)
-// ============================================
 exports.updateProperty = (req, res) => {
-  const { id } = req.params;
-  const bailleur_id = req.user.id;
-  const { titre, adresse, ville, loyer, charges, description, statut } = req.body;
+  const property = db.prepare("SELECT * FROM properties WHERE id = ?").get(req.params.id);
+  if (!property) return res.status(404).json({ message: "Logement introuvable" });
+  if (property.bailleur_id !== req.user.id) return res.status(403).json({ message: "Non autorisé" });
 
-  // Vérifier que le logement appartient au bailleur
-  const property = db.prepare("SELECT * FROM properties WHERE id = ?").get(id);
-  if (!property) {
-    return res.status(404).json({ message: "Logement introuvable" });
-  }
-  if (property.bailleur_id !== bailleur_id) {
-    return res.status(403).json({ message: "Vous n'etes pas le proprietaire de ce logement" });
-  }
+  const titre = req.body.titre !== undefined ? String(req.body.titre).trim() : property.titre;
+  const adresse = req.body.adresse !== undefined ? String(req.body.adresse).trim() : property.adresse;
+  const ville = req.body.ville !== undefined ? String(req.body.ville || "").trim() : property.ville;
+  const description = req.body.description !== undefined
+    ? String(req.body.description || "").slice(0, 2000)
+    : property.description;
+  const loyer = req.body.loyer !== undefined ? Number(req.body.loyer) : property.loyer;
+  const charges = req.body.charges !== undefined ? nombrePositif(req.body.charges, property.charges) : property.charges;
+  const statut = req.body.statut !== undefined ? req.body.statut : property.statut;
+
+  if (!titre || !adresse) return res.status(400).json({ message: "Titre et adresse obligatoires." });
+  if (!Number.isFinite(loyer) || loyer <= 0) return res.status(400).json({ message: "Loyer invalide." });
+  if (!STATUTS.includes(statut)) return res.status(400).json({ message: "Statut invalide." });
 
   db.prepare(`
     UPDATE properties
     SET titre = ?, adresse = ?, ville = ?, loyer = ?, charges = ?, description = ?, statut = ?
     WHERE id = ?
-  `).run(
-    titre || property.titre,
-    adresse || property.adresse,
-    ville || property.ville,
-    loyer || property.loyer,
-    charges !== undefined ? charges : property.charges,
-    description || property.description,
-    statut || property.statut,
-    id
-  );
+  `).run(titre, adresse, ville || null, loyer, charges, description || null, statut, property.id);
 
-  res.json({ message: "Logement mis a jour avec succes" });
+  res.json({ message: "Logement mis à jour avec succès" });
 };
 
-// ============================================
-// SUPPRIMER un logement — DELETE /api/properties/:id
-// (réservé au bailleur propriétaire)
-// ============================================
 exports.deleteProperty = (req, res) => {
-  const { id } = req.params;
-  const bailleur_id = req.user.id;
+  const property = db.prepare("SELECT * FROM properties WHERE id = ?").get(req.params.id);
+  if (!property) return res.status(404).json({ message: "Logement introuvable" });
+  if (property.bailleur_id !== req.user.id) return res.status(403).json({ message: "Non autorisé" });
 
-  const property = db.prepare("SELECT * FROM properties WHERE id = ?").get(id);
-  if (!property) {
-    return res.status(404).json({ message: "Logement introuvable" });
+  const contrats = db.prepare("SELECT COUNT(*) AS nb FROM contracts WHERE property_id = ?").get(property.id).nb;
+  if (contrats > 0) {
+    return res.status(409).json({
+      message: "Ce logement possède un historique de contrats. Archivez-le au lieu de le supprimer."
+    });
   }
-  if (property.bailleur_id !== bailleur_id) {
-    return res.status(403).json({ message: "Vous n'etes pas le proprietaire de ce logement" });
+  const incidents = db.prepare("SELECT COUNT(*) AS nb FROM incidents WHERE property_id = ?").get(property.id).nb;
+  if (incidents > 0) {
+    return res.status(409).json({ message: "Ce logement possède des signalements. Archivez-le au lieu de le supprimer." });
   }
 
-  db.prepare("DELETE FROM properties WHERE id = ?").run(id);
-
-  res.json({ message: "Logement supprime avec succes" });
+  db.prepare("DELETE FROM properties WHERE id = ?").run(property.id);
+  res.json({ message: "Logement supprimé avec succès" });
 };
 
-// ============================================
-// MES LOGEMENTS LOUÉS — GET /api/properties/mes-locations
-// (locataire : retourne ses logements actifs)
-// ============================================
 exports.getMesLocations = (req, res) => {
-  const locataire_id = req.user.id;
-
   const properties = db.prepare(`
-    SELECT p.*,
-           c.id AS contract_id,
-           c.date_debut, c.date_fin, c.montant_loyer,
-           c.statut AS contract_statut,
-           b.nom AS bailleur_nom,
-           b.email AS bailleur_email,
+    SELECT p.*, c.id AS contract_id, c.date_debut, c.date_fin, c.montant_loyer,
+           c.statut AS contract_statut, b.nom AS bailleur_nom, b.email AS bailleur_email,
            b.telephone AS bailleur_telephone
     FROM properties p
     JOIN contracts c ON c.property_id = p.id
     JOIN users b ON p.bailleur_id = b.id
     WHERE c.locataire_id = ? AND c.statut = 'actif'
     ORDER BY c.date_creation DESC
-  `).all(locataire_id);
-
+  `).all(req.user.id);
   res.json({ properties });
 };

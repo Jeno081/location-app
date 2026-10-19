@@ -34,7 +34,7 @@ async function loadCalendar(mois, annee) {
     // En-tête du calendrier
     let html = '<div class="calendar-header">' +
       '<button class="calendar-nav" onclick="navigateMonth(-1)">←</button>' +
-      '<h3 class="calendar-month">' + data.mois_nom + '</h3>' +
+      '<h3 class="calendar-month">' + escapeHtml(data.mois_nom) + '</h3>' +
       '<button class="calendar-nav" onclick="navigateMonth(1)">→</button>' +
       '</div>';
 
@@ -99,7 +99,7 @@ async function loadCalendar(mois, annee) {
           const icon = e.type === "loyer" ? (e.statut === "paye" ? "✅" : "💰") :
                        e.type === "echeance" ? "⏰" :
                        e.type === "incident" ? "🔧" : "🔔";
-          html += '<span class="calendar-event-dot" title="' + e.description + '">' + icon + '</span>';
+          html += '<span class="calendar-event-dot" title="' + escapeHtml(e.description) + '">' + icon + '</span>';
         });
         if (events.length > 2) {
           html += '<span class="calendar-event-more">+' + (events.length - 2) + '</span>';
@@ -139,10 +139,10 @@ async function loadCalendar(mois, annee) {
           '<div class="calendar-event-icon">' + icon + '</div>' +
           '<div class="calendar-event-info">' +
             '<div class="calendar-event-day">Le ' + e.jour + ' — ' + label + '</div>' +
-            '<div class="calendar-event-title">' + e.titre + '</div>' +
-            '<div class="calendar-event-desc">' + e.description + '</div>' +
+            '<div class="calendar-event-title">' + escapeHtml(e.titre) + '</div>' +
+            '<div class="calendar-event-desc">' + escapeHtml(e.description) + '</div>' +
           '</div>' +
-          (e.statut ? '<span class="calendar-event-badge ' + statutClass + '">' + e.statut.replace("_", " ") + '</span>' : '') +
+          (e.statut ? '<span class="calendar-event-badge ' + statutClass + '">' + escapeHtml(e.statut.replace("_", " ")) + '</span>' : '') +
           '</div>';
       });
       html += '</div>';
@@ -190,8 +190,8 @@ function showDayEvents(jour) {
       '<div class="calendar-event-icon">' + icon + '</div>' +
       '<div class="calendar-event-info">' +
         '<div class="calendar-event-day">' + label + '</div>' +
-        '<div class="calendar-event-title">' + e.titre + '</div>' +
-        '<div class="calendar-event-desc">' + e.description + '</div>' +
+        '<div class="calendar-event-title">' + escapeHtml(e.titre) + '</div>' +
+        '<div class="calendar-event-desc">' + escapeHtml(e.description) + '</div>' +
       '</div>' +
       '</div>';
   }).join("");

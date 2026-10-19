@@ -14,6 +14,7 @@ router.get("/mes-documents", verifyToken, requireRole("locataire"), documentCont
 
 // Bailleur
 router.get("/locataire/:id", verifyToken, requireRole("bailleur"), documentController.getDocumentsLocataire);
+router.get("/:id/file", verifyToken, documentController.getDocumentFile);
 router.put("/:id/statut", verifyToken, requireRole("bailleur"), documentController.updateDocumentStatus);
 
 // Suppression (les deux rôles autorisés)
