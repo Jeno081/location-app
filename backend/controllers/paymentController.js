@@ -54,9 +54,17 @@ exports.createPayment = (req, res) => {
     return res.status(409).json({ message: "Ce contrat n'est pas actif." });
   }
 
-  const dejaPaye = db.prepare("SELECT id FROM payments WHERE contract_id = ? AND mois = ?").get(contract_id, mois);
+  // Un paiement refusé n'empêche plus de déclarer un nouveau paiement pour ce mois.
+  const dejaPaye = db.prepare(`
+    SELECT id, statut_bailleur FROM payments
+    WHERE contract_id = ? AND mois = ? AND statut_bailleur <> 'refuse'
+  `).get(contract_id, mois);
   if (dejaPaye) {
-    return res.status(409).json({ message: "Un paiement existe déjà pour ce mois." });
+    return res.status(409).json({
+      message: dejaPaye.statut_bailleur === "valide"
+        ? "Le loyer de ce mois est déjà validé."
+        : "Un paiement est déjà en attente de validation pour ce mois."
+    });
   }
 
   if (!req.file) {
@@ -80,7 +88,7 @@ exports.createPayment = (req, res) => {
     });
   } catch (err) {
     if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      return res.status(409).json({ message: "Un paiement existe déjà pour ce mois." });
+      return res.status(409).json({ message: "Un paiement est déjà en attente pour ce mois." });
     }
     throw err;
   }
@@ -115,9 +123,16 @@ exports.getPaymentsForBailleur = (req, res) => {
 exports.validerPaiement = (req, res) => {
   const { id } = req.params;
   const { statut_bailleur } = req.body;
+  const motif = String(req.body.motif_refus || "").trim();
 
   if (!["valide", "refuse"].includes(statut_bailleur)) {
     return res.status(400).json({ message: "Statut invalide" });
+  }
+  if (statut_bailleur === "refuse" && motif.length < 5) {
+    return res.status(400).json({ message: "Merci d'indiquer un motif de refus (5 caractères minimum)." });
+  }
+  if (motif.length > 500) {
+    return res.status(400).json({ message: "Motif trop long (500 caractères max)." });
   }
 
   const payment = db.prepare(`
@@ -128,9 +143,35 @@ exports.validerPaiement = (req, res) => {
   `).get(id, req.user.id);
 
   if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
+  if (payment.statut_bailleur === "valide") {
+    return res.status(409).json({ message: "Ce paiement est déjà validé." });
+  }
+  if (payment.statut_bailleur === "refuse") {
+    const remplacement = db.prepare(`
+      SELECT id FROM payments
+      WHERE contract_id = ? AND mois = ? AND id <> ? AND statut_bailleur <> 'refuse'
+    `).get(payment.contract_id, payment.mois, payment.id);
+    if (remplacement) {
+      return res.status(409).json({ message: "Un paiement plus récent a déjà été déclaré pour ce mois." });
+    }
+  }
 
-  db.prepare("UPDATE payments SET statut_bailleur = ? WHERE id = ?").run(statut_bailleur, id);
-  res.json({ message: "Statut mis à jour" });
+  db.prepare(`
+    UPDATE payments
+    SET statut_bailleur = ?, motif_refus = ?, date_decision = ?
+    WHERE id = ?
+  `).run(
+    statut_bailleur,
+    statut_bailleur === "refuse" ? motif : null,
+    new Date().toISOString(),
+    id
+  );
+
+  res.json({
+    message: statut_bailleur === "valide" ? "Paiement validé" : "Paiement refusé",
+    statut_bailleur,
+    motif_refus: statut_bailleur === "refuse" ? motif : null
+  });
 };
 
 exports.getPaymentById = (req, res) => {

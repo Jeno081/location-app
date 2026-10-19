@@ -356,6 +356,11 @@
       <p id="validatePaymentText" class="muted">Confirmez-vous avoir bien reçu ce paiement ?</p>
       <input type="hidden" id="validatePaymentId">
       <input type="hidden" id="validatePaymentAction">
+      <div class="form-group" id="validatePaymentMotifGroup" style="display:none;">
+        <label for="validatePaymentMotif">Motif du refus</label>
+        <textarea id="validatePaymentMotif" rows="3" maxlength="500" placeholder="Ex : la preuve ne correspond pas au montant reçu, ou le virement n'apparaît pas sur le compte."></textarea>
+        <p class="form-hint">Ce motif sera visible par le locataire, qui pourra corriger et déclarer un nouveau paiement pour le même mois.</p>
+      </div>
       <div class="modal-actions">
         <button class="btn-secondary btn-block" onclick="closeValidatePaymentModal()">Annuler</button>
         <button class="btn-primary btn-block" id="validatePaymentBtn" onclick="confirmValidatePayment()">Confirmer</button>
@@ -367,11 +372,11 @@
   <script src="js/ui.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
-  <script src="js/notifications.js"></script>
+  <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
   <script src="js/navbar.js"></script>
-  <script src="js/bailleur.js?v=4"></script>
+  <script src="js/bailleur.js?v=6"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

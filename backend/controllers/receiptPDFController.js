@@ -6,6 +6,7 @@ const db = require("../database/db");
 const {
   createDocument,
   drawHeader,
+  ensureSpace,
   section,
   infoCard,
   card,
@@ -20,14 +21,17 @@ const {
 } = require("../utils/pdfTheme");
 
 function buildReceiptPDF(doc, payment) {
-  const reference = `QUI-${String(payment.id).padStart(6, "0")}`;
   const valide = payment.statut_bailleur === "valide";
+  const refuse = payment.statut_bailleur === "refuse";
+  const reference = `${refuse ? "REC" : "QUI"}-${String(payment.id).padStart(6, "0")}`;
   const status = valide
     ? { label: "Paiement validé", tone: "success" }
-    : { label: "En attente de validation", tone: "warning" };
+    : refuse
+      ? { label: "Paiement refusé", tone: "danger" }
+      : { label: "En attente de validation", tone: "warning" };
 
   drawHeader(doc, {
-    title: "QUITTANCE DE LOYER",
+    title: refuse ? "REÇU DE PAIEMENT" : "QUITTANCE DE LOYER",
     reference,
     date: `Émise le ${formatDate(payment.date_paiement)}`,
     status
@@ -35,7 +39,11 @@ function buildReceiptPDF(doc, payment) {
 
   paragraph(
     doc,
-    "La présente quittance atteste que le locataire désigné ci-dessous s'est acquitté du loyer et des charges pour la période indiquée.",
+    refuse
+      ? "Le paiement déclaré ci-dessous a été refusé par le bailleur. Ce document en conserve la trace et le motif ; il ne vaut pas quittance."
+      : valide
+        ? "La présente quittance atteste que le locataire désigné ci-dessous s'est acquitté du loyer et des charges pour la période indiquée."
+        : "Le paiement déclaré ci-dessous est en attente de validation par le bailleur. Cette quittance sera définitive après validation.",
     { size: 8.8, color: COLORS.muted, lineGap: 4 }
   );
 
@@ -64,16 +72,40 @@ function buildReceiptPDF(doc, payment) {
   doc.rect(50, y, 5, 84).fill(COLORS.gold);
   doc.restore();
 
-  label(doc, "Montant réglé", 70, y + 15, 200, "#94a3b8");
+  label(doc, valide ? "Montant réglé" : "Montant déclaré", 70, y + 15, 200, "#94a3b8");
   doc.font("Helvetica-Bold").fontSize(26).fillColor("#ffffff")
     .text(money(payment.montant), 70, y + 28, { width: 260, lineBreak: false });
   label(doc, "Période concernée", 350, y + 15, 170, "#94a3b8");
   value(doc, formatMonth(payment.mois), 350, y + 28, 170, { size: 13, color: "#ffffff" });
   doc.font("Helvetica").fontSize(7.5).fillColor("#94a3b8")
-    .text(`Quittance ${reference}`, 350, y + 52, { width: 170, lineBreak: false });
+    .text(`${refuse ? "Reçu" : "Quittance"} ${reference}`, 350, y + 52, { width: 170, lineBreak: false });
   doc.y = y + 100;
 
+  // --- Motif du refus ---
+  if (refuse) {
+    const motif = payment.motif_refus || "Aucun motif précisé.";
+    doc.font("Helvetica").fontSize(8.6);
+    const motifHeight = doc.heightOfString(motif, { width: width - 40, lineGap: 3 });
+    const boxHeight = Math.max(76, motifHeight + 48);
+    ensureSpace(doc, boxHeight + 24);
+    y = doc.y;
+    doc.save();
+    doc.roundedRect(50, y, width, boxHeight, 12).fillAndStroke(COLORS.dangerSoft, "#fecaca");
+    doc.roundedRect(50, y, 5, boxHeight, 2.5).fill(COLORS.danger);
+    doc.restore();
+    label(doc, "Motif du refus", 70, y + 13, 240, COLORS.danger);
+    doc.font("Helvetica").fontSize(8.6).fillColor("#7f1d1d")
+      .text(motif, 70, y + 27, { width: width - 40, lineGap: 3 });
+    doc.font("Helvetica").fontSize(7.4).fillColor(COLORS.danger)
+      .text(
+        payment.date_decision ? `Décidé le ${formatDate(payment.date_decision)}` : "Décision enregistrée",
+        70, y + boxHeight - 17, { lineBreak: false }
+      );
+    doc.y = y + boxHeight + 18;
+  }
+
   // --- Détails ---
+  ensureSpace(doc, 170);
   section(doc, "Détails du règlement");
   y = doc.y;
   card(doc, 50, y, width, 128);
@@ -102,25 +134,45 @@ function buildReceiptPDF(doc, payment) {
   doc.y = y + 144;
 
   // --- Mention ---
+  ensureSpace(doc, 130);
   section(doc, "Validation");
   y = doc.y;
-  card(doc, 50, y, width, 76);
-  label(doc, valide ? "Quittance validée par le bailleur" : "En attente de validation du bailleur", 66, y + 14, width - 32);
+  if (refuse) {
+    doc.save();
+    doc.roundedRect(50, y, width, 84, 12).fillAndStroke(COLORS.dangerSoft, "#fecaca");
+    doc.restore();
+  } else {
+    card(doc, 50, y, width, 84);
+  }
+  label(
+    doc,
+    valide
+      ? "Quittance validée par le bailleur"
+      : refuse
+        ? "Paiement refusé par le bailleur"
+        : "En attente de validation du bailleur",
+    66, y + 14, width - 32,
+    refuse ? COLORS.danger : COLORS.muted
+  );
   value(doc, payment.bailleur_nom, 66, y + 28, 260, { size: 10 });
-  doc.font("Helvetica").fontSize(8).fillColor(COLORS.muted)
+  doc.font("Helvetica").fontSize(8).fillColor(refuse ? "#7f1d1d" : COLORS.muted)
     .text(
       valide
-        ? `Paiement validé le ${formatDate(payment.date_paiement)}. Cette quittance vaut reçu pour la période indiquée.`
-        : "Cette quittance sera définitive après validation du paiement par le bailleur.",
+        ? `Paiement validé le ${formatDate(payment.date_decision || payment.date_paiement)}. Cette quittance vaut reçu pour la période indiquée.`
+        : refuse
+          ? `Refusé${payment.date_decision ? ` le ${formatDate(payment.date_decision)}` : ""}. Un nouveau paiement peut être déclaré pour ce mois depuis l'espace locataire.`
+          : "Cette quittance sera définitive après validation du paiement par le bailleur.",
       66,
       y + 45,
       { width: width - 32, lineGap: 2 }
     );
-  doc.y = y + 92;
+  doc.y = y + 100;
 
   paragraph(
     doc,
-    "Cette quittance ne vaut pas pour les périodes futures. Elle est générée automatiquement par Location App et conservée dans l'espace locatif.",
+    refuse
+      ? "Ce document ne constitue pas une quittance. Il conserve la trace du paiement refusé et du motif indiqué par le bailleur."
+      : "Cette quittance ne vaut pas pour les périodes futures. Elle est générée automatiquement par Location App et conservée dans l'espace locatif.",
     { size: 7.4, color: COLORS.soft, lineGap: 2 }
   );
 }
@@ -173,7 +225,7 @@ exports.downloadReceiptPDF = (req, res) => {
 
   try {
     buildReceiptPDF(doc, payment);
-    finalize(doc, { documentLabel: "Quittance de loyer" });
+    finalize(doc, { documentLabel: payment.statut_bailleur === "refuse" ? "Reçu de paiement" : "Quittance de loyer" });
   } catch (err) {
     console.error("Erreur génération quittance:", err);
     if (!res.headersSent) res.status(500).json({ message: "Erreur lors de la génération de la quittance" });

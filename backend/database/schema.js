@@ -68,6 +68,8 @@ db.exec(`
     statut TEXT DEFAULT 'paye' CHECK(statut IN ('paye', 'en_attente', 'refuse')),
     statut_bailleur TEXT DEFAULT 'en_attente' CHECK(statut_bailleur IN ('en_attente', 'valide', 'refuse')),
     preuve_paiement TEXT,
+    motif_refus TEXT,
+    date_decision DATETIME,
     date_paiement DATETIME,
     FOREIGN KEY (contract_id) REFERENCES contracts(id)
   )

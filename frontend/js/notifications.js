@@ -26,7 +26,7 @@ async function loadNotifications() {
     } else {
       updateTabBadge("rappels", data.rappels);
       updateTabBadge("signalements", data.incidents);
-      updateTabBadge("paiements", data.paiements);
+      updateTabBadge("paiements", Math.max(data.paiements || 0, data.paiements_refuses || 0));
     }
   } catch (err) {
     console.error("Erreur notifications:", err);

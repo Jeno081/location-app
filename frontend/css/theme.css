@@ -348,6 +348,15 @@ input[type="file"]::file-selector-button { border: 0; background: var(--white); 
 .reminder-confirmed { display: inline-flex; align-items: center; gap: 6px; color: var(--success); font-weight: 600; }
 .reminder-confirmed svg { width: 14px; height: 14px; }
 
+/* ---------- 8c. Décisions de paiement ---------- */
+.decision-note { display: flex; gap: 9px; padding: 10px 12px; border-radius: 12px; border: 1px solid; font-size: .74rem; }
+.decision-note svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.decision-note strong { display: block; font-weight: 700; }
+.decision-note p { margin-top: 2px; font-size: .74rem; line-height: 1.45; }
+.decision-note.danger { background: var(--danger-soft); border-color: #fecaca; color: #7f1d1d; }
+.retry-notice { display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; margin-bottom: 14px; border-radius: 12px; background: var(--info-soft); border: 1px solid #bfdbfe; color: #1d4ed8; font-size: .78rem; line-height: 1.45; }
+.retry-notice svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+
 .property-photos { display: block; position: relative; height: 165px; border-radius: 13px; overflow: hidden; background: var(--gray-100); }
 .property-photos img { display: block; width: 100%; height: 100%; object-fit: cover; border: 0; }
 .photo-count { position: absolute; right: 9px; bottom: 9px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 999px; background: rgba(15,23,42,.72); color: #fff; font-size: .65rem; font-weight: 700; backdrop-filter: blur(6px); }

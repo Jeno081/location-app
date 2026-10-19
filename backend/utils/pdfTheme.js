@@ -106,7 +106,9 @@ function drawHeader(doc, { title, reference, date, status }) {
       ? { bg: COLORS.successSoft, fg: COLORS.success }
       : status.tone === "warning"
         ? { bg: COLORS.warningSoft, fg: COLORS.warning }
-        : { bg: "#e2e8f0", fg: COLORS.slate };
+        : status.tone === "danger"
+          ? { bg: COLORS.dangerSoft, fg: COLORS.danger }
+          : { bg: "#e2e8f0", fg: COLORS.slate };
     doc.font("Helvetica-Bold").fontSize(6.6);
     const pillWidth = doc.widthOfString(labelText.toUpperCase()) + 18;
     const pillX = width - 50 - pillWidth;

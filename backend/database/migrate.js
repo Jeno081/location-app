@@ -65,6 +65,8 @@ function runMigrations() {
     ["users", "photo_profil", "TEXT"],
     ["payments", "statut_bailleur", "TEXT DEFAULT 'en_attente'"],
     ["payments", "preuve_paiement", "TEXT"],
+    ["payments", "motif_refus", "TEXT"],
+    ["payments", "date_decision", "DATETIME"],
     ["contracts", "clauses_personnalisees", "TEXT"],
     ["reminders", "date_lecture", "DATETIME"],
     ["reminders", "date_confirmation", "DATETIME"]
@@ -103,9 +105,12 @@ function runMigrations() {
     "email insensible a la casse",
     "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email_nocase ON users(email COLLATE NOCASE)"
   );
+  // Un seul paiement actif (en attente ou validé) par contrat et par mois :
+  // un paiement refusé peut être remplacé par une nouvelle déclaration.
+  safeExec("suppression ancien index paiement", "DROP INDEX IF EXISTS uq_payments_contract_mois");
   safeExec(
-    "un paiement par contrat et par mois",
-    "CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_contract_mois ON payments(contract_id, mois)"
+    "un paiement actif par contrat et par mois",
+    "CREATE UNIQUE INDEX IF NOT EXISTS uq_payments_contract_mois_actif ON payments(contract_id, mois) WHERE statut_bailleur <> 'refuse'"
   );
 
   // 5. Normaliser les anciens libellés de mois (« Octobre 2026 » -> « 2026-10 »).

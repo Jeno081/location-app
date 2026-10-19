@@ -425,7 +425,22 @@ function renderPayments(payments) {
         <button class="btn-ghost btn-sm danger-text" onclick="validerPaiement(${p.id}, 'refuse')"><i data-lucide="x"></i> Refuser</button>`;
     }
 
-    return `<article class="property-card card">
+    const decisionDate = p.date_decision ? ` le ${formatDate(p.date_decision)}` : "";
+    const note = p.statut_bailleur === "refuse"
+      ? `<div class="decision-note danger">
+           <i data-lucide="x-circle"></i>
+           <div>
+             <strong>Refusé${decisionDate}</strong>
+             <p>${escapeHtml(p.motif_refus || "Aucun motif précisé.")}</p>
+           </div>
+         </div>`
+      : "";
+
+    const documentButton = p.statut_bailleur === "refuse"
+      ? `<button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Reçu de refus</button>`
+      : `<button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> ${p.statut_bailleur === "valide" ? "Quittance" : "Reçu provisoire"}</button>`;
+
+    return `<article class="property-card card ${p.statut_bailleur === "refuse" ? "card-alert" : ""}">
       <div class="card-top">
         <span class="badge badge-${tone}">${badge}</span>
         <span class="card-id">${escapeHtml(formatMonth(p.mois_label || p.mois))}</span>
@@ -437,10 +452,11 @@ function renderPayments(payments) {
         <div><span>Méthode</span><strong>${escapeHtml((p.methode || "—").replace("_", " "))}</strong></div>
         <div><span>Déclaré le</span><strong>${formatDate(p.date_paiement)}</strong></div>
       </div>
+      ${note}
       <div class="card-actions">
         ${p.preuve_paiement ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/payments/${p.id}/preuve', 'Preuve de paiement')"><i data-lucide="eye"></i> Voir la preuve</button>` : ""}
         ${actions}
-        <button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button>
+        ${documentButton}
       </div>
     </article>`;
   }).join("");
@@ -450,19 +466,28 @@ function renderPayments(payments) {
 function validerPaiement(id, statut) {
   document.getElementById("validatePaymentId").value = id;
   document.getElementById("validatePaymentAction").value = statut;
-  
+
+  const motifGroup = document.getElementById("validatePaymentMotifGroup");
+  const motifInput = document.getElementById("validatePaymentMotif");
+  motifInput.value = "";
+
   if (statut === "valide") {
     document.getElementById("validatePaymentTitle").textContent = "Valider le paiement";
     document.getElementById("validatePaymentText").textContent = "Confirmez-vous avoir bien reçu ce paiement sur votre compte ?";
     document.getElementById("validatePaymentBtn").style.background = "var(--success)";
     document.getElementById("validatePaymentBtn").textContent = "Oui, valider";
+    motifGroup.style.display = "none";
+    motifInput.required = false;
   } else {
     document.getElementById("validatePaymentTitle").textContent = "Refuser le paiement";
-    document.getElementById("validatePaymentText").textContent = "Êtes-vous sûr de vouloir refuser cette preuve de paiement ? Le locataire sera notifié.";
+    document.getElementById("validatePaymentText").textContent = "Indiquez au locataire pourquoi ce paiement est refusé : il pourra corriger et déclarer un nouveau paiement pour le même mois.";
     document.getElementById("validatePaymentBtn").style.background = "var(--danger)";
     document.getElementById("validatePaymentBtn").textContent = "Oui, refuser";
+    motifGroup.style.display = "";
+    motifInput.required = true;
+    setTimeout(() => motifInput.focus(), 80);
   }
-  
+
   document.getElementById("validatePaymentModal").style.display = "flex";
 }
 
@@ -473,16 +498,28 @@ function closeValidatePaymentModal() {
 async function confirmValidatePayment() {
   const id = document.getElementById("validatePaymentId").value;
   const statut = document.getElementById("validatePaymentAction").value;
+  const motif = document.getElementById("validatePaymentMotif").value.trim();
+
+  if (statut === "refuse" && motif.length < 5) {
+    showToast("Merci d'indiquer un motif de refus (5 caractères minimum).", "error");
+    document.getElementById("validatePaymentMotif").focus();
+    return;
+  }
 
   try {
     const r = await fetch(API_URL + "/payments/" + id + "/valider", {
       method: "PUT",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-      body: JSON.stringify({ statut_bailleur: statut })
+      body: JSON.stringify({ statut_bailleur: statut, motif_refus: motif })
     });
-    
+
     if (r.ok) {
-      showToast(statut === "valide" ? "Paiement validé !" : "Paiement refusé.", "success");
+      showToast(
+        statut === "valide"
+          ? "Paiement validé."
+          : "Paiement refusé — le locataire peut corriger et repayer.",
+        "success"
+      );
       closeValidatePaymentModal();
       loadPayments();
       loadDashboard();

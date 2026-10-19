@@ -35,7 +35,19 @@ exports.getNotificationsLocataire = (req, res) => {
     if (!payeStmt.get(c.id, moisCle)) paiementsEnAttente++;
   }
 
-  res.json({ rappels, incidents, paiements: paiementsEnAttente });
+  // Paiements refusés qui n'ont pas encore été remplacés par une nouvelle déclaration.
+  const paiementsRefuses = db.prepare(`
+    SELECT COUNT(*) AS nb FROM payments pay
+    JOIN contracts c ON pay.contract_id = c.id
+    WHERE c.locataire_id = ? AND pay.statut_bailleur = 'refuse'
+      AND NOT EXISTS (
+        SELECT 1 FROM payments p2
+        WHERE p2.contract_id = pay.contract_id AND p2.mois = pay.mois
+          AND p2.statut_bailleur <> 'refuse'
+      )
+  `).get(locataire_id).nb;
+
+  res.json({ rappels, incidents, paiements: paiementsEnAttente, paiements_refuses: paiementsRefuses });
 };
 
 exports.getNotificationsBailleur = (req, res) => {

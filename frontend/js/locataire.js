@@ -201,10 +201,39 @@ function renderPayments(payments) {
     if (typeof lucide !== "undefined") lucide.createIcons();
     return;
   }
+  const activeKeys = new Set(
+    payments
+      .filter(p => p.statut_bailleur !== "refuse")
+      .map(p => `${p.contract_id}|${p.mois}`)
+  );
+
   container.innerHTML = payments.map(p => {
-    const tone = p.statut_bailleur === "valide" ? "success" : (p.statut_bailleur === "refuse" ? "danger" : "warning");
-    const label = p.statut_bailleur === "valide" ? "Validé" : (p.statut_bailleur === "refuse" ? "Refusé" : "En attente");
-    return `<article class="property-card card">
+    const statut = p.statut_bailleur;
+    const tone = statut === "valide" ? "success" : (statut === "refuse" ? "danger" : "warning");
+    const label = statut === "valide" ? "Validé" : (statut === "refuse" ? "Refusé" : "En attente");
+    const remplace = statut === "refuse" && activeKeys.has(`${p.contract_id}|${p.mois}`);
+
+    const decisionDate = p.date_decision ? ` le ${formatDate(p.date_decision)}` : "";
+    const note = statut === "refuse"
+      ? `<div class="decision-note danger">
+           <i data-lucide="x-circle"></i>
+           <div>
+             <strong>Paiement refusé${decisionDate}</strong>
+             <p>${escapeHtml(p.motif_refus || "Aucun motif précisé.")}</p>
+           </div>
+         </div>
+         ${remplace ? '<p class="card-note">Ce mois a depuis été régularisé par un nouveau paiement.</p>' : ""}`
+      : statut === "en_attente"
+        ? '<p class="card-note">En attente de validation par votre bailleur.</p>'
+        : "";
+
+    const actions = statut === "refuse" && !remplace
+      ? `<button class="btn-primary btn-sm" onclick="retryPayment(${p.contract_id}, ${Number(p.montant) || 0}, '${escapeHtml(p.mois)}')"><i data-lucide="refresh-cw"></i> Corriger et repayer</button>`
+      : statut === "valide"
+        ? `<button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button>`
+        : "";
+
+    return `<article class="property-card card ${statut === "refuse" ? "card-alert" : ""}">
       <div class="card-top">
         <span class="badge badge-${tone}">${label}</span>
         <span class="card-id">${escapeHtml(formatMonth(p.mois_label || p.mois))}</span>
@@ -216,8 +245,10 @@ function renderPayments(payments) {
         <div><span>Méthode</span><strong>${escapeHtml((p.methode || "—").replace("_", " "))}</strong></div>
         <div><span>Déclaré le</span><strong>${formatDate(p.date_paiement)}</strong></div>
       </div>
+      ${note}
       <div class="card-actions">
-        <button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button>
+        ${p.preuve_paiement ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/payments/${p.id}/preuve', 'Preuve de paiement')"><i data-lucide="eye"></i> Voir la preuve</button>` : ""}
+        ${actions}
       </div>
     </article>`;
   }).join("");
@@ -252,7 +283,7 @@ function renderIncidents(incidents) {
 }
 
 // ACTIONS
-function openPaymentModal(contractId, montant) {
+function openPaymentModal(contractId, montant, mois) {
   if (globalData.locations.length === 0) {
     showToast("Aucun logement actif pour déclarer un paiement", "error");
     return;
@@ -264,12 +295,31 @@ function openPaymentModal(contractId, montant) {
   if (contractId) select.value = String(contractId);
   if (montant !== undefined && montant !== null) document.getElementById("paymentMontant").value = montant;
 
-  const mois = document.getElementById("paymentMois");
-  if (!mois.value) {
+  const moisInput = document.getElementById("paymentMois");
+  if (mois) {
+    moisInput.value = mois;
+  } else if (!moisInput.value) {
     const now = new Date();
-    mois.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    moisInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   }
+
+  const notice = document.getElementById("paymentRetryNotice");
+  if (notice) {
+    if (mois) {
+      notice.innerHTML = `<i data-lucide="refresh-cw"></i><span>Nouveau paiement pour <strong>${formatMonth(mois)}</strong>. L'ancien paiement refusé reste conservé dans votre historique.</span>`;
+      notice.style.display = "flex";
+      if (typeof lucide !== "undefined") lucide.createIcons();
+    } else {
+      notice.style.display = "none";
+      notice.innerHTML = "";
+    }
+  }
+
   document.getElementById("paymentModal").style.display = "flex";
+}
+
+function retryPayment(contractId, montant, mois) {
+  openPaymentModal(contractId, montant, mois);
 }
 function closePaymentModal() { document.getElementById("paymentModal").style.display = "none"; }
 
@@ -300,6 +350,8 @@ document.getElementById("paymentForm").addEventListener("submit", async (e) => {
     if (response.ok) {
       showToast("Paiement déclaré ! En attente de validation.", "success");
       document.getElementById("paymentForm").reset();
+      const notice = document.getElementById("paymentRetryNotice");
+      if (notice) { notice.style.display = "none"; notice.innerHTML = ""; }
       closePaymentModal();
       loadPayments();
       if (window.loadNotifications) window.loadNotifications();

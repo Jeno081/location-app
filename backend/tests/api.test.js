@@ -213,6 +213,89 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.strictEqual(r.body.stats.loyers_payes, 1);
   assert.strictEqual(Number(r.body.stats.montant_attendu), 650);
 
+  // Refus motivé d'un paiement, puis nouveau paiement pour le même mois.
+  const paymentForm = (mois) => {
+    const form = new FormData();
+    form.append("contract_id", String(contractId));
+    form.append("mois", mois);
+    form.append("montant", "650");
+    form.append("methode", "mobile_money");
+    form.append("preuve", new Blob(["preuve"], { type: "image/png" }), "preuve.png");
+    return form;
+  };
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: paymentForm("2026-11")
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const refusedPaymentId = r.body.paymentId;
+
+  // Refus sans motif : refusé par le serveur.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/${refusedPaymentId}/valider`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut_bailleur: "refuse" })
+  }));
+  assert.strictEqual(r.status, 400);
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/${refusedPaymentId}/valider`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut_bailleur: "refuse", motif_refus: "La preuve ne correspond pas au montant reçu." })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.motif_refus, "La preuve ne correspond pas au montant reçu.");
+
+  // Le locataire voit le motif du refus.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/mes-paiements`, { headers: auth(tenantToken) }));
+  let refuse = r.body.payments.find((p) => p.id === refusedPaymentId);
+  assert.strictEqual(refuse.statut_bailleur, "refuse");
+  assert.match(refuse.motif_refus, /preuve/);
+  assert.ok(refuse.date_decision);
+
+  r = await asJson(await fetch(`${baseUrl}/api/notifications/locataire`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.paiements_refuses, 1);
+
+  // Un nouveau paiement pour le même mois est désormais autorisé.
+  r = await asJson(await fetch(`${baseUrl}/api/payments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: paymentForm("2026-11")
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const retryPaymentId = r.body.paymentId;
+  assert.notStrictEqual(retryPaymentId, refusedPaymentId);
+
+  // Un deuxième paiement en attente pour le même mois reste refusé.
+  r = await asJson(await fetch(`${baseUrl}/api/payments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: paymentForm("2026-11")
+  }));
+  assert.strictEqual(r.status, 409);
+
+  // Le bailleur valide le nouveau paiement.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/${retryPaymentId}/valider`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut_bailleur: "valide" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+
+  // Un paiement validé ne peut plus être modifié.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/${retryPaymentId}/valider`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut_bailleur: "refuse", motif_refus: "Test de garde-fou." })
+  }));
+  assert.strictEqual(r.status, 409);
+
+  // Le refus n'est plus signalé une fois le mois remplacé par un paiement valide.
+  r = await asJson(await fetch(`${baseUrl}/api/notifications/locataire`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.paiements_refuses, 0);
+
   // Rappel de loyer : envoi par le bailleur, réception et accusé du locataire.
   r = await asJson(await fetch(`${baseUrl}/api/payments/rappel`, {
     method: "POST",

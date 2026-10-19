@@ -1,6 +1,6 @@
 # Location App
 
-Application de gestion locative pour un bailleur unique et ses locataires : biens, contrats, signatures, loyers, quittances, relances avec accusé de réception, documents, signalements et calendrier.
+Application de gestion locative pour un bailleur unique et ses locataires : biens, contrats, signatures, loyers, quittances, refus motivés et reprise de paiement, relances avec accusé de réception, documents, signalements et calendrier.
 
 ## Stack
 
@@ -100,4 +100,4 @@ Les anciens libellés de mois (`Octobre 2026`) sont normalisés en `AAAA-MM` par
 npm test
 ```
 
-Les tests utilisent une base SQLite temporaire et couvrent : inscription/connexion, contrat, signature, PDF, paiement avec preuve, validation, protections d'accès, suppression du compte locataire et garde-fous sur la suppression d'un bien.
+Les tests utilisent une base SQLite temporaire et couvrent : inscription/connexion, contrat, signature, PDF, paiement avec preuve, validation, refus motivé et nouvelle déclaration pour le même mois, relance avec accusé de réception, protections d'accès, suppression du compte locataire et garde-fous sur la suppression d'un bien.

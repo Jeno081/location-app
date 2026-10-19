@@ -173,6 +173,7 @@
     <div class="modal-content">
       <span class="modal-close" onclick="closePaymentModal()" aria-label="Fermer">&times;</span>
       <h2>Déclarer un paiement</h2>
+      <div id="paymentRetryNotice" class="retry-notice" style="display:none;"></div>
       <form id="paymentForm">
         <div class="form-group">
           <label for="paymentContract">Contrat</label>
@@ -249,9 +250,9 @@
   <script src="js/ui.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
-  <script src="js/notifications.js"></script>
+  <script src="js/notifications.js?v=6"></script>
   <script src="js/navbar.js"></script>
-  <script src="js/locataire.js?v=4"></script>
+  <script src="js/locataire.js?v=6"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>
