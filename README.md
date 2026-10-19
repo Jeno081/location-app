@@ -30,6 +30,12 @@ npm start
 
 Le premier écran permet de créer le **compte bailleur unique**. Les comptes locataires sont ensuite créés par le bailleur lors de la création d'un contrat (mot de passe temporaire à changer à la première connexion).
 
+### Windows — lancement en un clic
+
+Double-cliquez sur **`start.cmd`** à la racine du projet : le serveur démarre, la base est migrée automatiquement et le navigateur s'ouvre sur http://localhost:3000. Laissez la fenêtre ouverte ; `Ctrl+C` arrête le serveur.
+
+> Si PowerShell refuse `npm` avec « running scripts is disabled on this system », la stratégie d'exécution Windows bloque `npm.ps1`. Utilisez `npm.cmd` (par exemple `npm.cmd start`, `npm.cmd test`) ou le lanceur `start.cmd`, qui n'est pas concerné.
+
 ## Scripts
 
 | Commande | Description |
