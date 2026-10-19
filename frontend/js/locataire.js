@@ -26,6 +26,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     const content = document.getElementById("tab-" + cible);
     if (content) content.classList.add("active");
     setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
+    if (cible === "rappels") loadRappels();
     if (window.innerWidth < 1024) closeSidebar();
   });
 });
@@ -456,26 +457,43 @@ async function loadRappels() {
       if (typeof lucide !== "undefined") lucide.createIcons();
       return;
     }
-    container.innerHTML = data.rappels.map(r => `
-      <article class="property-card card ${r.statut === "envoye" ? "card-alert" : ""}">
+    container.innerHTML = data.rappels.map(r => {
+      const confirme = !!r.confirme;
+      const lu = !!r.lu || r.statut === "lu";
+      const badge = confirme ? "Réception confirmée" : (lu ? "Lu" : "Nouveau");
+      const tone = confirme ? "success" : (lu ? "neutral" : "danger");
+      return `
+      <article class="property-card card ${!confirme ? "card-alert" : ""}">
         <div class="card-top">
-          <span class="badge badge-${r.statut === "lu" ? "neutral" : "danger"}">${r.statut === "lu" ? "Lu" : "Nouveau"}</span>
+          <span class="badge badge-${tone}">${badge}</span>
           <span class="card-id">${formatDate(r.date_envoi)}</span>
         </div>
         <h3 class="card-title">${escapeHtml(r.property_titre)}</h3>
         <p class="card-desc">${escapeHtml(r.message)}</p>
-        ${r.statut === "envoye" ? `<div class="card-actions"><button class="btn-secondary btn-sm" onclick="marquerRappelLu(${r.id})"><i data-lucide="check"></i> Marquer comme lu</button></div>` : ""}
-      </article>
-    `).join("");
+        ${confirme
+          ? `<p class="card-note reminder-confirmed"><i data-lucide="check-circle"></i> Réception confirmée le ${formatDate(r.date_confirmation)}</p>`
+          : `<div class="card-actions"><button class="btn-primary btn-sm" onclick="confirmerRappel(${r.id})"><i data-lucide="check-check"></i> Confirmer la réception</button></div>`}
+      </article>`;
+    }).join("");
     if (typeof lucide !== "undefined") lucide.createIcons();
   } catch (err) { console.error(err); }
 }
 
-async function marquerRappelLu(id) {
+async function confirmerRappel(id) {
   try {
-    const r = await fetch(API_URL + "/payments/rappels/" + id + "/lu", { method: "PUT", headers: { "Authorization": "Bearer " + token } });
-    if (r.ok) { showToast("Rappel marqué comme lu", "success"); loadRappels(); if (window.loadNotifications) window.loadNotifications(); }
-  } catch (err) { console.error(err); }
+    const r = await fetch(API_URL + "/payments/rappels/" + id + "/confirmer", {
+      method: "PUT",
+      headers: { "Authorization": "Bearer " + token }
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      showToast(data.message || "Impossible de confirmer la réception", "error");
+      return;
+    }
+    showToast("Réception confirmée", "success");
+    loadRappels();
+    if (window.loadNotifications) window.loadNotifications();
+  } catch (err) { showToast("Erreur", "error"); }
 }
 
 async function loadHistory() {

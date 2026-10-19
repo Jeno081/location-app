@@ -213,6 +213,48 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.strictEqual(r.body.stats.loyers_payes, 1);
   assert.strictEqual(Number(r.body.stats.montant_attendu), 650);
 
+  // Rappel de loyer : envoi par le bailleur, réception et accusé du locataire.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/rappel`, {
+    method: "POST",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ contract_id: contractId, message: "Merci de régulariser votre loyer." })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  assert.strictEqual(r.body.rappel.confirme, false);
+  const rappelId = r.body.rappel.id;
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/tableau-de-bord`, { headers: auth(bailleurToken) }));
+  assert.strictEqual(r.body.dashboard[0].dernier_rappel.id, rappelId);
+  assert.strictEqual(r.body.dashboard[0].dernier_rappel.confirme, false);
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/mes-rappels`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.rappels.length, 1);
+  assert.strictEqual(r.body.rappels[0].confirme, false);
+
+  // Le locataire confirme la réception.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/rappels/${rappelId}/confirmer`, {
+    method: "PUT",
+    headers: auth(tenantToken)
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.ok(r.body.date_confirmation);
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/mes-rappels`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.rappels[0].confirme, true);
+
+  // Le bailleur voit la confirmation sur son tableau de bord.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/tableau-de-bord`, { headers: auth(bailleurToken) }));
+  assert.strictEqual(r.body.dashboard[0].dernier_rappel.confirme, true);
+  assert.ok(r.body.dashboard[0].dernier_rappel.date_confirmation);
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/rappels`, { headers: auth(bailleurToken) }));
+  assert.strictEqual(r.body.rappels.length, 1);
+  assert.strictEqual(r.body.rappels[0].confirme, true);
+
+  // Plus de badge « rappel » côté locataire une fois la réception confirmée.
+  r = await asJson(await fetch(`${baseUrl}/api/notifications/locataire`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.rappels, 0);
+
   // Terminaison : le compte locataire et toutes ses données sont supprimés.
   r = await asJson(await fetch(`${baseUrl}/api/contracts/${contractId}/terminer`, {
     method: "PUT",

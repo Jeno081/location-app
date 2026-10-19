@@ -230,7 +230,30 @@ exports.getDashboard = (req, res) => {
     };
   });
 
-  res.json({ dashboard, mois_actuel: moisLabel(moisCle), mois_cle: moisCle });
+  const rappels = db.prepare(`
+    SELECT r.id, r.contract_id, r.message, r.statut, r.date_envoi, r.date_lecture, r.date_confirmation
+    FROM reminders r
+    JOIN contracts c ON r.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    WHERE p.bailleur_id = ?
+    ORDER BY r.date_envoi DESC, r.id DESC
+  `).all(bailleur_id);
+
+  const dernierRappel = new Map();
+  for (const rappel of rappels) {
+    if (!dernierRappel.has(rappel.contract_id)) {
+      dernierRappel.set(rappel.contract_id, { ...rappel, confirme: !!rappel.date_confirmation });
+    }
+  }
+
+  res.json({
+    dashboard: dashboard.map((d) => ({
+      ...d,
+      dernier_rappel: dernierRappel.get(d.contract_id) || null
+    })),
+    mois_actuel: moisLabel(moisCle),
+    mois_cle: moisCle
+  });
 };
 
 exports.envoyerRappel = (req, res) => {
@@ -240,26 +263,54 @@ exports.envoyerRappel = (req, res) => {
   if (message.length > 500) return res.status(400).json({ message: "Message trop long (500 caractères max)." });
 
   const contract = db.prepare(`
-    SELECT c.id FROM contracts c
+    SELECT c.id, u.nom AS locataire_nom, p.titre AS property_titre
+    FROM contracts c
     JOIN properties p ON c.property_id = p.id
-    WHERE c.id = ? AND p.bailleur_id = ?
+    JOIN users u ON c.locataire_id = u.id
+    WHERE c.id = ? AND p.bailleur_id = ? AND c.statut = 'actif'
   `).get(contract_id, req.user.id);
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
 
-  db.prepare("INSERT INTO reminders (contract_id, message) VALUES (?, ?)").run(contract_id, message);
-  res.status(201).json({ message: "Rappel envoyé" });
+  const result = db.prepare("INSERT INTO reminders (contract_id, message) VALUES (?, ?)").run(contract_id, message);
+  const rappel = db.prepare("SELECT * FROM reminders WHERE id = ?").get(result.lastInsertRowid);
+
+  res.status(201).json({
+    message: "Rappel envoyé",
+    rappel: { ...rappel, confirme: false, locataire_nom: contract.locataire_nom, property_titre: contract.property_titre }
+  });
+};
+
+exports.getRappelsBailleur = (req, res) => {
+  const rappels = db.prepare(`
+    SELECT r.*, u.nom AS locataire_nom, u.email AS locataire_email, p.titre AS property_titre
+    FROM reminders r
+    JOIN contracts c ON r.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    JOIN users u ON c.locataire_id = u.id
+    WHERE p.bailleur_id = ?
+    ORDER BY r.date_envoi DESC, r.id DESC
+  `).all(req.user.id);
+
+  res.json({ rappels: rappels.map((r) => ({ ...r, confirme: !!r.date_confirmation })) });
 };
 
 exports.getMesRappels = (req, res) => {
   const rappels = db.prepare(`
-    SELECT r.*, p.titre AS property_titre
+    SELECT r.*, p.titre AS property_titre, b.nom AS bailleur_nom
     FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
+    JOIN users b ON p.bailleur_id = b.id
     WHERE c.locataire_id = ?
-    ORDER BY r.date_envoi DESC
+    ORDER BY r.date_envoi DESC, r.id DESC
   `).all(req.user.id);
-  res.json({ rappels });
+  res.json({
+    rappels: rappels.map((r) => ({
+      ...r,
+      confirme: !!r.date_confirmation,
+      lu: r.statut === "lu" || !!r.date_lecture
+    }))
+  });
 };
 
 exports.marquerRappelLu = (req, res) => {
@@ -270,8 +321,38 @@ exports.marquerRappelLu = (req, res) => {
   `).get(req.params.id, req.user.id);
 
   if (!rappel) return res.status(404).json({ message: "Rappel introuvable" });
-  db.prepare("UPDATE reminders SET statut = 'lu' WHERE id = ?").run(req.params.id);
+  if (rappel.statut !== "lu") {
+    db.prepare("UPDATE reminders SET statut = 'lu', date_lecture = COALESCE(date_lecture, ?) WHERE id = ?")
+      .run(new Date().toISOString(), req.params.id);
+  }
   res.json({ message: "Rappel marqué comme lu" });
+};
+
+// Accusé de réception : le locataire confirme explicitement avoir reçu le rappel.
+exports.confirmerRappel = (req, res) => {
+  const rappel = db.prepare(`
+    SELECT r.* FROM reminders r
+    JOIN contracts c ON r.contract_id = c.id
+    WHERE r.id = ? AND c.locataire_id = ?
+  `).get(req.params.id, req.user.id);
+
+  if (!rappel) return res.status(404).json({ message: "Rappel introuvable" });
+
+  if (rappel.date_confirmation) {
+    return res.json({
+      message: "Réception déjà confirmée",
+      date_confirmation: rappel.date_confirmation
+    });
+  }
+
+  const now = new Date().toISOString();
+  db.prepare(`
+    UPDATE reminders
+    SET statut = 'lu', date_lecture = COALESCE(date_lecture, ?), date_confirmation = ?
+    WHERE id = ?
+  `).run(now, now, req.params.id);
+
+  res.json({ message: "Réception confirmée", date_confirmation: now });
 };
 
 exports.exportCSV = (req, res) => {

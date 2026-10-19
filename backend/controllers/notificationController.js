@@ -14,7 +14,7 @@ exports.getNotificationsLocataire = (req, res) => {
   const rappels = db.prepare(`
     SELECT COUNT(*) AS nb FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
-    WHERE c.locataire_id = ? AND r.statut = 'envoye'
+    WHERE c.locataire_id = ? AND r.date_confirmation IS NULL
   `).get(locataire_id).nb;
 
   const incidents = db.prepare(`

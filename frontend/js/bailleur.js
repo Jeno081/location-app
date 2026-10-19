@@ -15,7 +15,8 @@ let globalData = {
   tenants: [],
   contracts: [],
   payments: [],
-  incidents: []
+  incidents: [],
+  dashboard: []
 };
 
 let currentFilter = "tous";
@@ -35,6 +36,7 @@ document.querySelectorAll(".tab").forEach(btn => {
     if (overview) overview.style.display = cible === "suivi" ? "" : "none";
 
     setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
+    if (cible === "suivi") loadDashboard();
     if (window.innerWidth < 1024) closeSidebar();
   });
 });
@@ -198,6 +200,7 @@ async function loadDashboard() {
     });
     const data = await response.json();
     if (!response.ok) return;
+    globalData.dashboard = data.dashboard;
 
     const enRetard = data.dashboard.filter(d => d.statut_paiement === "retard" || d.statut_paiement === "retard_grave").length;
     document.getElementById("statRetards").textContent = enRetard;
@@ -233,8 +236,16 @@ async function loadDashboard() {
           <div><span>Mois en retard</span><strong>${d.mois_en_retard}</strong></div>
         </div>
         <p class="card-note">${message}</p>
+        ${d.dernier_rappel ? `
+          <div class="reminder-status ${d.dernier_rappel.confirme ? "confirmed" : "pending"}">
+            <i data-lucide="${d.dernier_rappel.confirme ? "check-circle" : "clock"}"></i>
+            <div>
+              <strong>${d.dernier_rappel.confirme ? "Rappel confirmé par le locataire" : "Rappel envoyé — en attente de confirmation"}</strong>
+              <small>Envoyé le ${formatDate(d.dernier_rappel.date_envoi)}${d.dernier_rappel.confirme ? ` · Confirmé le ${formatDate(d.dernier_rappel.date_confirmation)}` : ""}</small>
+            </div>
+          </div>` : ""}
         <div class="card-actions">
-          ${!d.paye_ce_mois ? `<button class="btn-secondary btn-sm" onclick="openRappelModal(${d.contract_id})"><i data-lucide="bell"></i> Envoyer un rappel</button>` : ""}
+          ${(!d.paye_ce_mois || d.mois_en_retard > 0) ? `<button class="btn-secondary btn-sm" onclick="openRappelModal(${d.contract_id})"><i data-lucide="bell"></i> ${d.dernier_rappel ? "Relancer" : "Envoyer un rappel"}</button>` : ""}
           <button class="btn-ghost btn-sm" onclick="document.querySelector('[data-tab=paiements]').click()">Voir les paiements <i data-lucide="arrow-right"></i></button>
         </div>
       </article>`;
@@ -875,10 +886,15 @@ async function updateIncidentStatus(id, statut) {
 }
 
 function openRappelModal(contractId) {
+  const ligne = (globalData.dashboard || []).find(d => Number(d.contract_id) === Number(contractId));
   const contrat = globalData.contracts.find(c => Number(c.id) === Number(contractId));
-  const nom = contrat ? contrat.locataire_nom : "locataire";
+  const nom = ligne ? ligne.locataire_nom : (contrat ? contrat.locataire_nom : "locataire");
+  const bien = ligne && ligne.property_titre ? ` de votre logement ${ligne.property_titre}` : "";
+  const retard = ligne && ligne.mois_en_retard > 0
+    ? ` (${ligne.mois_en_retard} mois en retard)`
+    : "";
   document.getElementById("rappelContractId").value = contractId;
-  document.getElementById("rappelMessage").value = `Bonjour ${nom}, nous vous rappelons que votre loyer est en attente. Merci de régulariser votre situation.`;
+  document.getElementById("rappelMessage").value = `Bonjour ${nom}, nous vous rappelons que le loyer${bien} est en attente${retard}. Merci de régulariser votre situation.`;
   document.getElementById("rappelModal").style.display = "flex";
 }
 function closeRappelModal() { document.getElementById("rappelModal").style.display = "none"; }

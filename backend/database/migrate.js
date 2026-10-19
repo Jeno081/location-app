@@ -65,7 +65,9 @@ function runMigrations() {
     ["users", "photo_profil", "TEXT"],
     ["payments", "statut_bailleur", "TEXT DEFAULT 'en_attente'"],
     ["payments", "preuve_paiement", "TEXT"],
-    ["contracts", "clauses_personnalisees", "TEXT"]
+    ["contracts", "clauses_personnalisees", "TEXT"],
+    ["reminders", "date_lecture", "DATETIME"],
+    ["reminders", "date_confirmation", "DATETIME"]
   ];
   for (const [table, column, definition] of colonnes) {
     if (addColumn(table, column, definition)) {

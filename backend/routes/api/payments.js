@@ -22,10 +22,12 @@ router.post(
 router.get("/mes-paiements", verifyToken, requireRole("locataire"), paymentController.getMyPayments);
 router.get("/mes-rappels", verifyToken, requireRole("locataire"), paymentController.getMesRappels);
 router.put("/rappels/:id/lu", verifyToken, requireRole("locataire"), paymentController.marquerRappelLu);
+router.put("/rappels/:id/confirmer", verifyToken, requireRole("locataire"), paymentController.confirmerRappel);
 
 // Bailleur
 router.get("/recus", verifyToken, requireRole("bailleur"), paymentController.getPaymentsForBailleur);
 router.get("/tableau-de-bord", verifyToken, requireRole("bailleur"), paymentController.getDashboard);
+router.get("/rappels", verifyToken, requireRole("bailleur"), paymentController.getRappelsBailleur);
 router.post("/rappel", verifyToken, requireRole("bailleur"), paymentController.envoyerRappel);
 router.get("/export-csv", verifyToken, requireRole("bailleur"), paymentController.exportCSV);
 router.put("/:id/valider", verifyToken, requireRole("bailleur"), paymentController.validerPaiement);

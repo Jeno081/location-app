@@ -108,6 +108,8 @@ db.exec(`
     message TEXT NOT NULL,
     statut TEXT DEFAULT 'envoye' CHECK(statut IN ('envoye', 'lu')),
     date_envoi DATETIME DEFAULT CURRENT_TIMESTAMP,
+    date_lecture DATETIME,
+    date_confirmation DATETIME,
     FOREIGN KEY (contract_id) REFERENCES contracts(id)
   )
 `);
