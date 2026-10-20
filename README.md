@@ -4,20 +4,21 @@ Application de gestion locative pour un bailleur unique et ses locataires : bien
 
 ## Stack
 
-- **Backend** : Node.js, Express 5, better-sqlite3, JWT, bcrypt, PDFKit, Multer
+- **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer
 - **Frontend** : HTML / CSS / JavaScript vanilla, Chart.js, Lucide
-- **Base** : SQLite (mode WAL, clés étrangères activées)
+- **Base** : MySQL 8 (Clever Cloud) — pool de connexions, clés étrangères et contraintes d'unicité
 
 ## Démarrage
 
+Prérequis : Node.js ≥ 20 et une base MySQL accessible (Clever Cloud, MySQL local, etc.).
+
 ```bash
 # 1. Dépendances
-npm install
 npm --prefix backend install
 
 # 2. Configuration
 cp .env.example .env
-# Éditez .env et définissez un JWT_SECRET long et aléatoire :
+# Renseignez JWT_SECRET et les variables DB_* (ou MYSQL_ADDON_* fournies par Clever Cloud)
 # node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 # 3. Initialisation / migrations de la base
@@ -29,6 +30,8 @@ npm start
 ```
 
 Le premier écran permet de créer le **compte bailleur unique**. Les comptes locataires sont ensuite créés par le bailleur lors de la création d'un contrat (mot de passe temporaire à changer à la première connexion).
+
+Le déploiement Render + Clever Cloud est décrit pas à pas dans [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Windows — lancement en un clic
 
@@ -43,7 +46,8 @@ Double-cliquez sur **`start.cmd`** à la racine du projet : le serveur démarre,
 | `npm start` | Démarre le serveur |
 | `npm run dev` | Démarre avec nodemon |
 | `npm test` | Lance les tests d'intégration API |
-| `npm run db:migrate` | Applique les migrations SQLite |
+| `npm run db:migrate` | Applique les migrations MySQL |
+| `npm run db:import-sqlite` | Importe une base SQLite locale vers MySQL |
 | `npm --prefix backend test` | Équivalent direct |
 
 ## Variables d'environnement
@@ -54,7 +58,13 @@ Double-cliquez sur **`start.cmd`** à la racine du projet : le serveur démarre,
 | `PORT` | `3000` | Port HTTP |
 | `JWT_SECRET` | secret de dev | **Obligatoire en production** (≥ 32 caractères) |
 | `JWT_EXPIRES_IN` | `7d` | Durée des sessions |
-| `DB_PATH` | `backend/database/location.sqlite` | Fichier SQLite |
+| `DB_HOST` / `MYSQL_ADDON_HOST` | `127.0.0.1` | Hôte MySQL |
+| `DB_PORT` / `MYSQL_ADDON_PORT` | `3306` | Port MySQL |
+| `DB_USER` / `MYSQL_ADDON_USER` | `root` | Utilisateur MySQL |
+| `DB_PASSWORD` / `MYSQL_ADDON_PASSWORD` | *(vide)* | Mot de passe MySQL |
+| `DB_NAME` / `MYSQL_ADDON_DB` | `location_app` | Base MySQL |
+| `DB_SSL` | `false` | Active TLS vers MySQL |
+| `DB_URI` | — | URL complète `mysql://…` (prioritaire) |
 | `UPLOAD_DIR` | `backend/uploads` | Dossier des fichiers |
 
 `.env` est ignoré par Git. Ne committez jamais de secret, de base ou de document personnel.
@@ -92,7 +102,7 @@ frontend/
 
 ## Notes de données
 
-Les anciens libellés de mois (`Octobre 2026`) sont normalisés en `AAAA-MM` par la migration. Les photos de profil historiques sont migrées vers `/uploads/avatars`. Les contrats et paiements restent liés au locataire ; la suppression d'un compte locataire supprime ses contrats et paiements dans une transaction (les fichiers associés sont nettoyés).
+Les anciens libellés de mois (`Octobre 2026`) sont normalisés en `AAAA-MM` par la migration. Les contrats et paiements restent liés au locataire ; la suppression d'un compte locataire supprime ses contrats et paiements dans une transaction (les fichiers associés sont nettoyés). Pour reprendre les données d'une ancienne base SQLite : `node scripts/import-sqlite.js backend/database/location.sqlite`.
 
 ## Tests
 
@@ -100,4 +110,6 @@ Les anciens libellés de mois (`Octobre 2026`) sont normalisés en `AAAA-MM` par
 npm test
 ```
 
-Les tests utilisent une base SQLite temporaire et couvrent : inscription/connexion, contrat, signature, PDF, paiement avec preuve, validation, refus motivé et nouvelle déclaration pour le même mois, relance avec accusé de réception, protections d'accès, suppression du compte locataire et garde-fous sur la suppression d'un bien.
+Les tests créent une base MySQL temporaire (préfixe `location_app_test_`) puis la suppriment. Ils utilisent les variables `TEST_DB_HOST`, `TEST_DB_PORT`, `TEST_DB_USER`, `TEST_DB_PASSWORD` (sinon `DB_*`). Avec une base locale : `TEST_DB_PORT=3306 TEST_DB_PASSWORD=... npm test`. À exécuter contre un MySQL local : l'utilisateur Clever Cloud n'a pas le droit de créer des bases.
+
+Ils couvrent : inscription/connexion, contrat, signature, PDF, paiement avec preuve, validation, refus motivé et nouvelle déclaration pour le même mois, relance avec accusé de réception, protections d'accès, suppression du compte locataire et garde-fous sur la suppression d'un bien.

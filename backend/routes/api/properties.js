@@ -56,7 +56,7 @@ router.post(
   verifyToken,
   requireRole("bailleur"),
   upload.array("photos", 5),
-  (req, res) => {
+  async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "Aucune photo envoyee" });
     }
@@ -64,7 +64,7 @@ router.post(
     const bailleur_id = req.user.id;
 
     const db = require("../../database/db");
-    const property = db.prepare("SELECT * FROM properties WHERE id = ?").get(propertyId);
+    const property = await db.get("SELECT * FROM properties WHERE id = ?", [propertyId]);
 
     if (!property) return res.status(404).json({ message: "Logement introuvable" });
     if (property.bailleur_id !== bailleur_id) return res.status(403).json({ message: "Non autorise" });
@@ -73,7 +73,7 @@ router.post(
     const existing = property.photos ? JSON.parse(property.photos) : [];
     const allPhotos = [...existing, ...newPhotos];
 
-    db.prepare("UPDATE properties SET photos = ? WHERE id = ?").run(JSON.stringify(allPhotos), propertyId);
+    await db.run("UPDATE properties SET photos = ? WHERE id = ?", [JSON.stringify(allPhotos), propertyId]);
 
     res.json({ message: "Photos ajoutees avec succes", photos: allPhotos });
   }

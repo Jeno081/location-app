@@ -38,10 +38,37 @@ if (!IS_PRODUCTION && !process.env.JWT_SECRET) {
   console.warn("[config] JWT_SECRET non défini : utilisation d'un secret de développement.");
 }
 
+// --- Base de données MySQL -------------------------------------------------
+// Compatible avec les variables fournies par l'add-on MySQL de Clever Cloud
+// (MYSQL_ADDON_*) et avec une configuration générique DB_* sur Render.
+function parseDatabaseUri(uri) {
+  const url = new URL(uri);
+  return {
+    host: url.hostname,
+    port: Number(url.port) || 3306,
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
+    name: url.pathname.replace(/^\//, "")
+  };
+}
+
+const databaseUri = process.env.DB_URI || process.env.MYSQL_ADDON_URI || process.env.DATABASE_URL || "";
+const fromUri = databaseUri ? parseDatabaseUri(databaseUri) : null;
+
+const DB_HOST = process.env.DB_HOST || process.env.MYSQL_ADDON_HOST || (fromUri && fromUri.host) || "127.0.0.1";
+const DB_PORT = Number(process.env.DB_PORT || process.env.MYSQL_ADDON_PORT || (fromUri && fromUri.port) || 3306);
+const DB_USER = process.env.DB_USER || process.env.MYSQL_ADDON_USER || (fromUri && fromUri.user) || "root";
+const DB_PASSWORD = process.env.DB_PASSWORD !== undefined
+  ? process.env.DB_PASSWORD
+  : process.env.MYSQL_ADDON_PASSWORD !== undefined
+    ? process.env.MYSQL_ADDON_PASSWORD
+    : (fromUri && fromUri.password) || "";
+const DB_NAME = process.env.DB_NAME || process.env.MYSQL_ADDON_DB || (fromUri && fromUri.name) || "location_app";
+const DB_SSL = String(process.env.DB_SSL || "").toLowerCase() === "true";
+const DB_SSL_CA = process.env.DB_SSL_CA || null;
+const DB_POOL_SIZE = Number(process.env.DB_POOL_SIZE) || 5;
+
 const PORT = Number(process.env.PORT) || 3000;
-const DB_PATH = process.env.DB_PATH
-  ? path.resolve(process.env.DB_PATH)
-  : path.join(__dirname, "database", "location.sqlite");
 const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, "uploads");
@@ -52,7 +79,14 @@ module.exports = {
   PORT,
   JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
-  DB_PATH,
+  DB_HOST,
+  DB_PORT,
+  DB_USER,
+  DB_PASSWORD,
+  DB_NAME,
+  DB_SSL,
+  DB_SSL_CA,
+  DB_POOL_SIZE,
   UPLOAD_DIR,
   DOCUMENT_DIR: path.join(UPLOAD_DIR, "documents"),
   AVATAR_DIR: path.join(UPLOAD_DIR, "avatars"),

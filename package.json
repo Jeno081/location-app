@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "description": "Location App — gestion locative pour bailleurs et locataires",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
     "test": "npm --prefix backend test",
-    "db:migrate": "npm --prefix backend run db:migrate"
-  },
-  "dependencies": {
-    "better-sqlite3": "^13.0.3"
+    "db:migrate": "npm --prefix backend run db:migrate",
+    "db:import-sqlite": "node scripts/import-sqlite.js"
   }
 }

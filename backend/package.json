@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "db:migrate": "node -e \"require('./database/migrate').runMigrations()\"",
+    "db:migrate": "node -e \"require('./database/migrate').runMigrations().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); })\"",
     "test": "node tests/api.test.js"
   },
   "keywords": [],
@@ -15,11 +15,11 @@
   "type": "commonjs",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^13.0.3",
     "express": "^5.2.1",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.4.0",
+    "mysql2": "^3.24.6",
     "pdfkit": "^0.20.2"
   },
   "devDependencies": {

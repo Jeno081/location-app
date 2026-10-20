@@ -3,12 +3,16 @@
 // ============================================
 
 const express = require("express");
+const fs = require("fs");
 const path = require("path");
 const config = require("./config");
-const { runMigrations } = require("./database/migrate");
+const db = require("./database/db");
 const { securityHeaders, createRateLimiter, apiNotFound, errorHandler } = require("./middleware/security");
 
-runMigrations();
+// Les fichiers envoyés sont stockés dans UPLOAD_DIR (disque persistant ou volume).
+fs.mkdirSync(config.UPLOAD_DIR, { recursive: true });
+fs.mkdirSync(config.DOCUMENT_DIR, { recursive: true });
+fs.mkdirSync(config.AVATAR_DIR, { recursive: true });
 
 const app = express();
 app.disable("x-powered-by");
@@ -34,10 +38,9 @@ app.use(express.static(config.FRONTEND_DIR, {
   }
 }));
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", async (req, res) => {
   try {
-    const db = require("./database/db");
-    db.prepare("SELECT 1").get();
+    await db.query("SELECT 1");
     res.json({ status: "ok", version: require("./package.json").version });
   } catch (err) {
     res.status(503).json({ status: "error" });

@@ -8,35 +8,38 @@ function currentMonthKey(d = new Date()) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-exports.getNotificationsLocataire = (req, res) => {
+exports.getNotificationsLocataire = async (req, res) => {
   const locataire_id = req.user.id;
 
-  const rappels = db.prepare(`
+  const rappels = await db.get(`
     SELECT COUNT(*) AS nb FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
     WHERE c.locataire_id = ? AND r.date_confirmation IS NULL
-  `).get(locataire_id).nb;
+  `, [locataire_id]);
 
-  const incidents = db.prepare(`
+  const incidents = await db.get(`
     SELECT COUNT(*) AS nb FROM incidents
     WHERE locataire_id = ? AND statut != 'resolu'
-  `).get(locataire_id).nb;
+  `, [locataire_id]);
 
   const moisCle = currentMonthKey();
-  const contratsActifs = db.prepare(`
-    SELECT id FROM contracts WHERE locataire_id = ? AND statut = 'actif'
-  `).all(locataire_id);
+  const contratsActifs = await db.all(`
+    SELECT c.id FROM contracts c WHERE c.locataire_id = ? AND c.statut = 'actif'
+  `, [locataire_id]);
 
   let paiementsEnAttente = 0;
-  const payeStmt = db.prepare(`
-    SELECT id FROM payments WHERE contract_id = ? AND mois = ? AND statut_bailleur = 'valide'
-  `);
-  for (const c of contratsActifs) {
-    if (!payeStmt.get(c.id, moisCle)) paiementsEnAttente++;
+  if (contratsActifs.length > 0) {
+    const payes = await db.all(`
+      SELECT contract_id FROM payments
+      WHERE mois = ? AND statut_bailleur = 'valide'
+        AND contract_id IN (${contratsActifs.map(() => "?").join(",")})
+    `, [moisCle, ...contratsActifs.map((c) => c.id)]);
+    const payesSet = new Set(payes.map((p) => p.contract_id));
+    paiementsEnAttente = contratsActifs.filter((c) => !payesSet.has(c.id)).length;
   }
 
   // Paiements refusés qui n'ont pas encore été remplacés par une nouvelle déclaration.
-  const paiementsRefuses = db.prepare(`
+  const refuses = await db.get(`
     SELECT COUNT(*) AS nb FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     WHERE c.locataire_id = ? AND pay.statut_bailleur = 'refuse'
@@ -45,53 +48,68 @@ exports.getNotificationsLocataire = (req, res) => {
         WHERE p2.contract_id = pay.contract_id AND p2.mois = pay.mois
           AND p2.statut_bailleur <> 'refuse'
       )
-  `).get(locataire_id).nb;
+  `, [locataire_id]);
 
-  res.json({ rappels, incidents, paiements: paiementsEnAttente, paiements_refuses: paiementsRefuses });
+  res.json({
+    rappels: Number(rappels.nb),
+    incidents: Number(incidents.nb),
+    paiements: paiementsEnAttente,
+    paiements_refuses: Number(refuses.nb)
+  });
 };
 
-exports.getNotificationsBailleur = (req, res) => {
+exports.getNotificationsBailleur = async (req, res) => {
   const bailleur_id = req.user.id;
 
-  const incidents = db.prepare(`
+  const incidents = await db.get(`
     SELECT COUNT(*) AS nb FROM incidents i
     JOIN properties p ON i.property_id = p.id
     WHERE p.bailleur_id = ? AND i.statut != 'resolu'
-  `).get(bailleur_id).nb;
+  `, [bailleur_id]);
 
-  const contrats = db.prepare(`
+  const contrats = await db.get(`
     SELECT COUNT(*) AS nb FROM contracts c
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ? AND c.statut = 'en_attente'
-  `).get(bailleur_id).nb;
+  `, [bailleur_id]);
 
-  const paiementsAttente = db.prepare(`
+  const paiementsAttente = await db.get(`
     SELECT COUNT(*) AS nb FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ? AND pay.statut_bailleur = 'en_attente'
-  `).get(bailleur_id).nb;
+  `, [bailleur_id]);
 
   const now = new Date();
-  const contratsActifs = db.prepare(`
+  const contratsActifs = await db.all(`
     SELECT c.id, c.date_debut FROM contracts c
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ? AND c.statut = 'actif'
-  `).all(bailleur_id);
+  `, [bailleur_id]);
 
-  const countPaid = db.prepare(`
-    SELECT COUNT(DISTINCT mois) AS nb FROM payments
-    WHERE contract_id = ? AND statut_bailleur = 'valide'
-  `);
+  const paiements = await db.all(`
+    SELECT pay.contract_id, COUNT(DISTINCT pay.mois) AS nb
+    FROM payments pay
+    JOIN contracts c ON pay.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    WHERE p.bailleur_id = ? AND pay.statut_bailleur = 'valide'
+    GROUP BY pay.contract_id
+  `, [bailleur_id]);
+  const payesParContrat = new Map(paiements.map((p) => [p.contract_id, Number(p.nb)]));
 
   let retards = 0;
   for (const c of contratsActifs) {
     const [annee, mois] = String(c.date_debut).slice(0, 10).split("-").map(Number);
     const debut = new Date(annee, (mois || 1) - 1, 1);
     const moisEcoules = Math.max(0, (now.getFullYear() - debut.getFullYear()) * 12 + (now.getMonth() - debut.getMonth()) + 1);
-    const payes = countPaid.get(c.id).nb;
+    const payes = payesParContrat.get(c.id) || 0;
     if (moisEcoules - payes >= 1) retards++;
   }
 
-  res.json({ incidents, contrats, paiements: paiementsAttente, retards });
+  res.json({
+    incidents: Number(incidents.nb),
+    contrats: Number(contrats.nb),
+    paiements: Number(paiementsAttente.nb),
+    retards
+  });
 };

@@ -120,12 +120,12 @@ function buildContractPDF(doc, contract) {
   doc.y = y + 102;
 }
 
-exports.downloadContractPDF = (req, res) => {
+exports.downloadContractPDF = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const role = req.user.role;
 
-  const contract = db.prepare(`
+  const contract = await db.get(`
     SELECT c.*, p.titre AS property_titre, p.adresse AS property_adresse, p.ville AS property_ville,
            p.charges AS property_charges, p.bailleur_id,
            b.nom AS bailleur_nom, b.email AS bailleur_email, b.telephone AS bailleur_tel,
@@ -135,7 +135,7 @@ exports.downloadContractPDF = (req, res) => {
     JOIN users b ON p.bailleur_id = b.id
     JOIN users l ON c.locataire_id = l.id
     WHERE c.id = ?
-  `).get(id);
+  `, [id]);
 
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
   if (role === "bailleur" && contract.bailleur_id !== userId) return res.status(403).json({ message: "Non autorisé" });

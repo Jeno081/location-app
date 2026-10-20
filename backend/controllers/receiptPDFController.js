@@ -177,12 +177,12 @@ function buildReceiptPDF(doc, payment) {
   );
 }
 
-exports.downloadReceiptPDF = (req, res) => {
+exports.downloadReceiptPDF = async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const role = req.user.role;
 
-  const payment = db.prepare(`
+  const payment = await db.get(`
     SELECT pay.*, c.locataire_id, c.montant_loyer, c.date_debut,
            p.titre AS property_titre, p.adresse AS property_adresse, p.ville AS property_ville,
            p.charges AS property_charges, p.bailleur_id,
@@ -194,7 +194,7 @@ exports.downloadReceiptPDF = (req, res) => {
     JOIN users b ON p.bailleur_id = b.id
     JOIN users l ON c.locataire_id = l.id
     WHERE pay.id = ?
-  `).get(id);
+  `, [id]);
 
   if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
 

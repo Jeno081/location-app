@@ -32,7 +32,7 @@ function csvSafe(value) {
   return /^[=+\-@]/.test(text) ? `'${text}` : text;
 }
 
-exports.createPayment = (req, res) => {
+exports.createPayment = async (req, res) => {
   const { contract_id, montant, methode } = req.body;
   const locataire_id = req.user.id;
   const mois = normaliserMois(req.body.mois);
@@ -47,7 +47,7 @@ exports.createPayment = (req, res) => {
     return res.status(400).json({ message: "Le montant doit être positif." });
   }
 
-  const contract = db.prepare("SELECT * FROM contracts WHERE id = ?").get(contract_id);
+  const contract = await db.get("SELECT * FROM contracts WHERE id = ?", [contract_id]);
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
   if (contract.locataire_id !== locataire_id) return res.status(403).json({ message: "Non autorisé" });
   if (contract.statut !== "actif") {
@@ -55,10 +55,11 @@ exports.createPayment = (req, res) => {
   }
 
   // Un paiement refusé n'empêche plus de déclarer un nouveau paiement pour ce mois.
-  const dejaPaye = db.prepare(`
+  const dejaPaye = await db.get(`
     SELECT id, statut_bailleur FROM payments
     WHERE contract_id = ? AND mois = ? AND statut_bailleur <> 'refuse'
-  `).get(contract_id, mois);
+    LIMIT 1
+  `, [contract_id, mois]);
   if (dejaPaye) {
     return res.status(409).json({
       message: dejaPaye.statut_bailleur === "valide"
@@ -75,39 +76,39 @@ exports.createPayment = (req, res) => {
   const now = new Date().toISOString();
 
   try {
-    const result = db.prepare(`
+    const result = await db.run(`
       INSERT INTO payments (contract_id, montant, mois, methode, statut, statut_bailleur, preuve_paiement, date_paiement)
       VALUES (?, ?, ?, ?, 'paye', 'en_attente', ?, ?)
-    `).run(contract_id, montantNombre, mois, methode || "mobile", preuve, now);
+    `, [contract_id, montantNombre, mois, methode || "mobile", preuve, now]);
 
     res.status(201).json({
       message: "Paiement enregistré, en attente de validation.",
-      paymentId: result.lastInsertRowid,
+      paymentId: result.insertId,
       mois,
       mois_label: moisLabel(mois)
     });
   } catch (err) {
-    if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ message: "Un paiement est déjà en attente pour ce mois." });
     }
     throw err;
   }
 };
 
-exports.getMyPayments = (req, res) => {
-  const payments = db.prepare(`
+exports.getMyPayments = async (req, res) => {
+  const payments = await db.all(`
     SELECT pay.*, c.montant_loyer, p.titre AS property_titre, p.adresse AS property_adresse
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE c.locataire_id = ?
     ORDER BY pay.mois DESC, pay.date_paiement DESC
-  `).all(req.user.id);
+  `, [req.user.id]);
   res.json({ payments: payments.map(decorate) });
 };
 
-exports.getPaymentsForBailleur = (req, res) => {
-  const payments = db.prepare(`
+exports.getPaymentsForBailleur = async (req, res) => {
+  const payments = await db.all(`
     SELECT pay.*, c.montant_loyer, p.titre AS property_titre, p.adresse AS property_adresse,
            u.nom AS locataire_nom, u.email AS locataire_email
     FROM payments pay
@@ -116,11 +117,11 @@ exports.getPaymentsForBailleur = (req, res) => {
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ?
     ORDER BY pay.mois DESC, pay.date_paiement DESC
-  `).all(req.user.id);
+  `, [req.user.id]);
   res.json({ payments: payments.map(decorate) });
 };
 
-exports.validerPaiement = (req, res) => {
+exports.validerPaiement = async (req, res) => {
   const { id } = req.params;
   const { statut_bailleur } = req.body;
   const motif = String(req.body.motif_refus || "").trim();
@@ -135,37 +136,38 @@ exports.validerPaiement = (req, res) => {
     return res.status(400).json({ message: "Motif trop long (500 caractères max)." });
   }
 
-  const payment = db.prepare(`
+  const payment = await db.get(`
     SELECT pay.* FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE pay.id = ? AND p.bailleur_id = ?
-  `).get(id, req.user.id);
+  `, [id, req.user.id]);
 
   if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
   if (payment.statut_bailleur === "valide") {
     return res.status(409).json({ message: "Ce paiement est déjà validé." });
   }
   if (payment.statut_bailleur === "refuse") {
-    const remplacement = db.prepare(`
+    const remplacement = await db.get(`
       SELECT id FROM payments
       WHERE contract_id = ? AND mois = ? AND id <> ? AND statut_bailleur <> 'refuse'
-    `).get(payment.contract_id, payment.mois, payment.id);
+      LIMIT 1
+    `, [payment.contract_id, payment.mois, payment.id]);
     if (remplacement) {
       return res.status(409).json({ message: "Un paiement plus récent a déjà été déclaré pour ce mois." });
     }
   }
 
-  db.prepare(`
+  await db.run(`
     UPDATE payments
     SET statut_bailleur = ?, motif_refus = ?, date_decision = ?
     WHERE id = ?
-  `).run(
+  `, [
     statut_bailleur,
     statut_bailleur === "refuse" ? motif : null,
     new Date().toISOString(),
     id
-  );
+  ]);
 
   res.json({
     message: statut_bailleur === "valide" ? "Paiement validé" : "Paiement refusé",
@@ -174,11 +176,11 @@ exports.validerPaiement = (req, res) => {
   });
 };
 
-exports.getPaymentById = (req, res) => {
+exports.getPaymentById = async (req, res) => {
   const { id } = req.params;
   const { id: userId, role } = req.user;
 
-  const payment = db.prepare(`
+  const payment = await db.get(`
     SELECT pay.*, c.locataire_id, c.montant_loyer, c.date_debut,
            p.titre AS property_titre, p.adresse AS property_adresse, p.ville AS property_ville,
            p.bailleur_id, b.nom AS bailleur_nom, b.email AS bailleur_email,
@@ -189,7 +191,7 @@ exports.getPaymentById = (req, res) => {
     JOIN users b ON p.bailleur_id = b.id
     JOIN users l ON c.locataire_id = l.id
     WHERE pay.id = ?
-  `).get(id);
+  `, [id]);
 
   if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
   const autorise = (role === "bailleur" && payment.bailleur_id === userId)
@@ -199,14 +201,14 @@ exports.getPaymentById = (req, res) => {
   res.json({ payment: decorate(payment) });
 };
 
-exports.getPaymentProof = (req, res) => {
-  const payment = db.prepare(`
+exports.getPaymentProof = async (req, res) => {
+  const payment = await db.get(`
     SELECT pay.preuve_paiement, c.locataire_id, p.bailleur_id
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE pay.id = ?
-  `).get(req.params.id);
+  `, [req.params.id]);
 
   if (!payment) return res.status(404).json({ message: "Paiement introuvable" });
   const autorise = (req.user.role === "bailleur" && payment.bailleur_id === req.user.id)
@@ -221,12 +223,12 @@ exports.getPaymentProof = (req, res) => {
   res.sendFile(file);
 };
 
-exports.getDashboard = (req, res) => {
+exports.getDashboard = async (req, res) => {
   const bailleur_id = req.user.id;
   const now = new Date();
   const moisCle = currentMonthKey(now);
 
-  const contrats = db.prepare(`
+  const contrats = await db.all(`
     SELECT c.id AS contract_id, c.montant_loyer, c.date_debut, c.date_fin,
            u.id AS locataire_id, u.nom AS locataire_nom, u.email AS locataire_email,
            p.id AS property_id, p.titre AS property_titre, p.adresse AS property_adresse
@@ -235,9 +237,9 @@ exports.getDashboard = (req, res) => {
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ? AND c.statut = 'actif'
     ORDER BY u.nom
-  `).all(bailleur_id);
+  `, [bailleur_id]);
 
-  const agregats = db.prepare(`
+  const agregats = await db.all(`
     SELECT contract_id,
            COUNT(DISTINCT mois) AS nb_mois,
            COALESCE(SUM(montant), 0) AS total,
@@ -245,7 +247,7 @@ exports.getDashboard = (req, res) => {
     FROM payments
     WHERE statut_bailleur = 'valide'
     GROUP BY contract_id
-  `).all(moisCle);
+  `, [moisCle]);
   const parContrat = new Map(agregats.map((a) => [a.contract_id, a]));
 
   const dashboard = contrats.map((c) => {
@@ -258,27 +260,27 @@ exports.getDashboard = (req, res) => {
     let statut = "a_jour";
     if (moisEnRetard >= 2) statut = "retard_grave";
     else if (moisEnRetard === 1) statut = "retard";
-    else if (!agg.paye_ce_mois) statut = "en_attente";
+    else if (!Number(agg.paye_ce_mois)) statut = "en_attente";
 
     return {
       ...c,
       mois_actuel: moisLabel(moisCle),
       mois_cle: moisCle,
-      paye_ce_mois: !!agg.paye_ce_mois,
+      paye_ce_mois: !!Number(agg.paye_ce_mois),
       total_paye: Number(agg.total || 0),
       mois_en_retard: moisEnRetard,
       statut_paiement: statut
     };
   });
 
-  const rappels = db.prepare(`
+  const rappels = await db.all(`
     SELECT r.id, r.contract_id, r.message, r.statut, r.date_envoi, r.date_lecture, r.date_confirmation
     FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ?
     ORDER BY r.date_envoi DESC, r.id DESC
-  `).all(bailleur_id);
+  `, [bailleur_id]);
 
   const dernierRappel = new Map();
   for (const rappel of rappels) {
@@ -297,23 +299,23 @@ exports.getDashboard = (req, res) => {
   });
 };
 
-exports.envoyerRappel = (req, res) => {
+exports.envoyerRappel = async (req, res) => {
   const { contract_id } = req.body;
   const message = String(req.body.message || "").trim();
   if (!contract_id || !message) return res.status(400).json({ message: "Champs manquants" });
   if (message.length > 500) return res.status(400).json({ message: "Message trop long (500 caractères max)." });
 
-  const contract = db.prepare(`
+  const contract = await db.get(`
     SELECT c.id, u.nom AS locataire_nom, p.titre AS property_titre
     FROM contracts c
     JOIN properties p ON c.property_id = p.id
     JOIN users u ON c.locataire_id = u.id
     WHERE c.id = ? AND p.bailleur_id = ? AND c.statut = 'actif'
-  `).get(contract_id, req.user.id);
+  `, [contract_id, req.user.id]);
   if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
 
-  const result = db.prepare("INSERT INTO reminders (contract_id, message) VALUES (?, ?)").run(contract_id, message);
-  const rappel = db.prepare("SELECT * FROM reminders WHERE id = ?").get(result.lastInsertRowid);
+  const result = await db.run("INSERT INTO reminders (contract_id, message) VALUES (?, ?)", [contract_id, message]);
+  const rappel = await db.get("SELECT * FROM reminders WHERE id = ?", [result.insertId]);
 
   res.status(201).json({
     message: "Rappel envoyé",
@@ -321,8 +323,8 @@ exports.envoyerRappel = (req, res) => {
   });
 };
 
-exports.getRappelsBailleur = (req, res) => {
-  const rappels = db.prepare(`
+exports.getRappelsBailleur = async (req, res) => {
+  const rappels = await db.all(`
     SELECT r.*, u.nom AS locataire_nom, u.email AS locataire_email, p.titre AS property_titre
     FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
@@ -330,13 +332,13 @@ exports.getRappelsBailleur = (req, res) => {
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ?
     ORDER BY r.date_envoi DESC, r.id DESC
-  `).all(req.user.id);
+  `, [req.user.id]);
 
   res.json({ rappels: rappels.map((r) => ({ ...r, confirme: !!r.date_confirmation })) });
 };
 
-exports.getMesRappels = (req, res) => {
-  const rappels = db.prepare(`
+exports.getMesRappels = async (req, res) => {
+  const rappels = await db.all(`
     SELECT r.*, p.titre AS property_titre, b.nom AS bailleur_nom
     FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
@@ -344,7 +346,7 @@ exports.getMesRappels = (req, res) => {
     JOIN users b ON p.bailleur_id = b.id
     WHERE c.locataire_id = ?
     ORDER BY r.date_envoi DESC, r.id DESC
-  `).all(req.user.id);
+  `, [req.user.id]);
   res.json({
     rappels: rappels.map((r) => ({
       ...r,
@@ -354,28 +356,28 @@ exports.getMesRappels = (req, res) => {
   });
 };
 
-exports.marquerRappelLu = (req, res) => {
-  const rappel = db.prepare(`
+exports.marquerRappelLu = async (req, res) => {
+  const rappel = await db.get(`
     SELECT r.* FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
     WHERE r.id = ? AND c.locataire_id = ?
-  `).get(req.params.id, req.user.id);
+  `, [req.params.id, req.user.id]);
 
   if (!rappel) return res.status(404).json({ message: "Rappel introuvable" });
   if (rappel.statut !== "lu") {
-    db.prepare("UPDATE reminders SET statut = 'lu', date_lecture = COALESCE(date_lecture, ?) WHERE id = ?")
-      .run(new Date().toISOString(), req.params.id);
+    await db.run("UPDATE reminders SET statut = 'lu', date_lecture = COALESCE(date_lecture, ?) WHERE id = ?",
+      [new Date().toISOString(), req.params.id]);
   }
   res.json({ message: "Rappel marqué comme lu" });
 };
 
 // Accusé de réception : le locataire confirme explicitement avoir reçu le rappel.
-exports.confirmerRappel = (req, res) => {
-  const rappel = db.prepare(`
+exports.confirmerRappel = async (req, res) => {
+  const rappel = await db.get(`
     SELECT r.* FROM reminders r
     JOIN contracts c ON r.contract_id = c.id
     WHERE r.id = ? AND c.locataire_id = ?
-  `).get(req.params.id, req.user.id);
+  `, [req.params.id, req.user.id]);
 
   if (!rappel) return res.status(404).json({ message: "Rappel introuvable" });
 
@@ -387,17 +389,17 @@ exports.confirmerRappel = (req, res) => {
   }
 
   const now = new Date().toISOString();
-  db.prepare(`
+  await db.run(`
     UPDATE reminders
     SET statut = 'lu', date_lecture = COALESCE(date_lecture, ?), date_confirmation = ?
     WHERE id = ?
-  `).run(now, now, req.params.id);
+  `, [now, now, req.params.id]);
 
   res.json({ message: "Réception confirmée", date_confirmation: now });
 };
 
-exports.exportCSV = (req, res) => {
-  const payments = db.prepare(`
+exports.exportCSV = async (req, res) => {
+  const payments = await db.all(`
     SELECT pay.id, u.nom AS locataire, u.email, p.titre AS logement,
            pay.mois, pay.montant, pay.methode, pay.statut_bailleur, pay.date_paiement
     FROM payments pay
@@ -406,7 +408,7 @@ exports.exportCSV = (req, res) => {
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ?
     ORDER BY pay.mois DESC, pay.date_paiement DESC
-  `).all(req.user.id);
+  `, [req.user.id]);
 
   if (payments.length === 0) return res.status(404).json({ message: "Aucun paiement à exporter" });
 

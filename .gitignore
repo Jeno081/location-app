@@ -8,6 +8,8 @@ backend/uploads/
 backend/private/
 smoke-db/
 tmp-*
+.npm-cache/
+.dsh-office-*/
 coverage/
 *.log
 .DS_Store

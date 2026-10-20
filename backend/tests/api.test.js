@@ -7,18 +7,48 @@ const assert = require("node:assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const mysql = require("mysql2/promise");
 
-const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "location-app-test-"));
+const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "location-app-uploads-"));
 process.env.NODE_ENV = "test";
-process.env.DB_PATH = path.join(tmpDir, "location.sqlite");
-process.env.UPLOAD_DIR = path.join(tmpDir, "uploads");
+process.env.UPLOAD_DIR = uploadDir;
 process.env.JWT_SECRET = "test-secret-0123456789-abcdefghijklmnopqrstuvwxyz";
 process.env.PORT = "0";
+process.env.DB_HOST = process.env.TEST_DB_HOST || process.env.DB_HOST || "127.0.0.1";
+process.env.DB_PORT = process.env.TEST_DB_PORT || process.env.DB_PORT || "3306";
+process.env.DB_USER = process.env.TEST_DB_USER || process.env.DB_USER || "root";
+process.env.DB_PASSWORD = process.env.TEST_DB_PASSWORD !== undefined
+  ? process.env.TEST_DB_PASSWORD
+  : (process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : "");
+
+const testDatabase = `location_app_test_${Date.now()}`;
+process.env.DB_NAME = testDatabase;
 
 const app = require("../app");
+const db = require("../database/db");
+const { runMigrations } = require("../database/migrate");
 
 let server;
 let baseUrl;
+
+function adminConnection() {
+  return mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    multipleStatements: false
+  });
+}
+
+async function dropTestDatabase() {
+  const admin = await adminConnection();
+  try {
+    await admin.query(`DROP DATABASE IF EXISTS \`${testDatabase}\``);
+  } finally {
+    await admin.end();
+  }
+}
 
 function auth(token) {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
@@ -29,6 +59,12 @@ async function asJson(response) {
 }
 
 before(async () => {
+  const admin = await adminConnection();
+  await admin.query(`CREATE DATABASE \`${testDatabase}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await admin.end();
+
+  await runMigrations();
+
   await new Promise((resolve) => {
     server = app.listen(0, () => {
       baseUrl = `http://127.0.0.1:${server.address().port}`;
@@ -39,8 +75,9 @@ before(async () => {
 
 after(async () => {
   if (server) await new Promise((resolve) => server.close(resolve));
-  try { require("../database/db").close(); } catch (err) { /* déjà fermée */ }
-  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (err) { /* ignoré */ }
+  try { await db.close(); } catch (err) { /* déjà fermée */ }
+  try { await dropTestDatabase(); } catch (err) { /* ignoré */ }
+  try { fs.rmSync(uploadDir, { recursive: true, force: true }); } catch (err) { /* ignoré */ }
 });
 
 test("healthcheck et compte bailleur", async () => {

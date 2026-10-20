@@ -28,7 +28,7 @@ function signToken(user) {
 
 exports.signToken = signToken;
 
-exports.verifyToken = (req, res, next) => {
+exports.verifyToken = async (req, res, next) => {
   const authHeader = req.headers["authorization"];
   if (!authHeader) return res.status(401).json({ message: "Authentification requise" });
 
@@ -46,10 +46,10 @@ exports.verifyToken = (req, res, next) => {
 
   // On recharge l'utilisateur : un token révoqué (mot de passe changé,
   // compte supprimé) ne doit plus fonctionner.
-  const user = db.prepare(`
+  const user = await db.get(`
     SELECT id, nom, email, role, token_version, doit_changer_mot_de_passe
     FROM users WHERE id = ?
-  `).get(decoded.id);
+  `, [decoded.id]);
 
   if (!user) return res.status(401).json({ message: "Compte introuvable" });
   if ((Number(user.token_version) || 0) !== (Number(decoded.token_version) || 0)) {

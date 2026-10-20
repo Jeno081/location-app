@@ -84,13 +84,13 @@ function errorHandler(err, req, res, next) {
   if (err.code === "LIMIT_UNEXPECTED_FILE") {
     return res.status(400).json({ message: "Champ de fichier inattendu" });
   }
-  if (err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+  if (err.code === "ER_DUP_ENTRY") {
     return res.status(409).json({ message: "Cette donnée existe déjà." });
   }
-  if (err.code === "SQLITE_CONSTRAINT_FOREIGNKEY") {
+  if (err.code === "ER_ROW_IS_REFERENCED_2" || err.code === "ER_NO_REFERENCED_ROW_2") {
     return res.status(409).json({ message: "Opération impossible : des données liées existent encore." });
   }
-  if (err.code === "SQLITE_CONSTRAINT_CHECK") {
+  if (err.code === "ER_CHECK_CONSTRAINT_VIOLATED") {
     return res.status(400).json({ message: "Valeur invalide." });
   }
 

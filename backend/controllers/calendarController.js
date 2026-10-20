@@ -9,7 +9,7 @@ const MOIS_LABELS = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
-exports.getCalendar = (req, res) => {
+exports.getCalendar = async (req, res) => {
   const now = new Date();
   const mois = Math.min(12, Math.max(1, parseInt(req.query.mois, 10) || now.getMonth() + 1));
   const annee = Math.min(2100, Math.max(2000, parseInt(req.query.annee, 10) || now.getFullYear()));
@@ -19,25 +19,30 @@ exports.getCalendar = (req, res) => {
   const debut = new Date(annee, mois - 1, 1);
   const fin = new Date(annee, mois, 0, 23, 59, 59);
 
-  const contrats = db.prepare(`
+  const contrats = await db.all(`
     SELECT c.id, c.montant_loyer, c.date_debut, c.date_fin,
            u.nom AS locataire_nom, p.titre AS property_titre, p.adresse AS property_adresse
     FROM contracts c
     JOIN properties p ON c.property_id = p.id
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ? AND c.statut = 'actif'
-  `).all(req.user.id);
+  `, [req.user.id]);
+
+  const paiements = await db.all(`
+    SELECT pay.contract_id, pay.id, pay.montant, pay.date_paiement
+    FROM payments pay
+    JOIN contracts c ON pay.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    WHERE p.bailleur_id = ? AND pay.mois = ? AND pay.statut_bailleur = 'valide'
+  `, [req.user.id, moisCle]);
+  const paiementParContrat = new Map(paiements.map((p) => [p.contract_id, p]));
 
   const loyers = contrats.map((c) => {
     const debutContrat = new Date(c.date_debut);
     const actifCeMois = debutContrat <= fin && (!c.date_fin || new Date(c.date_fin) >= debut);
     if (!actifCeMois) return null;
 
-    const paye = db.prepare(`
-      SELECT id, montant, date_paiement FROM payments
-      WHERE contract_id = ? AND mois = ? AND statut_bailleur = 'valide'
-      LIMIT 1
-    `).get(c.id, moisCle);
+    const paye = paiementParContrat.get(c.id) || null;
 
     return {
       type: "loyer",
@@ -46,7 +51,7 @@ exports.getCalendar = (req, res) => {
       description: `Loyer ${c.montant_loyer} $ — ${c.property_titre}`,
       montant: Number(c.montant_loyer) || 0,
       statut: paye ? "paye" : "en_attente",
-      paiement: paye || null
+      paiement: paye
     };
   }).filter(Boolean);
 
@@ -61,7 +66,7 @@ exports.getCalendar = (req, res) => {
     description: `Fin de contrat — ${c.property_titre}`
   }));
 
-  const incidents = db.prepare(`
+  const incidents = await db.all(`
     SELECT i.id, i.description, i.statut, i.date_creation, i.photo,
            p.titre AS property_titre, u.nom AS locataire_nom
     FROM incidents i
@@ -69,10 +74,10 @@ exports.getCalendar = (req, res) => {
     JOIN users u ON i.locataire_id = u.id
     WHERE p.bailleur_id = ?
       AND i.statut != 'resolu'
-      AND datetime(i.date_creation) >= datetime(?)
-      AND datetime(i.date_creation) <= datetime(?)
+      AND i.date_creation >= ?
+      AND i.date_creation <= ?
     ORDER BY i.date_creation DESC
-  `).all(req.user.id, debut.toISOString(), fin.toISOString());
+  `, [req.user.id, debut, fin]);
 
   const incidentsFormates = incidents.map((i) => ({
     type: "incident",
@@ -83,7 +88,7 @@ exports.getCalendar = (req, res) => {
     property: i.property_titre
   }));
 
-  const rappels = db.prepare(`
+  const rappels = await db.all(`
     SELECT r.id, r.message, r.statut, r.date_envoi,
            u.nom AS locataire_nom, p.titre AS property_titre
     FROM reminders r
@@ -91,10 +96,10 @@ exports.getCalendar = (req, res) => {
     JOIN properties p ON c.property_id = p.id
     JOIN users u ON c.locataire_id = u.id
     WHERE p.bailleur_id = ?
-      AND datetime(r.date_envoi) >= datetime(?)
-      AND datetime(r.date_envoi) <= datetime(?)
+      AND r.date_envoi >= ?
+      AND r.date_envoi <= ?
     ORDER BY r.date_envoi DESC
-  `).all(req.user.id, debut.toISOString(), fin.toISOString());
+  `, [req.user.id, debut, fin]);
 
   const rappelsFormates = rappels.map((r) => ({
     type: "rappel",

@@ -6,7 +6,7 @@ const db = require("../database/db");
 
 const MOIS_COURT = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
-exports.getRevenus = (req, res) => {
+exports.getRevenus = async (req, res) => {
   const now = new Date();
   const mois = [];
 
@@ -20,13 +20,13 @@ exports.getRevenus = (req, res) => {
     });
   }
 
-  const payments = db.prepare(`
+  const payments = await db.all(`
     SELECT pay.montant, pay.mois
     FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE p.bailleur_id = ? AND pay.statut_bailleur = 'valide'
-  `).all(req.user.id);
+  `, [req.user.id]);
 
   const parCle = new Map(mois.map((m) => [m.cle, m]));
   for (const p of payments) {
@@ -41,12 +41,12 @@ exports.getRevenus = (req, res) => {
   });
 };
 
-exports.getRepartition = (req, res) => {
+exports.getRepartition = async (req, res) => {
   const counts = { disponible: 0, loue: 0, archive: 0 };
-  const rows = db.prepare(`
+  const rows = await db.all(`
     SELECT statut, COUNT(*) AS nb FROM properties WHERE bailleur_id = ? GROUP BY statut
-  `).all(req.user.id);
-  for (const row of rows) counts[row.statut] = row.nb;
+  `, [req.user.id]);
+  for (const row of rows) counts[row.statut] = Number(row.nb);
 
   res.json({
     labels: ["Disponibles", "Loués", "Archivés"],

@@ -1,0 +1,40 @@
+# Blueprint Render — Location App (Node + MySQL Clever Cloud)
+# À placer à la racine du dépôt GitHub, puis « New > Blueprint » sur Render.
+services:
+  - type: web
+    name: location-app
+    runtime: node
+    plan: free
+    region: frankfurt
+    branch: main
+    autoDeploy: true
+    buildCommand: npm --prefix backend install
+    startCommand: node backend/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Valeurs à saisir dans le tableau de bord Render (sync: false)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL
+        value: "false"
+      - key: DB_POOL_SIZE
+        value: "5"
+      # Dossier des fichiers : nécessite un disque persistant (plan payant).
+      # - key: UPLOAD_DIR
+      #   value: /var/data/uploads
