@@ -120,11 +120,23 @@ Copiez-les vers le stockage de production (voir la section « Fichiers envoyés 
 
 ## Étape 4 — Pousser le code sur GitHub
 
+Si le dépôt local n'a pas encore de remote :
+
+```bash
+git remote add origin https://github.com/<votre-compte>/<votre-depot>.git
+git push -u origin master
+```
+
+Sinon, poussez simplement la branche courante :
+
 ```bash
 git add .
 git commit -m "Migration MySQL et configuration de déploiement"
-git push origin main
+git push origin master
 ```
+
+> La branche du projet est `master`. Si votre dépôt GitHub utilise `main`,
+> remplacez `master` par `main` ci-dessus et dans le champ **Branch** de Render.
 
 Vérifiez que `.env`, `node_modules` et `backend/uploads` ne sont **pas** versionnés
 (le `.gitignore` du projet s'en charge).
@@ -142,7 +154,7 @@ Vérifiez que `.env`, `node_modules` et `backend/uploads` ne sont **pas** versio
 | --- | --- |
 | **Name** | `location-app` |
 | **Region** | `Frankfurt (EU Central)` |
-| **Branch** | `main` |
+| **Branch** | `master` (ou `main` selon votre dépôt) |
 | **Root Directory** | *(vide)* |
 | **Runtime** | `Node` |
 | **Build Command** | `npm --prefix backend install` |

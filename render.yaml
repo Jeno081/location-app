@@ -6,7 +6,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    branch: main
+    branch: master
     autoDeploy: true
     buildCommand: npm --prefix backend install
     startCommand: node backend/server.js
