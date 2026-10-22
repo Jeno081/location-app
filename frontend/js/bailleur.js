@@ -296,6 +296,8 @@ function renderProperties(properties) {
       <div class="card-actions">
         <label for="photos-${p.id}" class="btn-secondary btn-sm"><i data-lucide="camera"></i> Ajouter des photos</label>
         <input type="file" id="photos-${p.id}" accept="image/*" multiple hidden onchange="uploadPhotos(${p.id}, this.files)">
+        <button class="btn-secondary btn-sm" onclick="openEditProperty(${p.id})"><i data-lucide="pencil"></i> Modifier</button>
+        <button class="btn-ghost btn-sm danger-text" onclick="deleteProperty(${p.id})"><i data-lucide="trash-2"></i> Supprimer</button>
       </div>
     </article>`;
   }).join("");
@@ -312,6 +314,79 @@ function openPropertyGallery(propertyId) {
     return;
   }
   openImageLightbox(photos, 0, property.titre);
+}
+
+function openEditProperty(propertyId) {
+  const property = globalData.properties.find((p) => Number(p.id) === Number(propertyId));
+  if (!property) return;
+
+  document.getElementById("editPropertyId").value = property.id;
+  document.getElementById("editPropertyTitre").value = property.titre || "";
+  document.getElementById("editPropertyAdresse").value = property.adresse || "";
+  document.getElementById("editPropertyVille").value = property.ville || "";
+  document.getElementById("editPropertyLoyer").value = property.loyer ?? "";
+  document.getElementById("editPropertyCharges").value = property.charges ?? 0;
+  document.getElementById("editPropertyStatut").value = property.statut || "disponible";
+  document.getElementById("editPropertyDescription").value = property.description || "";
+  document.getElementById("editPropertyModal").style.display = "flex";
+}
+
+function closeEditPropertyModal() {
+  document.getElementById("editPropertyModal").style.display = "none";
+}
+
+async function savePropertyEdit(event) {
+  event.preventDefault();
+  const id = document.getElementById("editPropertyId").value;
+  const body = {
+    titre: document.getElementById("editPropertyTitre").value,
+    adresse: document.getElementById("editPropertyAdresse").value,
+    ville: document.getElementById("editPropertyVille").value,
+    loyer: Number(document.getElementById("editPropertyLoyer").value),
+    charges: Number(document.getElementById("editPropertyCharges").value),
+    statut: document.getElementById("editPropertyStatut").value,
+    description: document.getElementById("editPropertyDescription").value
+  };
+
+  try {
+    const response = await fetch(`${API_URL}/properties/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { showToast(data.message || "Modification impossible", "error"); return; }
+    showToast("Logement mis à jour", "success");
+    closeEditPropertyModal();
+    loadProperties();
+    loadDashboard();
+  } catch (err) { showToast("Erreur serveur", "error"); }
+}
+
+function deleteProperty(propertyId) {
+  const property = globalData.properties.find((p) => Number(p.id) === Number(propertyId));
+  if (!property) return;
+
+  confirmAction({
+    title: "Supprimer ce logement ?",
+    message: `« ${property.titre} » sera définitivement supprimé. Les logements avec un historique de contrats ou des signalements doivent être archivés, pas supprimés.`,
+    confirmLabel: "Supprimer",
+    cancelLabel: "Annuler",
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const response = await fetch(`${API_URL}/properties/${propertyId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) { showToast(data.message || "Suppression impossible", "error"); return; }
+        showToast("Logement supprimé", "success");
+        loadProperties();
+        loadDashboard();
+      } catch (err) { showToast("Erreur serveur", "error"); }
+    }
+  });
 }
 
 function renderTenants(tenants) {

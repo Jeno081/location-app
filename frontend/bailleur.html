@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=8">
+  <link rel="stylesheet" href="css/theme.css?v=9">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -292,6 +292,57 @@
     </div>
   </div>
 
+  <!-- Modale modification de logement -->
+  <div id="editPropertyModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeEditPropertyModal()" aria-label="Fermer">&times;</span>
+      <h2>Modifier le logement</h2>
+      <form id="editPropertyForm" onsubmit="savePropertyEdit(event)">
+        <input type="hidden" id="editPropertyId">
+        <div class="form-group">
+          <label for="editPropertyTitre">Titre</label>
+          <input type="text" id="editPropertyTitre" maxlength="120" required>
+        </div>
+        <div class="form-group">
+          <label for="editPropertyAdresse">Adresse</label>
+          <input type="text" id="editPropertyAdresse" maxlength="200" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPropertyVille">Ville</label>
+            <input type="text" id="editPropertyVille">
+          </div>
+          <div class="form-group">
+            <label for="editPropertyStatut">Statut</label>
+            <select id="editPropertyStatut">
+              <option value="disponible">Disponible</option>
+              <option value="loue">Loué</option>
+              <option value="archive">Archivé</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPropertyLoyer">Loyer ($)</label>
+            <input type="number" id="editPropertyLoyer" min="1" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="editPropertyCharges">Charges ($)</label>
+            <input type="number" id="editPropertyCharges" min="0" step="0.01">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editPropertyDescription">Description</label>
+          <textarea id="editPropertyDescription" rows="3" maxlength="2000"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-block" onclick="closeEditPropertyModal()">Annuler</button>
+          <button type="submit" class="btn-primary btn-block">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Modale renouvellement de contrat -->
   <div id="renewModal" class="modal">
     <div class="modal-content">
@@ -388,14 +439,14 @@
   </div>
 
   <script src="js/icons.js"></script>
-  <script src="js/ui.js?v=8"></script>
+  <script src="js/ui.js?v=9"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js?v=8"></script>
-  <script src="js/bailleur.js?v=8"></script>
+  <script src="js/navbar.js?v=9"></script>
+  <script src="js/bailleur.js?v=9"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

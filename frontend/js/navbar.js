@@ -11,6 +11,20 @@ function initials(name) {
   return parts.slice(0, 2).map((p) => p.charAt(0).toUpperCase()).join("") || "?";
 }
 
+function rendrePhotoCliquable(container, url, nom) {
+  if (!url) return;
+  container.querySelectorAll("img.avatar").forEach((img) => {
+    img.style.cursor = "zoom-in";
+    img.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof openImageLightbox === "function") {
+        openImageLightbox([url], 0, nom || "Photo de profil");
+      }
+    });
+  });
+}
+
 function renderSidebarUser() {
   const container = document.getElementById("sidebarUser");
   if (!container) return;
@@ -36,6 +50,7 @@ function renderSidebarUser() {
     </button>
   `;
   if (typeof lucide !== "undefined") lucide.createIcons();
+  rendrePhotoCliquable(container, user.photo_profil, user.nom);
 }
 
 function renderSimpleNavbar() {
@@ -78,6 +93,7 @@ function renderSimpleNavbar() {
     </header>
   `;
   if (typeof lucide !== "undefined") lucide.createIcons();
+  rendrePhotoCliquable(container, user.photo_profil, user.nom);
 }
 
 function renderNavbar() {

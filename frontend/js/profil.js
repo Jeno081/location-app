@@ -25,7 +25,13 @@ function afficherPhoto() {
   const preview = document.getElementById("photoPreview");
   if (!preview) return;
   if (user.photo_profil) {
-    preview.innerHTML = '<img src="' + escapeHtml(user.photo_profil) + '" alt="Profil">';
+    preview.innerHTML = '<img class="photo-viewable" src="' + escapeHtml(user.photo_profil) + '" alt="Profil">';
+    const image = preview.querySelector("img");
+    image.addEventListener("click", () => {
+      if (typeof openImageLightbox === "function") {
+        openImageLightbox([user.photo_profil], 0, "Photo de profil");
+      }
+    });
   } else {
     const initiale = (user.nom || "?").charAt(0).toUpperCase();
     preview.innerHTML = '<div class="avatar-initials-big">' + escapeHtml(initiale) + '</div>';

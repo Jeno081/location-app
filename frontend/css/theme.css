@@ -930,14 +930,17 @@ body.lightbox-open { overflow: hidden; }
    paiement multi-mois, renouvellement, lots
    ============================================ */
 
-/* Toasts plus compacts */
+/* Toasts compacts (top:auto annule l'ancienne règle qui étirait le toast) */
 .toast {
-  right: 16px; bottom: 16px; max-width: min(330px, calc(100vw - 32px));
+  top: auto; left: auto; right: 16px; bottom: 16px;
+  max-width: min(330px, calc(100vw - 32px));
   padding: 9px 12px; border-radius: 11px; gap: 7px; font-size: .76rem;
+  animation: none;
 }
+.toast-success, .toast-error, .toast-info { background: var(--gray-900); }
 .toast-icon { width: 17px; height: 17px; font-size: .62rem; }
 @media (max-width: 640px) {
-  .toast { left: 50%; right: auto; bottom: 14px; transform: translate(-50%, 10px); }
+  .toast { top: auto; left: 50%; right: auto; bottom: 14px; transform: translate(-50%, 10px); }
   .toast.show { transform: translate(-50%, 0); }
 }
 
@@ -1034,3 +1037,6 @@ body.lightbox-open { overflow: hidden; }
 .property-photos.photo-missing::after { content: "Photo indisponible — renvoyez-la"; padding: 0 12px; text-align: center; }
 .property-photos.photo-missing .photo-count,
 .property-photos.photo-missing .photo-zoom { display: none; }
+/* Photo de profil cliquable */
+.photo-viewable, .sidebar-user .avatar, .user-menu-btn .avatar { cursor: zoom-in; }
+.photo-viewable:hover { transform: scale(1.02); transition: transform .15s ease; }
