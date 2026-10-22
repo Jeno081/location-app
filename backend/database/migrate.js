@@ -79,6 +79,7 @@ async function runMigrations() {
     ["payments", "statut_bailleur", "ENUM('en_attente', 'valide', 'refuse') NOT NULL DEFAULT 'en_attente'"],
     ["payments", "preuve_paiement", "VARCHAR(255) NULL"],
     ["payments", "motif_refus", "VARCHAR(500) NULL"],
+    ["payments", "lot_id", "CHAR(36) NULL"],
     ["payments", "date_decision", "DATETIME NULL"],
     ["contracts", "clauses_personnalisees", "TEXT NULL"],
     ["reminders", "date_lecture", "DATETIME NULL"],
@@ -102,7 +103,8 @@ async function runMigrations() {
     ["users", "uq_users_email", "UNIQUE KEY uq_users_email (email)"],
     ["users", "uq_single_bailleur", "UNIQUE KEY uq_single_bailleur (bailleur_unique)"],
     ["contracts", "uq_contract_open_property", "UNIQUE KEY uq_contract_open_property (contrat_ouvert)"],
-    ["payments", "uq_payments_contract_mois_actif", "UNIQUE KEY uq_payments_contract_mois_actif (contract_id, mois_actif)"]
+    ["payments", "uq_payments_contract_mois_actif", "UNIQUE KEY uq_payments_contract_mois_actif (contract_id, mois_actif)"],
+    ["payments", "idx_payments_lot", "KEY idx_payments_lot (lot_id)"]
   ];
   for (const [table, index, definition] of contraintes) {
     try {

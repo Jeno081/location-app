@@ -4,7 +4,7 @@
 
 const db = require("../database/db");
 const fs = require("fs");
-const { resolveStoredPath } = require("../utils/files");
+const { sendStoredFile, deleteStoredFiles } = require("../services/fileStore");
 
 const TYPES = ["cni", "passeport", "fiche_paie", "autre"];
 
@@ -102,10 +102,7 @@ exports.deleteDocument = async (req, res) => {
   }
   if (!autorise) return res.status(403).json({ message: "Non autorisé" });
 
-  const filePath = resolveStoredPath(doc.chemin);
-  if (filePath) {
-    try { fs.unlinkSync(filePath); } catch (err) { /* ignoré */ }
-  }
+  await deleteStoredFiles([doc.chemin]);
   await db.run("DELETE FROM documents WHERE id = ?", [id]);
   res.json({ message: "Document supprimé" });
 };
@@ -127,10 +124,7 @@ exports.getDocumentFile = async (req, res) => {
   }
   if (!autorise) return res.status(403).json({ message: "Non autorisé" });
 
-  const filePath = resolveStoredPath(doc.chemin);
-  if (!filePath) return res.status(404).json({ message: "Fichier introuvable" });
-
   res.setHeader("Cache-Control", "private, max-age=0");
-  res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(doc.nom_fichier)}"`);
-  res.sendFile(filePath);
+  const sent = await sendStoredFile(res, doc.chemin, { inlineName: doc.nom_fichier });
+  if (!sent) return res.status(404).json({ message: "Fichier introuvable" });
 };

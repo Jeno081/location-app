@@ -6,7 +6,7 @@ Application de gestion locative pour un bailleur unique et ses locataires : bien
 
 - **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer
 - **Frontend** : HTML / CSS / JavaScript vanilla, Chart.js, Lucide
-- **Base** : MySQL 8 (Clever Cloud) — pool de connexions, clés étrangères et contraintes d'unicité
+- **Base** : MySQL 8 (Clever Cloud) — pool de connexions, clés étrangères et contraintes d'unicité. Les fichiers envoyés sont stockés dans la table `files`.
 
 ## Démarrage
 

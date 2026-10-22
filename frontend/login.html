@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/theme.css?v=8">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body class="auth-body">
@@ -46,7 +46,12 @@
           </div>
           <div class="form-group">
             <label for="mot_de_passe">Mot de passe</label>
-            <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" autocomplete="current-password" required>
+            <div class="password-field">
+              <input type="password" id="mot_de_passe" name="mot_de_passe" placeholder="Votre mot de passe" autocomplete="current-password" required>
+              <button type="button" class="password-toggle" id="togglePassword" aria-label="Afficher le mot de passe" aria-pressed="false">
+                <i data-lucide="eye"></i>
+              </button>
+            </div>
           </div>
           <button type="submit" class="btn-primary btn-block">
             <i data-lucide="log-in"></i> Se connecter
@@ -64,9 +69,9 @@
   </div>
 
   <script src="js/icons.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/ui.js?v=8"></script>
   <script src="js/animations.js"></script>
-  <script src="js/login.js"></script>
+  <script src="js/login.js?v=8"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
     document.getElementById("year").textContent = new Date().getFullYear();

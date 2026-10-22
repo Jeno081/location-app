@@ -4,7 +4,7 @@
 
 const db = require("../database/db");
 const fs = require("fs");
-const { resolveStoredPath } = require("../utils/files");
+const { sendStoredFile } = require("../services/fileStore");
 
 function unlinkUploaded(files) {
   for (const file of files || []) {
@@ -120,9 +120,7 @@ exports.getIncidentPhoto = async (req, res) => {
     || (req.user.role === "locataire" && incident.locataire_id === req.user.id);
   if (!autorise) return res.status(403).json({ message: "Non autorisé" });
 
-  const file = resolveStoredPath(incident.photo);
-  if (!file) return res.status(404).json({ message: "Aucune photo disponible" });
-
   res.setHeader("Cache-Control", "private, max-age=0");
-  res.sendFile(file);
+  const sent = await sendStoredFile(res, incident.photo, { inlineName: "photo-signalement" });
+  if (!sent) return res.status(404).json({ message: "Aucune photo disponible" });
 };

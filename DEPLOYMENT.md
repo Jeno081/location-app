@@ -181,7 +181,7 @@ Ajoutez exactement ces variables :
 | `DB_PASSWORD` | mot de passe MySQL |
 | `DB_NAME` | nom de la base MySQL |
 | `DB_SSL` | `false` |
-| `DB_POOL_SIZE` | `5` |
+| `DB_POOL_SIZE` | `2` |
 
 Cliquez sur **Create Web Service**. Render installe les dépendances, démarre
 `node backend/server.js` ; les journaux doivent afficher :
@@ -207,20 +207,20 @@ Le port est fourni par Render via `PORT`, la configuration le lit automatiquemen
 
 ## Fichiers envoyés (photos, preuves, documents)
 
-Le système de fichiers de Render (plan gratuit) est **éphémère** : les fichiers
-envoyés disparaissent à chaque redéploiement ou redémarrage.
+Les fichiers sont désormais **stockés dans MySQL** (table `files`), pas sur le
+disque de Render. Ils survivent donc aux redéploiements, aux redémarrages et aux
+réveils du service gratuit.
 
-Trois options :
+- Les images sont compressées automatiquement (max 1600 px, qualité 82) avant
+  enregistrement, pour limiter la taille de la base.
+- La taille disponible dépend du plan MySQL Clever Cloud (plan DEV : quota réduit).
+  Surveillez l'espace si vous envoyez de nombreux documents.
+- `UPLOAD_DIR` ne sert plus que de dossier temporaire pendant l'envoi et de repli
+  pour les anciens fichiers locaux.
 
-1. **Render Disk** (plan payant) : ajoutez un disque monté sur `/var/data`,
-   puis la variable `UPLOAD_DIR=/var/data/uploads`.
-2. **Stockage externe** (S3, Cloudinary, Backblaze…) : adaptez
-   `backend/middleware/uploadMiddleware.js` et `documentUpload.js`.
-3. **Plan gratuit** : acceptez que les fichiers soient perdus au redémarrage ;
-   les données (contrats, paiements) restent en base.
-
-Les photos de profil et de logement sont publiques via `/uploads/...` ; les
-documents et preuves passent par des routes authentifiées.
+> Les photos envoyées avant cette mise à jour ont été perdues lors des
+> redéploiements précédents : elles doivent être renvoyées une fois. Les nouvelles
+> sont conservées.
 
 ---
 

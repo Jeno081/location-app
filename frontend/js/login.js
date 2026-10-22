@@ -4,6 +4,19 @@
 
 const API_URL = "/api";
 
+const togglePassword = document.getElementById("togglePassword");
+if (togglePassword) {
+  togglePassword.addEventListener("click", () => {
+    const input = document.getElementById("mot_de_passe");
+    const afficher = input.type === "password";
+    input.type = afficher ? "text" : "password";
+    togglePassword.innerHTML = `<i data-lucide="${afficher ? "eye-off" : "eye"}"></i>`;
+    togglePassword.setAttribute("aria-label", afficher ? "Masquer le mot de passe" : "Afficher le mot de passe");
+    togglePassword.setAttribute("aria-pressed", String(afficher));
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  });
+}
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 

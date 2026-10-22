@@ -103,7 +103,22 @@ function closeSidebar() {
   document.body.classList.remove("sidebar-open");
 }
 
-async function logout() {
+function logout() {
+  if (typeof window.confirmAction === "function") {
+    window.confirmAction({
+      title: "Se déconnecter ?",
+      message: "Vous allez quitter votre espace. Vous devrez vous reconnecter pour y accéder.",
+      confirmLabel: "Se déconnecter",
+      cancelLabel: "Rester connecté",
+      danger: true,
+      onConfirm: performLogout
+    });
+    return;
+  }
+  performLogout();
+}
+
+async function performLogout() {
   const token = localStorage.getItem("token");
   try {
     if (token) {

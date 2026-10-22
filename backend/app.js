@@ -26,6 +26,25 @@ app.use(express.json({ limit: "1mb" }));
 app.use("/uploads/documents", (req, res) => {
   res.status(404).json({ message: "Document protégé. Utilisez l'interface de l'application." });
 });
+
+// Les fichiers sont stockés en base (table `files`) pour survivre aux
+// redéploiements Render ; le disque local reste un repli pour le développement.
+app.use("/uploads", async (req, res, next) => {
+  try {
+    const stored = "/uploads" + req.path;
+    const row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
+    if (row) {
+      res.setHeader("Content-Type", row.mime);
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("Cache-Control", config.IS_PRODUCTION ? "public, max-age=86400" : "no-cache");
+      return res.send(row.donnees);
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 app.use("/uploads", express.static(config.UPLOAD_DIR, {
   maxAge: config.IS_PRODUCTION ? "1h" : 0,
   setHeaders: (res) => res.setHeader("X-Content-Type-Options", "nosniff")

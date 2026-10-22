@@ -271,7 +271,7 @@ function renderProperties(properties) {
 
     const photosHtml = photos.length > 0
       ? `<div class="property-photos" onclick="openPropertyGallery(${p.id})" role="button" tabindex="0" aria-label="Voir les photos de ${escapeHtml(p.titre)}">
-           <img src="${escapeHtml(photos[0])}" alt="${escapeHtml(p.titre)}">
+           <img src="${escapeHtml(photos[0])}" alt="${escapeHtml(p.titre)}" onerror="this.closest('.property-photos').classList.add('photo-missing'); this.remove();">
            <span class="photo-count"><i data-lucide="image"></i> ${photos.length}</span>
            <span class="photo-zoom"><i data-lucide="maximize-2"></i></span>
          </div>`
@@ -370,6 +370,17 @@ function renderContracts(contracts) {
     const tone = c.statut === "actif" ? "success" : (c.statut === "en_attente" ? "warning" : "neutral");
     const label = c.statut === "actif" ? "Actif" : (c.statut === "en_attente" ? "En attente" : "Terminé");
 
+    const fin = c.date_fin ? new Date(c.date_fin) : null;
+    const joursRestants = fin ? Math.ceil((fin.getTime() - Date.now()) / 86400000) : null;
+    const bientot = c.statut === "actif" && joursRestants !== null && joursRestants <= 60;
+    const expire = joursRestants !== null && joursRestants < 0;
+    const renewBadge = bientot
+      ? `<div class="renew-badge ${expire || joursRestants <= 30 ? "danger" : "warning"}">
+           <i data-lucide="calendar-clock"></i>
+           ${expire ? "Contrat expiré" : `Expire dans ${joursRestants} jour${joursRestants > 1 ? "s" : ""}`}
+         </div>`
+      : "";
+
     return `<article class="property-card card">
       <div class="card-top">
         <span class="badge badge-${tone}">${label}</span>
@@ -389,19 +400,107 @@ function renderContracts(contracts) {
         <div><span>Début</span><strong>${formatDate(c.date_debut)}</strong></div>
         <div><span>Fin</span><strong>${c.date_fin ? formatDate(c.date_fin) : "Indéterminée"}</strong></div>
       </div>
+      ${renewBadge}
       ${c.clauses_personnalisees ? `<p class="card-desc"><strong>Clauses :</strong> ${escapeHtml(c.clauses_personnalisees.slice(0, 140))}${c.clauses_personnalisees.length > 140 ? "…" : ""}</p>` : ""}
       ${c.date_terminaison ? `<p class="card-note">Terminé le ${formatDate(c.date_terminaison)}</p>` : ""}
       <p class="contract-signature ${c.signature_bailleur ? "signed" : "unsigned"}">${c.signature_bailleur ? "Signé par vous" : "En attente de votre signature"}</p>
       <p class="contract-signature ${c.signature_locataire ? "signed" : "unsigned"}">${c.signature_locataire ? "Signé par le locataire" : "En attente du locataire"}</p>
       <div class="card-actions">
         ${!c.signature_bailleur && !estTermine ? `<button class="btn-primary btn-sm" onclick="signContract(${c.id})"><i data-lucide="pen-line"></i> Signer</button>` : ""}
+        ${bientot ? `<button class="btn-primary btn-sm" onclick="openRenewModal(${c.id}, '${String(c.date_fin).slice(0, 10)}')"><i data-lucide="refresh-cw"></i> Renouveler</button>` : ""}
         ${!estTermine && !c.signature_locataire ? `<button class="btn-secondary btn-sm" onclick="editClauses(${c.id})"><i data-lucide="pencil"></i> Clauses</button>` : ""}
-        <button class="btn-secondary btn-sm" onclick="downloadContractPDF(${c.id})"><i data-lucide="file-down"></i> PDF</button>
+        <button class="btn-secondary btn-sm" onclick="openContractPDF(${c.id})"><i data-lucide="file-text"></i> Voir le PDF</button>
+        <button class="btn-ghost btn-sm" onclick="downloadContractPDF(${c.id})" title="Télécharger le contrat"><i data-lucide="download"></i> Télécharger</button>
         ${!estTermine ? `<button class="btn-ghost btn-sm danger-text" onclick="terminerContrat(${c.id})"><i data-lucide="x-circle"></i> Mettre fin</button>` : ""}
       </div>
     </article>`;
   }).join("");
   if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+function statutPaiement(p) {
+  if (p.statut_bailleur === "valide") return { badge: "Validé", tone: "success" };
+  if (p.statut_bailleur === "refuse") return { badge: "Refusé", tone: "danger" };
+  return { badge: "À valider", tone: "warning" };
+}
+
+function noteRefus(p) {
+  if (p.statut_bailleur !== "refuse") return "";
+  const date = p.date_decision ? ` le ${formatDate(p.date_decision)}` : "";
+  return `<div class="decision-note danger">
+    <i data-lucide="x-circle"></i>
+    <div>
+      <strong>Refusé${date}</strong>
+      <p>${escapeHtml(p.motif_refus || "Aucun motif précisé.")}</p>
+    </div>
+  </div>`;
+}
+
+function boutonsValidation(p, lotId) {
+  if (p.statut_bailleur !== "en_attente") return "";
+  const cible = lotId ? `validerLot('${lotId}', 'valide')` : `validerPaiement(${p.id}, 'valide')`;
+  const cibleRefus = lotId ? `validerLot('${lotId}', 'refuse')` : `validerPaiement(${p.id}, 'refuse')`;
+  return `<button class="btn-primary btn-sm" onclick="${cible}"><i data-lucide="check"></i> Valider${lotId ? " le lot" : ""}</button>
+    <button class="btn-ghost btn-sm danger-text" onclick="${cibleRefus}"><i data-lucide="x"></i> Refuser${lotId ? " le lot" : ""}</button>`;
+}
+
+function renderPaymentCard(p) {
+  const { badge, tone } = statutPaiement(p);
+  const documentLabel = p.statut_bailleur === "valide" ? "Quittance" : (p.statut_bailleur === "refuse" ? "Reçu de refus" : "Reçu provisoire");
+
+  return `<article class="property-card card ${p.statut_bailleur === "refuse" ? "card-alert" : ""}">
+    <div class="card-top">
+      <span class="badge badge-${tone}">${badge}</span>
+      <span class="card-id">${escapeHtml(formatMonth(p.mois_label || p.mois))}</span>
+    </div>
+    <h3 class="card-title">${escapeHtml(p.property_titre)}</h3>
+    <p class="card-sub"><i data-lucide="user"></i> ${escapeHtml(p.locataire_nom)}</p>
+    <div class="card-metrics">
+      <div><span>Montant</span><strong>${formatMoney(p.montant)}</strong></div>
+      <div><span>Méthode</span><strong>${escapeHtml((p.methode || "—").replace("_", " "))}</strong></div>
+      <div><span>Déclaré le</span><strong>${formatDate(p.date_paiement)}</strong></div>
+    </div>
+    ${noteRefus(p)}
+    <div class="card-actions">
+      ${p.preuve_paiement ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/payments/${p.id}/preuve', 'Preuve de paiement')"><i data-lucide="eye"></i> Preuve</button>` : ""}
+      ${boutonsValidation(p)}
+      <button class="btn-secondary btn-sm" onclick="openReceiptPDF(${p.id})"><i data-lucide="receipt"></i> ${documentLabel}</button>
+      <button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})" title="Télécharger le PDF"><i data-lucide="download"></i></button>
+    </div>
+  </article>`;
+}
+
+function renderPaymentLot(groupe) {
+  const items = groupe.items;
+  const premier = items[0];
+  const { badge, tone } = statutPaiement(premier);
+  const total = items.reduce((somme, p) => somme + Number(p.montant || 0), 0);
+
+  return `<article class="property-card card ${premier.statut_bailleur === "refuse" ? "card-alert" : ""}">
+    <div class="card-top">
+      <span class="badge badge-${tone}">${badge}</span>
+      <span class="card-id">Paiement groupé · ${items.length} mois</span>
+    </div>
+    <h3 class="card-title">${escapeHtml(premier.property_titre)}</h3>
+    <p class="card-sub"><i data-lucide="user"></i> ${escapeHtml(premier.locataire_nom)}</p>
+    <div class="lot-months">
+      ${items.map((p) => `<span class="lot-month">
+        ${escapeHtml(formatMonth(p.mois_label || p.mois))}
+        <button type="button" onclick="openReceiptPDF(${p.id})" title="Voir le PDF"><i data-lucide="eye"></i></button>
+        <button type="button" onclick="downloadReceiptPDF(${p.id})" title="Télécharger"><i data-lucide="download"></i></button>
+      </span>`).join("")}
+    </div>
+    <div class="card-metrics">
+      <div><span>Total</span><strong>${formatMoney(total)}</strong></div>
+      <div><span>Mois réglés</span><strong>${items.length}</strong></div>
+      <div><span>Déclaré le</span><strong>${formatDate(premier.date_paiement)}</strong></div>
+    </div>
+    ${noteRefus(premier)}
+    <div class="card-actions">
+      ${premier.preuve_paiement ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/payments/${premier.id}/preuve', 'Preuve de paiement')"><i data-lucide="eye"></i> Preuve</button>` : ""}
+      ${boutonsValidation(premier, groupe.lotId)}
+    </div>
+  </article>`;
 }
 
 function renderPayments(payments) {
@@ -412,59 +511,30 @@ function renderPayments(payments) {
     return;
   }
 
-  container.innerHTML = payments.map(p => {
-    let badge = "";
-    let tone = "warning";
-    let actions = "";
-
-    if (p.statut_bailleur === "valide") { badge = "Validé"; tone = "success"; }
-    else if (p.statut_bailleur === "refuse") { badge = "Refusé"; tone = "danger"; }
-    else {
-      badge = "À valider"; tone = "warning";
-      actions = `<button class="btn-primary btn-sm" onclick="validerPaiement(${p.id}, 'valide')"><i data-lucide="check"></i> Valider</button>
-        <button class="btn-ghost btn-sm danger-text" onclick="validerPaiement(${p.id}, 'refuse')"><i data-lucide="x"></i> Refuser</button>`;
+  const groupes = [];
+  const lots = new Map();
+  for (const paiement of payments) {
+    if (paiement.lot_id) {
+      if (!lots.has(paiement.lot_id)) {
+        const groupe = { lotId: paiement.lot_id, items: [] };
+        lots.set(paiement.lot_id, groupe);
+        groupes.push(groupe);
+      }
+      lots.get(paiement.lot_id).items.push(paiement);
+    } else {
+      groupes.push({ lotId: null, items: [paiement] });
     }
+  }
 
-    const decisionDate = p.date_decision ? ` le ${formatDate(p.date_decision)}` : "";
-    const note = p.statut_bailleur === "refuse"
-      ? `<div class="decision-note danger">
-           <i data-lucide="x-circle"></i>
-           <div>
-             <strong>Refusé${decisionDate}</strong>
-             <p>${escapeHtml(p.motif_refus || "Aucun motif précisé.")}</p>
-           </div>
-         </div>`
-      : "";
-
-    const documentButton = p.statut_bailleur === "refuse"
-      ? `<button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Reçu de refus</button>`
-      : `<button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> ${p.statut_bailleur === "valide" ? "Quittance" : "Reçu provisoire"}</button>`;
-
-    return `<article class="property-card card ${p.statut_bailleur === "refuse" ? "card-alert" : ""}">
-      <div class="card-top">
-        <span class="badge badge-${tone}">${badge}</span>
-        <span class="card-id">${escapeHtml(formatMonth(p.mois_label || p.mois))}</span>
-      </div>
-      <h3 class="card-title">${escapeHtml(p.property_titre)}</h3>
-      <p class="card-sub"><i data-lucide="user"></i> ${escapeHtml(p.locataire_nom)}</p>
-      <div class="card-metrics">
-        <div><span>Montant</span><strong>${formatMoney(p.montant)}</strong></div>
-        <div><span>Méthode</span><strong>${escapeHtml((p.methode || "—").replace("_", " "))}</strong></div>
-        <div><span>Déclaré le</span><strong>${formatDate(p.date_paiement)}</strong></div>
-      </div>
-      ${note}
-      <div class="card-actions">
-        ${p.preuve_paiement ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/payments/${p.id}/preuve', 'Preuve de paiement')"><i data-lucide="eye"></i> Voir la preuve</button>` : ""}
-        ${actions}
-        ${documentButton}
-      </div>
-    </article>`;
-  }).join("");
+  container.innerHTML = groupes
+    .map((groupe) => (groupe.items.length > 1 ? renderPaymentLot(groupe) : renderPaymentCard(groupe.items[0])))
+    .join("");
   if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
-function validerPaiement(id, statut) {
+function openValidationModal({ id = "", lotId = "", statut }) {
   document.getElementById("validatePaymentId").value = id;
+  document.getElementById("validatePaymentLot").value = lotId;
   document.getElementById("validatePaymentAction").value = statut;
 
   const motifGroup = document.getElementById("validatePaymentMotifGroup");
@@ -472,15 +542,15 @@ function validerPaiement(id, statut) {
   motifInput.value = "";
 
   if (statut === "valide") {
-    document.getElementById("validatePaymentTitle").textContent = "Valider le paiement";
+    document.getElementById("validatePaymentTitle").textContent = lotId ? "Valider le lot" : "Valider le paiement";
     document.getElementById("validatePaymentText").textContent = "Confirmez-vous avoir bien reçu ce paiement sur votre compte ?";
     document.getElementById("validatePaymentBtn").style.background = "var(--success)";
     document.getElementById("validatePaymentBtn").textContent = "Oui, valider";
     motifGroup.style.display = "none";
     motifInput.required = false;
   } else {
-    document.getElementById("validatePaymentTitle").textContent = "Refuser le paiement";
-    document.getElementById("validatePaymentText").textContent = "Indiquez au locataire pourquoi ce paiement est refusé : il pourra corriger et déclarer un nouveau paiement pour le même mois.";
+    document.getElementById("validatePaymentTitle").textContent = lotId ? "Refuser le lot" : "Refuser le paiement";
+    document.getElementById("validatePaymentText").textContent = "Indiquez au locataire pourquoi ce paiement est refusé : il pourra corriger et déclarer un nouveau paiement pour les mêmes mois.";
     document.getElementById("validatePaymentBtn").style.background = "var(--danger)";
     document.getElementById("validatePaymentBtn").textContent = "Oui, refuser";
     motifGroup.style.display = "";
@@ -491,12 +561,16 @@ function validerPaiement(id, statut) {
   document.getElementById("validatePaymentModal").style.display = "flex";
 }
 
+function validerPaiement(id, statut) { openValidationModal({ id, statut }); }
+function validerLot(lotId, statut) { openValidationModal({ lotId, statut }); }
+
 function closeValidatePaymentModal() {
   document.getElementById("validatePaymentModal").style.display = "none";
 }
 
 async function confirmValidatePayment() {
   const id = document.getElementById("validatePaymentId").value;
+  const lotId = document.getElementById("validatePaymentLot").value;
   const statut = document.getElementById("validatePaymentAction").value;
   const motif = document.getElementById("validatePaymentMotif").value.trim();
 
@@ -506,8 +580,10 @@ async function confirmValidatePayment() {
     return;
   }
 
+  const url = lotId ? `${API_URL}/payments/lots/${lotId}/valider` : `${API_URL}/payments/${id}/valider`;
+
   try {
-    const r = await fetch(API_URL + "/payments/" + id + "/valider", {
+    const r = await fetch(url, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
       body: JSON.stringify({ statut_bailleur: statut, motif_refus: motif })
@@ -516,7 +592,7 @@ async function confirmValidatePayment() {
     if (r.ok) {
       showToast(
         statut === "valide"
-          ? "Paiement validé."
+          ? (lotId ? "Lot validé." : "Paiement validé.")
           : "Paiement refusé — le locataire peut corriger et repayer.",
         "success"
       );
@@ -776,6 +852,14 @@ async function editClauses(contractId) {
   } catch (err) { showToast("Erreur serveur", "error"); }
 }
 
+async function openContractPDF(id) {
+  await openProtectedFile(`/api/contracts/${id}/pdf`, `Contrat CTR-${String(id).padStart(4, "0")}`);
+}
+
+async function openReceiptPDF(id) {
+  await openProtectedFile(`/api/payments/${id}/quittance`, `Quittance QUI-${String(id).padStart(6, "0")}`);
+}
+
 async function downloadContractPDF(id) {
   await downloadPdf(`/api/contracts/${id}/pdf`, `contrat-${id}.pdf`);
 }
@@ -920,6 +1004,40 @@ async function updateIncidentStatus(id, statut) {
       if (window.loadNotifications) window.loadNotifications();
     }
   } catch (err) { console.error(err); }
+}
+
+function openRenewModal(contractId, dateFin) {
+  const date = new Date(`${String(dateFin).slice(0, 10)}T00:00:00`);
+  date.setFullYear(date.getFullYear() + 1);
+  const nouvelleFin = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+  document.getElementById("renewContractId").value = contractId;
+  document.getElementById("renewDateFin").value = nouvelleFin;
+  document.getElementById("renewText").textContent =
+    `Le contrat sera prolongé jusqu'à la nouvelle date de fin. Le locataire verra la mise à jour dans son espace.`;
+  document.getElementById("renewModal").style.display = "flex";
+}
+
+function closeRenewModal() { document.getElementById("renewModal").style.display = "none"; }
+
+async function confirmRenew() {
+  const id = document.getElementById("renewContractId").value;
+  const nouvelleFin = document.getElementById("renewDateFin").value;
+  if (!nouvelleFin) { showToast("Choisissez une nouvelle date de fin.", "error"); return; }
+
+  try {
+    const response = await fetch(`${API_URL}/contracts/${id}/renouveler`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ nouvelle_date_fin: nouvelleFin })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { showToast(data.message || "Renouvellement impossible", "error"); return; }
+    showToast(data.message || "Contrat renouvelé", "success");
+    closeRenewModal();
+    loadContracts();
+    loadDashboard();
+  } catch (err) { showToast("Erreur serveur", "error"); }
 }
 
 function openRappelModal(contractId) {

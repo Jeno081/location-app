@@ -76,7 +76,7 @@ async function loadMesLocations() {
       try { photos = p.photos ? JSON.parse(p.photos) : []; } catch (err) { photos = []; }
       const photosHtml = photos.length > 0
         ? `<div class="property-photos" onclick="openPropertyGallery(${p.id})" role="button" tabindex="0" aria-label="Voir les photos de ${escapeHtml(p.titre)}">
-             <img src="${escapeHtml(photos[0])}" alt="${escapeHtml(p.titre)}">
+             <img src="${escapeHtml(photos[0])}" alt="${escapeHtml(p.titre)}" onerror="this.closest('.property-photos').classList.add('photo-missing'); this.remove();">
              <span class="photo-count"><i data-lucide="image"></i> ${photos.length}</span>
              <span class="photo-zoom"><i data-lucide="maximize-2"></i></span>
            </div>`
@@ -169,6 +169,16 @@ function renderContracts(contracts) {
     const tone = c.statut === "actif" ? "success" : (c.statut === "en_attente" ? "warning" : "neutral");
     const label = c.statut === "actif" ? "Actif" : (c.statut === "en_attente" ? "À signer" : "Terminé");
 
+    const fin = c.date_fin ? new Date(c.date_fin) : null;
+    const joursRestants = fin ? Math.ceil((fin.getTime() - Date.now()) / 86400000) : null;
+    const bientot = c.statut === "actif" && joursRestants !== null && joursRestants <= 60;
+    const renewBadge = bientot
+      ? `<div class="renew-badge ${joursRestants < 0 || joursRestants <= 30 ? "danger" : "warning"}">
+           <i data-lucide="calendar-clock"></i>
+           ${joursRestants < 0 ? "Contrat expiré" : `Expire dans ${joursRestants} jour${joursRestants > 1 ? "s" : ""}`}
+         </div>`
+      : "";
+
     return `<article class="property-card card">
       <div class="card-top">
         <span class="badge badge-${tone}">${label}</span>
@@ -182,12 +192,14 @@ function renderContracts(contracts) {
         <div><span>Début</span><strong>${formatDate(c.date_debut)}</strong></div>
         <div><span>Fin</span><strong>${c.date_fin ? formatDate(c.date_fin) : "Indéterminée"}</strong></div>
       </div>
+      ${renewBadge}
       ${c.date_terminaison ? `<p class="card-note">Terminé le ${formatDate(c.date_terminaison)}</p>` : ""}
       <p class="contract-signature ${c.signature_bailleur ? "signed" : "unsigned"}">${c.signature_bailleur ? "Signé par le bailleur" : "En attente du bailleur"}</p>
       <p class="contract-signature ${c.signature_locataire ? "signed" : "unsigned"}">${c.signature_locataire ? "Signé par vous" : "En attente de votre signature"}</p>
       <div class="card-actions">
         ${!c.signature_locataire && !estTermine ? `<button class="btn-primary btn-sm" onclick="signContract(${c.id})"><i data-lucide="pen-line"></i> Signer</button>` : ""}
-        <button class="btn-secondary btn-sm" onclick="downloadContractPDF(${c.id})"><i data-lucide="file-down"></i> Contrat PDF</button>
+        <button class="btn-secondary btn-sm" onclick="openContractPDF(${c.id})"><i data-lucide="file-text"></i> Voir le PDF</button>
+        <button class="btn-ghost btn-sm" onclick="downloadContractPDF(${c.id})" title="Télécharger le contrat"><i data-lucide="download"></i></button>
       </div>
     </article>`;
   }).join("");
@@ -230,7 +242,8 @@ function renderPayments(payments) {
     const actions = statut === "refuse" && !remplace
       ? `<button class="btn-primary btn-sm" onclick="retryPayment(${p.contract_id}, ${Number(p.montant) || 0}, '${escapeHtml(p.mois)}')"><i data-lucide="refresh-cw"></i> Corriger et repayer</button>`
       : statut === "valide"
-        ? `<button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button>`
+        ? `<button class="btn-secondary btn-sm" onclick="openReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Voir la quittance</button>
+           <button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})" title="Télécharger la quittance"><i data-lucide="download"></i></button>`
         : "";
 
     return `<article class="property-card card ${statut === "refuse" ? "card-alert" : ""}">
@@ -283,6 +296,98 @@ function renderIncidents(incidents) {
 }
 
 // ACTIONS
+function moisCle(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function decalerMois(cle, delta) {
+  const [annee, mois] = cle.split("-").map(Number);
+  const date = new Date(annee, mois - 1 + delta, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function moisDeDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : moisCle(date);
+}
+
+function moisSelectionnes() {
+  return [...document.querySelectorAll('#paymentMonths input[type="checkbox"]:checked')].map((input) => input.value);
+}
+
+function updatePaymentTotal() {
+  const mois = moisSelectionnes();
+  const contractId = document.getElementById("paymentContract").value;
+  const location = globalData.locations.find((p) => Number(p.contract_id) === Number(contractId));
+  const loyer = location ? Number(location.montant_loyer) || 0 : 0;
+  const total = mois.length * loyer;
+
+  document.getElementById("paymentMontant").value = total;
+  document.getElementById("paymentTotal").textContent =
+    `${formatMoney(total)}${mois.length > 1 ? ` · ${mois.length} mois` : ""}`;
+  document.getElementById("paymentMonthsHint").textContent = mois.length
+    ? `${mois.length} mois sélectionné(s)${mois.length > 1 ? " — total calculé automatiquement" : ""}.`
+    : "Sélectionnez au moins un mois à régler.";
+}
+
+function renderPaymentMonths(contractId, moisPasses) {
+  const container = document.getElementById("paymentMonths");
+  const location = globalData.locations.find((p) => Number(p.contract_id) === Number(contractId));
+
+  if (!location) {
+    container.innerHTML = '<p class="form-hint">Choisissez un contrat pour voir les mois disponibles.</p>';
+    updatePaymentTotal();
+    return;
+  }
+
+  const debut = moisDeDate(location.date_debut) || moisCle();
+  const fin = decalerMois(moisCle(), 6);
+  let mois = [];
+  for (let cle = debut; cle <= fin; cle = decalerMois(cle, 1)) mois.push(cle);
+  if (mois.length > 24) mois = mois.slice(-24);
+
+  // Un mois ciblé (retry d'un paiement refusé) reste toujours proposé.
+  const cibles = Array.isArray(moisPasses) ? moisPasses : moisPasses ? [moisPasses] : [];
+  for (const cle of cibles) {
+    if (cle && !mois.includes(cle)) mois.push(cle);
+  }
+  mois.sort();
+
+  const payes = new Map();
+  globalData.payments.forEach((p) => {
+    if (Number(p.contract_id) === Number(contractId) && p.statut_bailleur !== "refuse") {
+      payes.set(p.mois, p.statut_bailleur);
+    }
+  });
+
+  const selection = new Set(
+    (Array.isArray(moisPasses) ? moisPasses : moisPasses ? [moisPasses] : []).filter((m) => mois.includes(m))
+  );
+  if (selection.size === 0) {
+    const courant = moisCle();
+    if (mois.includes(courant) && !payes.has(courant)) selection.add(courant);
+  }
+
+  container.innerHTML = mois.map((cle) => {
+    const statut = payes.get(cle);
+    const disabled = !!statut;
+    const checked = selection.has(cle);
+    return `<label class="month-option ${disabled ? "disabled" : ""} ${checked ? "selected" : ""}">
+      <input type="checkbox" value="${cle}" ${disabled ? "disabled" : ""} ${checked ? "checked" : ""}>
+      <span>${escapeHtml(formatMonth(cle))}${statut ? `<small>${statut === "valide" ? "Payé" : "En attente"}</small>` : ""}</span>
+    </label>`;
+  }).join("");
+
+  container.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener("change", () => {
+      input.closest(".month-option").classList.toggle("selected", input.checked);
+      updatePaymentTotal();
+    });
+  });
+
+  updatePaymentTotal();
+}
+
 function openPaymentModal(contractId, montant, mois) {
   if (globalData.locations.length === 0) {
     showToast("Aucun logement actif pour déclarer un paiement", "error");
@@ -293,15 +398,9 @@ function openPaymentModal(contractId, montant, mois) {
     `<option value="${p.contract_id}">${escapeHtml(p.titre)} — ${formatMoney(p.montant_loyer)}</option>`
   ).join("");
   if (contractId) select.value = String(contractId);
-  if (montant !== undefined && montant !== null) document.getElementById("paymentMontant").value = montant;
+  else if (!select.value) select.value = String(globalData.locations[0].contract_id);
 
-  const moisInput = document.getElementById("paymentMois");
-  if (mois) {
-    moisInput.value = mois;
-  } else if (!moisInput.value) {
-    const now = new Date();
-    moisInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  }
+  renderPaymentMonths(select.value, mois || null);
 
   const notice = document.getElementById("paymentRetryNotice");
   if (notice) {
@@ -323,11 +422,21 @@ function retryPayment(contractId, montant, mois) {
 }
 function closePaymentModal() { document.getElementById("paymentModal").style.display = "none"; }
 
+document.getElementById("paymentContract").addEventListener("change", (e) => {
+  renderPaymentMonths(e.target.value, null);
+});
+
 document.getElementById("paymentForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const methode = document.querySelector('input[name="methode"]:checked').value;
   const preuve = document.getElementById("paymentPreuve").files[0];
-  
+  const mois = moisSelectionnes();
+
+  if (mois.length === 0) {
+    showToast("Sélectionnez au moins un mois à régler.", "error");
+    return;
+  }
+
   if (!preuve) {
     showToast("Veuillez ajouter une preuve de paiement", "error");
     return;
@@ -335,7 +444,7 @@ document.getElementById("paymentForm").addEventListener("submit", async (e) => {
 
   const formData = new FormData();
   formData.append("contract_id", document.getElementById("paymentContract").value);
-  formData.append("mois", document.getElementById("paymentMois").value);
+  formData.append("mois", JSON.stringify(mois));
   formData.append("montant", document.getElementById("paymentMontant").value);
   formData.append("methode", methode);
   formData.append("preuve", preuve);
@@ -348,7 +457,12 @@ document.getElementById("paymentForm").addEventListener("submit", async (e) => {
     });
     const data = await response.json();
     if (response.ok) {
-      showToast("Paiement déclaré ! En attente de validation.", "success");
+      showToast(
+        mois.length > 1
+          ? `${mois.length} mois déclarés — en attente de validation.`
+          : "Paiement déclaré ! En attente de validation.",
+        "success"
+      );
       document.getElementById("paymentForm").reset();
       const notice = document.getElementById("paymentRetryNotice");
       if (notice) { notice.style.display = "none"; notice.innerHTML = ""; }
@@ -490,6 +604,14 @@ async function confirmSignature() {
   }
 }
 
+async function openContractPDF(id) {
+  await openProtectedFile(`/api/contracts/${id}/pdf`, `Contrat CTR-${String(id).padStart(4, "0")}`);
+}
+
+async function openReceiptPDF(id) {
+  await openProtectedFile(`/api/payments/${id}/quittance`, `Quittance QUI-${String(id).padStart(6, "0")}`);
+}
+
 async function downloadContractPDF(id) {
   await downloadProtectedFile(`/api/contracts/${id}/pdf`, `contrat-${id}.pdf`);
 }
@@ -572,7 +694,7 @@ async function loadHistory() {
             <h3 class="card-title">${escapeHtml(c.property_titre)}</h3>
             <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(c.property_adresse)}</p>
             <div class="card-metrics"><div><span>Loyer</span><strong>${formatMoney(c.montant_loyer)}</strong></div><div><span>Début</span><strong>${formatDate(c.date_debut)}</strong></div></div>
-            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="downloadContractPDF(${c.id})"><i data-lucide="file-down"></i> Télécharger</button></div>
+            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="openContractPDF(${c.id})"><i data-lucide="file-text"></i> Voir</button><button class="btn-ghost btn-sm" onclick="downloadContractPDF(${c.id})" title="Télécharger"><i data-lucide="download"></i></button></div>
           </article>`).join("")}</div>`;
 
     const paiementsHtml = data.paiements.length === 0
@@ -582,7 +704,7 @@ async function loadHistory() {
             <div class="card-top"><span class="badge badge-${p.statut === "valide" ? "success" : "warning"}">${escapeHtml(p.statut)}</span><span class="card-id">${escapeHtml(formatMonth(p.mois))}</span></div>
             <h3 class="card-title">${escapeHtml(p.property_titre)}</h3>
             <div class="card-metrics"><div><span>Montant</span><strong>${formatMoney(p.montant)}</strong></div><div><span>Mois</span><strong>${escapeHtml(formatMonth(p.mois))}</strong></div></div>
-            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="downloadReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Quittance</button></div>
+            <div class="card-actions"><button class="btn-secondary btn-sm" onclick="openReceiptPDF(${p.id})"><i data-lucide="receipt"></i> Voir</button><button class="btn-ghost btn-sm" onclick="downloadReceiptPDF(${p.id})" title="Télécharger"><i data-lucide="download"></i></button></div>
           </article>`).join("")}</div>`;
 
     contentContainer.innerHTML = `

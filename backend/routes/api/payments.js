@@ -8,6 +8,7 @@ const paymentController = require("../../controllers/paymentController");
 const receiptPDFController = require("../../controllers/receiptPDFController");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/documentUpload"); // Réutilise multer
+const { persistUploads } = require("../../services/fileStore");
 
 // ⚠️ Routes spécifiques AVANT les routes /:id
 
@@ -17,6 +18,7 @@ router.post(
   verifyToken, 
   requireRole("locataire"), 
   upload.single("preuve"), // Le nom "preuve" correspond au name du FormData
+  persistUploads,
   paymentController.createPayment
 );
 router.get("/mes-paiements", verifyToken, requireRole("locataire"), paymentController.getMyPayments);
@@ -30,6 +32,7 @@ router.get("/tableau-de-bord", verifyToken, requireRole("bailleur"), paymentCont
 router.get("/rappels", verifyToken, requireRole("bailleur"), paymentController.getRappelsBailleur);
 router.post("/rappel", verifyToken, requireRole("bailleur"), paymentController.envoyerRappel);
 router.get("/export-csv", verifyToken, requireRole("bailleur"), paymentController.exportCSV);
+router.put("/lots/:lotId/valider", verifyToken, requireRole("bailleur"), paymentController.validerLot);
 router.put("/:id/valider", verifyToken, requireRole("bailleur"), paymentController.validerPaiement);
 
 // Détail (avec :id en dernier)

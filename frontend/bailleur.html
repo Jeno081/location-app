@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/theme.css?v=8">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -292,6 +292,24 @@
     </div>
   </div>
 
+  <!-- Modale renouvellement de contrat -->
+  <div id="renewModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeRenewModal()" aria-label="Fermer">&times;</span>
+      <h2>Renouveler le contrat</h2>
+      <p id="renewText" class="muted">Prolongez la durée du contrat.</p>
+      <input type="hidden" id="renewContractId">
+      <div class="form-group">
+        <label for="renewDateFin">Nouvelle date de fin</label>
+        <input type="date" id="renewDateFin" required>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="closeRenewModal()">Annuler</button>
+        <button class="btn-primary btn-block" onclick="confirmRenew()">Renouveler</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale rappel -->
   <div id="rappelModal" class="modal">
     <div class="modal-content">
@@ -356,6 +374,7 @@
       <p id="validatePaymentText" class="muted">Confirmez-vous avoir bien reçu ce paiement ?</p>
       <input type="hidden" id="validatePaymentId">
       <input type="hidden" id="validatePaymentAction">
+      <input type="hidden" id="validatePaymentLot">
       <div class="form-group" id="validatePaymentMotifGroup" style="display:none;">
         <label for="validatePaymentMotif">Motif du refus</label>
         <textarea id="validatePaymentMotif" rows="3" maxlength="500" placeholder="Ex : la preuve ne correspond pas au montant reçu, ou le virement n'apparaît pas sur le compte."></textarea>
@@ -369,14 +388,14 @@
   </div>
 
   <script src="js/icons.js"></script>
-  <script src="js/ui.js"></script>
+  <script src="js/ui.js?v=8"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js"></script>
-  <script src="js/bailleur.js?v=6"></script>
+  <script src="js/navbar.js?v=8"></script>
+  <script src="js/bailleur.js?v=8"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

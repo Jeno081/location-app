@@ -3,9 +3,10 @@
 // ============================================
 
 const db = require("../database/db");
+const crypto = require("crypto");
 const { Parser } = require("json2csv");
 const { normaliserMois } = require("../database/migrate");
-const { resolveStoredPath } = require("../utils/files");
+const { sendStoredFile } = require("../services/fileStore");
 
 const MOIS_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -35,12 +36,21 @@ function csvSafe(value) {
 exports.createPayment = async (req, res) => {
   const { contract_id, montant, methode } = req.body;
   const locataire_id = req.user.id;
-  const mois = normaliserMois(req.body.mois);
 
-  if (!contract_id || montant === undefined || !req.body.mois) {
+  // Le champ `mois` accepte un mois ou un tableau JSON de mois (paiement groupé).
+  let moisBruts = req.body.mois;
+  if (typeof moisBruts === "string" && moisBruts.trim().startsWith("[")) {
+    try { moisBruts = JSON.parse(moisBruts); } catch (err) { moisBruts = null; }
+  }
+  if (!Array.isArray(moisBruts)) moisBruts = moisBruts ? [moisBruts] : [];
+  const moisListe = [...new Set(moisBruts.map(normaliserMois).filter(Boolean))].sort();
+
+  if (!contract_id || montant === undefined || moisListe.length === 0) {
     return res.status(400).json({ message: "Champs obligatoires manquants" });
   }
-  if (!mois) return res.status(400).json({ message: "Mois invalide. Utilisez le format AAAA-MM." });
+  if (moisListe.length > 12) {
+    return res.status(400).json({ message: "Vous pouvez payer au maximum 12 mois à la fois." });
+  }
 
   const montantNombre = Number(montant);
   if (!Number.isFinite(montantNombre) || montantNombre <= 0) {
@@ -55,16 +65,19 @@ exports.createPayment = async (req, res) => {
   }
 
   // Un paiement refusé n'empêche plus de déclarer un nouveau paiement pour ce mois.
-  const dejaPaye = await db.get(`
-    SELECT id, statut_bailleur FROM payments
-    WHERE contract_id = ? AND mois = ? AND statut_bailleur <> 'refuse'
-    LIMIT 1
-  `, [contract_id, mois]);
-  if (dejaPaye) {
+  const placeholders = moisListe.map(() => "?").join(",");
+  const dejaPayes = await db.all(`
+    SELECT mois, statut_bailleur FROM payments
+    WHERE contract_id = ? AND mois IN (${placeholders}) AND statut_bailleur <> 'refuse'
+  `, [contract_id, ...moisListe]);
+
+  if (dejaPayes.length > 0) {
+    const detail = dejaPayes.map((p) => moisLabel(p.mois)).join(", ");
+    const dejaValide = dejaPayes.some((p) => p.statut_bailleur === "valide");
     return res.status(409).json({
-      message: dejaPaye.statut_bailleur === "valide"
-        ? "Le loyer de ce mois est déjà validé."
-        : "Un paiement est déjà en attente de validation pour ce mois."
+      message: `Un paiement existe déjà pour : ${detail}.`,
+      code: dejaValide ? "DEJA_VALIDE" : "DEJA_EN_ATTENTE",
+      mois: dejaPayes.map((p) => p.mois)
     });
   }
 
@@ -74,22 +87,41 @@ exports.createPayment = async (req, res) => {
 
   const preuve = "/uploads/documents/" + req.file.filename;
   const now = new Date().toISOString();
+  const lotId = moisListe.length > 1 ? crypto.randomUUID() : null;
+  const montantMois = Math.round((montantNombre / moisListe.length) * 100) / 100;
+  const ids = [];
 
   try {
-    const result = await db.run(`
-      INSERT INTO payments (contract_id, montant, mois, methode, statut, statut_bailleur, preuve_paiement, date_paiement)
-      VALUES (?, ?, ?, ?, 'paye', 'en_attente', ?, ?)
-    `, [contract_id, montantNombre, mois, methode || "mobile", preuve, now]);
+    await db.transaction(async (tx) => {
+      for (let index = 0; index < moisListe.length; index++) {
+        // Le dernier mois absorbe l'arrondi pour que le total corresponde exactement.
+        const montantLigne = index === moisListe.length - 1
+          ? Math.round((montantNombre - montantMois * (moisListe.length - 1)) * 100) / 100
+          : montantMois;
+
+        const result = await tx.run(`
+          INSERT INTO payments (contract_id, montant, mois, methode, statut, statut_bailleur, preuve_paiement, lot_id, date_paiement)
+          VALUES (?, ?, ?, ?, 'paye', 'en_attente', ?, ?, ?)
+        `, [contract_id, montantLigne, moisListe[index], methode || "mobile", preuve, lotId, now]);
+        ids.push(result.insertId);
+      }
+    });
 
     res.status(201).json({
-      message: "Paiement enregistré, en attente de validation.",
-      paymentId: result.insertId,
-      mois,
-      mois_label: moisLabel(mois)
+      message: moisListe.length > 1
+        ? `${moisListe.length} mois déclarés, en attente de validation.`
+        : "Paiement enregistré, en attente de validation.",
+      paymentId: ids[0],
+      paymentIds: ids,
+      lot_id: lotId,
+      mois: moisListe.length === 1 ? moisListe[0] : moisListe,
+      mois_label: moisListe.length === 1 ? moisLabel(moisListe[0]) : moisListe.map(moisLabel).join(", "),
+      mois_labels: moisListe.map(moisLabel),
+      total: montantNombre
     });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
-      return res.status(409).json({ message: "Un paiement est déjà en attente pour ce mois." });
+      return res.status(409).json({ message: "Un paiement est déjà en attente pour un de ces mois." });
     }
     throw err;
   }
@@ -176,6 +208,47 @@ exports.validerPaiement = async (req, res) => {
   });
 };
 
+exports.validerLot = async (req, res) => {
+  const { lotId } = req.params;
+  const { statut_bailleur } = req.body;
+  const motif = String(req.body.motif_refus || "").trim();
+
+  if (!["valide", "refuse"].includes(statut_bailleur)) {
+    return res.status(400).json({ message: "Statut invalide" });
+  }
+  if (statut_bailleur === "refuse" && motif.length < 5) {
+    return res.status(400).json({ message: "Merci d'indiquer un motif de refus (5 caractères minimum)." });
+  }
+
+  const paiements = await db.all(`
+    SELECT pay.id FROM payments pay
+    JOIN contracts c ON pay.contract_id = c.id
+    JOIN properties p ON c.property_id = p.id
+    WHERE pay.lot_id = ? AND pay.statut_bailleur = 'en_attente' AND p.bailleur_id = ?
+  `, [lotId, req.user.id]);
+
+  if (paiements.length === 0) {
+    return res.status(404).json({ message: "Aucun paiement en attente pour ce lot." });
+  }
+
+  const now = new Date().toISOString();
+  await db.transaction(async (tx) => {
+    for (const paiement of paiements) {
+      await tx.run(`
+        UPDATE payments SET statut_bailleur = ?, motif_refus = ?, date_decision = ? WHERE id = ?
+      `, [statut_bailleur, statut_bailleur === "refuse" ? motif : null, now, paiement.id]);
+    }
+  });
+
+  res.json({
+    message: statut_bailleur === "valide"
+      ? `${paiements.length} paiement(s) validé(s).`
+      : `${paiements.length} paiement(s) refusé(s).`,
+    count: paiements.length,
+    statut_bailleur
+  });
+};
+
 exports.getPaymentById = async (req, res) => {
   const { id } = req.params;
   const { id: userId, role } = req.user;
@@ -215,12 +288,9 @@ exports.getPaymentProof = async (req, res) => {
     || (req.user.role === "locataire" && payment.locataire_id === req.user.id);
   if (!autorise) return res.status(403).json({ message: "Non autorisé" });
 
-  const file = resolveStoredPath(payment.preuve_paiement);
-  if (!file) return res.status(404).json({ message: "Aucune preuve disponible" });
-
   res.setHeader("Cache-Control", "private, max-age=0");
-  res.setHeader("Content-Disposition", "inline");
-  res.sendFile(file);
+  const sent = await sendStoredFile(res, payment.preuve_paiement, { inlineName: "preuve-paiement" });
+  if (!sent) return res.status(404).json({ message: "Aucune preuve disponible" });
 };
 
 exports.getDashboard = async (req, res) => {

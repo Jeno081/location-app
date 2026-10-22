@@ -7,6 +7,7 @@ const router = express.Router();
 const propertyController = require("../../controllers/propertyController");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/uploadMiddleware");
+const { persistUploads } = require("../../services/fileStore");
 
 // --- Routes PUBLIQUES ---
 router.get("/", propertyController.getAllProperties);
@@ -56,6 +57,7 @@ router.post(
   verifyToken,
   requireRole("bailleur"),
   upload.array("photos", 5),
+  persistUploads,
   async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "Aucune photo envoyee" });

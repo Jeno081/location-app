@@ -34,7 +34,7 @@ services:
       - key: DB_SSL
         value: "false"
       - key: DB_POOL_SIZE
-        value: "5"
+        value: "2"
       # Dossier des fichiers : nécessite un disque persistant (plan payant).
       # - key: UPLOAD_DIR
       #   value: /var/data/uploads

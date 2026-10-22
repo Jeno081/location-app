@@ -134,6 +134,30 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.strictEqual(r.status, 201, JSON.stringify(r.body));
   const propertyId = r.body.propertyId;
 
+  // Photo de logement : stockée en base et servie publiquement.
+  const photoForm = new FormData();
+  photoForm.append("photos", new Blob(["photo-test"], { type: "image/png" }), "logement.png");
+  r = await asJson(await fetch(`${baseUrl}/api/properties/${propertyId}/photos`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${bailleurToken}` },
+    body: photoForm
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  const photoUrl = r.body.photos[0];
+  const photoResponse = await fetch(`${baseUrl}${photoUrl}`);
+  assert.strictEqual(photoResponse.status, 200);
+  assert.match(photoResponse.headers.get("content-type"), /^image\//);
+
+  // Les chemins de photos disparues sont retirés des réponses API.
+  await db.run("UPDATE properties SET photos = ? WHERE id = ?", [
+    JSON.stringify([photoUrl, "/uploads/fichier-absent.jpg"]), propertyId
+  ]);
+  r = await asJson(await fetch(`${baseUrl}/api/properties/mes-logements/liste`, { headers: auth(bailleurToken) }));
+  const proprieteListee = r.body.properties.find((p) => p.id === propertyId);
+  const photosListees = JSON.parse(proprieteListee.photos);
+  assert.ok(photosListees.includes(photoUrl));
+  assert.ok(!photosListees.includes("/uploads/fichier-absent.jpg"));
+
   r = await asJson(await fetch(`${baseUrl}/api/contracts`, {
     method: "POST",
     headers: auth(bailleurToken),
@@ -184,6 +208,17 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
 
   r = await asJson(await fetch(`${baseUrl}/api/contracts/mes-contrats`, { headers: auth(bailleurToken) }));
   assert.strictEqual(r.body.contracts[0].statut, "actif");
+
+  // Renouvellement du contrat : nouvelle date de fin.
+  r = await asJson(await fetch(`${baseUrl}/api/contracts/${contractId}/renouveler`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ nouvelle_date_fin: "2028-10-01" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.date_fin, "2028-10-01");
+  r = await asJson(await fetch(`${baseUrl}/api/contracts/mes-contrats`, { headers: auth(bailleurToken) }));
+  assert.strictEqual(String(r.body.contracts[0].date_fin).slice(0, 10), "2028-10-01");
 
   // PDF du contrat.
   const pdf = await fetch(`${baseUrl}/api/contracts/${contractId}/pdf`, { headers: { Authorization: `Bearer ${tenantToken}` } });
@@ -249,6 +284,50 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.strictEqual(r.body.stats.loyers_attendus, 1);
   assert.strictEqual(r.body.stats.loyers_payes, 1);
   assert.strictEqual(Number(r.body.stats.montant_attendu), 650);
+
+  // Paiement groupé sur plusieurs mois + validation du lot par le bailleur.
+  const multiForm = () => {
+    const form = new FormData();
+    form.append("contract_id", String(contractId));
+    form.append("mois", JSON.stringify(["2026-12", "2027-01"]));
+    form.append("montant", "1300");
+    form.append("methode", "mobile_money");
+    form.append("preuve", new Blob(["preuve"], { type: "image/png" }), "preuve.png");
+    return form;
+  };
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: multiForm()
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  assert.strictEqual(r.body.paymentIds.length, 2);
+  assert.ok(r.body.lot_id);
+  const lotId = r.body.lot_id;
+
+  // Un deuxième paiement sur les mêmes mois est refusé.
+  r = await asJson(await fetch(`${baseUrl}/api/payments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: multiForm()
+  }));
+  assert.strictEqual(r.status, 409, JSON.stringify(r.body));
+
+  // Le bailleur valide tout le lot en une action.
+  r = await asJson(await fetch(`${baseUrl}/api/payments/lots/${lotId}/valider`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut_bailleur: "valide" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.count, 2);
+
+  r = await asJson(await fetch(`${baseUrl}/api/payments/mes-paiements`, { headers: auth(tenantToken) }));
+  const paiementsLot = r.body.payments.filter((p) => p.lot_id === lotId);
+  assert.strictEqual(paiementsLot.length, 2);
+  assert.ok(paiementsLot.every((p) => p.statut_bailleur === "valide"));
+  assert.strictEqual(paiementsLot.reduce((s, p) => s + Number(p.montant), 0), 1300);
 
   // Refus motivé d'un paiement, puis nouveau paiement pour le même mois.
   const paymentForm = (mois) => {

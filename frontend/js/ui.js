@@ -159,14 +159,102 @@ function openImageLightbox(urls, startIndex = 0, title = "", onClose = null) {
   requestAnimationFrame(() => overlay.classList.add("show"));
 }
 
-function openPdfBlob(objectUrl) {
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.target = "_blank";
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+function openPdfBlob(objectUrl, title = "Document", filename = "document.pdf") {
+  return openPdfViewer(objectUrl, title, filename, { revoke: true });
+}
+
+let pdfJsPromise = null;
+
+function loadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  if (pdfJsPromise) return pdfJsPromise;
+  pdfJsPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+    script.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+      resolve(window.pdfjsLib);
+    };
+    script.onerror = () => reject(new Error("Visionneuse PDF indisponible"));
+    document.head.appendChild(script);
+  });
+  return pdfJsPromise;
+}
+
+function closePdfViewer() {
+  const viewer = document.getElementById("pdfViewer");
+  if (!viewer) return;
+  const revoke = viewer.dataset.revokeUrl;
+  viewer.classList.remove("show");
+  document.body.style.overflow = "";
+  setTimeout(() => viewer.remove(), 180);
+  if (revoke) setTimeout(() => URL.revokeObjectURL(revoke), 500);
+}
+
+async function openPdfViewer(objectUrl, title = "Document", filename = "document.pdf", options = {}) {
+  closePdfViewer();
+  document.body.style.overflow = "hidden";
+
+  const overlay = document.createElement("div");
+  overlay.id = "pdfViewer";
+  overlay.className = "pdf-viewer";
+  if (options.revoke) overlay.dataset.revokeUrl = objectUrl;
+  overlay.innerHTML = `
+    <header class="pdf-viewer-head">
+      <button type="button" class="pdf-viewer-btn" data-pdf-close aria-label="Fermer le document">
+        <i data-lucide="arrow-left"></i><span>Retour</span>
+      </button>
+      <span class="pdf-viewer-title">${escapeHtml(title)}</span>
+      <a class="pdf-viewer-btn" href="${objectUrl}" download="${escapeHtml(filename)}" aria-label="Télécharger le PDF">
+        <i data-lucide="download"></i><span>Télécharger</span>
+      </a>
+      <button type="button" class="pdf-viewer-btn" data-pdf-close aria-label="Fermer">
+        <i data-lucide="x"></i>
+      </button>
+    </header>
+    <div class="pdf-viewer-body"><p class="pdf-viewer-loading">Chargement du document…</p></div>
+  `;
+  document.body.appendChild(overlay);
+  if (typeof lucide !== "undefined") lucide.createIcons();
+  requestAnimationFrame(() => overlay.classList.add("show"));
+
+  overlay.querySelectorAll("[data-pdf-close]").forEach((btn) => btn.addEventListener("click", closePdfViewer));
+  document.addEventListener("keydown", function onKey(event) {
+    if (event.key === "Escape") { closePdfViewer(); document.removeEventListener("keydown", onKey); }
+  });
+
+  const body = overlay.querySelector(".pdf-viewer-body");
+
+  try {
+    const pdfjsLib = await loadPdfJs();
+    const pdf = await pdfjsLib.getDocument(objectUrl).promise;
+    body.innerHTML = "";
+
+    const largeur = Math.min(body.clientWidth - 24, 900);
+    for (let numero = 1; numero <= pdf.numPages; numero++) {
+      const page = await pdf.getPage(numero);
+      const base = page.getViewport({ scale: 1 });
+      const ratio = Math.min(2, window.devicePixelRatio || 1);
+      const viewport = page.getViewport({ scale: (largeur / base.width) * ratio });
+
+      const wrapper = document.createElement("div");
+      wrapper.className = "pdf-viewer-page";
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.floor(viewport.width);
+      canvas.height = Math.floor(viewport.height);
+      wrapper.appendChild(canvas);
+      body.appendChild(wrapper);
+
+      await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    }
+  } catch (err) {
+    body.innerHTML = `
+      <p class="pdf-viewer-error">
+        Impossible d'afficher l'aperçu sur cet appareil.<br>
+        <a href="${objectUrl}" download="${escapeHtml(filename)}" style="color:#93c5fd;text-decoration:underline;">Télécharger le PDF</a>
+      </p>`;
+  }
 }
 
 async function openProtectedFile(url, title = "Aperçu") {
@@ -187,8 +275,7 @@ async function openProtectedFile(url, title = "Aperçu") {
       return;
     }
     if (type.startsWith("application/pdf")) {
-      openPdfBlob(objectUrl);
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      openPdfViewer(objectUrl, title, `${title}.pdf`, { revoke: true });
       return;
     }
     const link = document.createElement("a");
@@ -229,6 +316,37 @@ async function downloadProtectedFile(url, filename) {
   }
 }
 
+function confirmAction({ title, message, confirmLabel = "Confirmer", cancelLabel = "Annuler", danger = false, onConfirm }) {
+  document.getElementById("confirmActionDialog")?.remove();
+  const overlay = document.createElement("div");
+  overlay.id = "confirmActionDialog";
+  overlay.className = "modal";
+  overlay.style.display = "flex";
+  overlay.innerHTML = `
+    <div class="modal-content confirm-dialog" role="dialog" aria-modal="true">
+      <div class="confirm-icon"><i data-lucide="${danger ? "log-out" : "help-circle"}"></i></div>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(message || "")}</p>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary btn-block" data-confirm-cancel>${escapeHtml(cancelLabel)}</button>
+        <button type="button" class="btn-primary btn-block" data-confirm-ok ${danger ? 'style="background:var(--danger)"' : ""}>${escapeHtml(confirmLabel)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  if (typeof lucide !== "undefined") lucide.createIcons();
+
+  const close = () => overlay.remove();
+  overlay.querySelector("[data-confirm-cancel]").addEventListener("click", close);
+  overlay.querySelector("[data-confirm-ok]").addEventListener("click", () => {
+    close();
+    if (typeof onConfirm === "function") onConfirm();
+  });
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  document.addEventListener("keydown", function onKey(event) {
+    if (event.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
+  });
+}
+
 function setPageHeading(title, subtitle) {
   const heading = document.getElementById("pageTitle");
   const sub = document.getElementById("pageSubtitle");
@@ -260,3 +378,6 @@ window.openImageLightbox = openImageLightbox;
 window.closeImageLightbox = closeImageLightbox;
 window.downloadProtectedFile = downloadProtectedFile;
 window.setPageHeading = setPageHeading;
+window.confirmAction = confirmAction;
+window.openPdfViewer = openPdfViewer;
+window.closePdfViewer = closePdfViewer;

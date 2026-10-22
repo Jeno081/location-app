@@ -66,7 +66,9 @@ const DB_PASSWORD = process.env.DB_PASSWORD !== undefined
 const DB_NAME = process.env.DB_NAME || process.env.MYSQL_ADDON_DB || (fromUri && fromUri.name) || "location_app";
 const DB_SSL = String(process.env.DB_SSL || "").toLowerCase() === "true";
 const DB_SSL_CA = process.env.DB_SSL_CA || null;
-const DB_POOL_SIZE = Number(process.env.DB_POOL_SIZE) || 5;
+// Clever Cloud DEV limite l'utilisateur à 5 connexions : 2 par instance
+// laisse de la marge pendant les déploiements Render (ancienne + nouvelle).
+const DB_POOL_SIZE = Number(process.env.DB_POOL_SIZE) || 2;
 
 const PORT = Number(process.env.PORT) || 3000;
 const UPLOAD_DIR = process.env.UPLOAD_DIR

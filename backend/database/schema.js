@@ -78,6 +78,7 @@ const SCHEMA = [
     statut_bailleur ENUM('en_attente', 'valide', 'refuse') NOT NULL DEFAULT 'en_attente',
     preuve_paiement VARCHAR(255) NULL,
     motif_refus VARCHAR(500) NULL,
+    lot_id CHAR(36) NULL,
     date_decision DATETIME NULL,
     date_paiement DATETIME NULL,
     mois_actif VARCHAR(7) GENERATED ALWAYS AS (
@@ -86,6 +87,7 @@ const SCHEMA = [
     PRIMARY KEY (id),
     KEY idx_payments_contract (contract_id),
     KEY idx_payments_mois (mois),
+    KEY idx_payments_lot (lot_id),
     UNIQUE KEY uq_payments_contract_mois_actif (contract_id, mois_actif),
     CONSTRAINT fk_payments_contract FOREIGN KEY (contract_id) REFERENCES contracts (id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -130,6 +132,17 @@ const SCHEMA = [
     PRIMARY KEY (id),
     KEY idx_reminders_contract (contract_id),
     CONSTRAINT fk_reminders_contract FOREIGN KEY (contract_id) REFERENCES contracts (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  // Fichiers envoyés (photos, preuves, documents) : stockés en base pour
+  // survivre aux redéploiements Render (disque éphémère).
+  `CREATE TABLE IF NOT EXISTS files (
+    path VARCHAR(255) NOT NULL,
+    mime VARCHAR(100) NOT NULL,
+    taille INT UNSIGNED NOT NULL,
+    donnees LONGBLOB NOT NULL,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (path)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

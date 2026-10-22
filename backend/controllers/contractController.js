@@ -231,10 +231,55 @@ exports.terminerContrat = async (req, res) => {
   }
 };
 
+function ajouterUnAn(dateStr) {
+  const [annee, mois, jour] = String(dateStr).slice(0, 10).split("-").map(Number);
+  const date = new Date(annee, mois - 1, jour);
+  date.setFullYear(date.getFullYear() + 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+exports.renouvelerContrat = async (req, res) => {
+  const { id } = req.params;
+
+  const contract = await db.get(`
+    SELECT c.*, p.bailleur_id FROM contracts c
+    JOIN properties p ON c.property_id = p.id
+    WHERE c.id = ?
+  `, [id]);
+
+  if (!contract) return res.status(404).json({ message: "Contrat introuvable" });
+  if (contract.bailleur_id !== req.user.id) return res.status(403).json({ message: "Non autorisé" });
+  if (contract.statut !== "actif") {
+    return res.status(409).json({ message: "Seul un contrat actif peut être renouvelé." });
+  }
+  if (!contract.date_fin) {
+    return res.status(409).json({ message: "Ce contrat est à durée indéterminée : aucune reconduction nécessaire." });
+  }
+
+  const ancienneFin = String(contract.date_fin).slice(0, 10);
+  const nouvelleFin = String(req.body.nouvelle_date_fin || ajouterUnAn(ancienneFin)).slice(0, 10);
+
+  if (!estDateValide(nouvelleFin)) {
+    return res.status(400).json({ message: "Nouvelle date de fin invalide." });
+  }
+  if (nouvelleFin <= ancienneFin) {
+    return res.status(400).json({ message: "La nouvelle date de fin doit être postérieure à l'actuelle." });
+  }
+  if (new Date(nouvelleFin) > new Date(Date.now() + 10 * 365 * 24 * 3600 * 1000)) {
+    return res.status(400).json({ message: "La nouvelle date de fin est trop lointaine (10 ans maximum)." });
+  }
+
+  await db.run("UPDATE contracts SET date_fin = ? WHERE id = ?", [nouvelleFin, id]);
+
+  res.json({
+    message: `Contrat renouvelé jusqu'au ${nouvelleFin.split("-").reverse().join("/")}`,
+    date_fin: nouvelleFin
+  });
+};
+
 exports.updateClauses = async (req, res) => {
   const { id } = req.params;
   const clauses = req.body.clauses_personnalisees;
-
   const contract = await db.get(`
     SELECT c.*, p.bailleur_id FROM contracts c
     JOIN properties p ON c.property_id = p.id

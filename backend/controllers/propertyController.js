@@ -3,8 +3,27 @@
 // ============================================
 
 const db = require("../database/db");
+const { resolveStoredPath } = require("../utils/files");
 
 const STATUTS = ["disponible", "loue", "archive"];
+
+// Retire des tableaux `photos` les fichiers qui n'existent plus (anciens
+// fichiers perdus lors des redéploiements Render).
+async function filtrerPhotos(properties) {
+  const rows = await db.all("SELECT path FROM files");
+  const enBase = new Set(rows.map((row) => row.path));
+
+  for (const property of properties) {
+    if (!property.photos) continue;
+    let photos = [];
+    try { photos = JSON.parse(property.photos); } catch (err) { photos = []; }
+    if (!Array.isArray(photos)) photos = [];
+    property.photos = JSON.stringify(
+      photos.filter((photo) => enBase.has(photo) || Boolean(resolveStoredPath(photo)))
+    );
+  }
+  return properties;
+}
 
 function nombrePositif(value, fallback = 0) {
   const n = Number(value);
@@ -40,6 +59,7 @@ exports.getMyProperties = async (req, res) => {
   const properties = await db.all(`
     SELECT * FROM properties WHERE bailleur_id = ? ORDER BY date_creation DESC
   `, [req.user.id]);
+  await filtrerPhotos(properties);
   res.json({ properties });
 };
 
@@ -52,6 +72,7 @@ exports.getAllProperties = async (req, res) => {
     WHERE p.statut = 'disponible'
     ORDER BY p.date_creation DESC
   `);
+  await filtrerPhotos(properties);
   res.json({ properties });
 };
 
@@ -64,6 +85,7 @@ exports.getPropertyById = async (req, res) => {
   `, [req.params.id]);
 
   if (!property) return res.status(404).json({ message: "Logement introuvable" });
+  await filtrerPhotos([property]);
   res.json({ property });
 };
 
@@ -126,5 +148,6 @@ exports.getMesLocations = async (req, res) => {
     WHERE c.locataire_id = ? AND c.statut = 'actif'
     ORDER BY c.date_creation DESC
   `, [req.user.id]);
+  await filtrerPhotos(properties);
   res.json({ properties });
 };

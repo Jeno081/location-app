@@ -6,10 +6,11 @@ const express = require("express");
 const router = express.Router();
 const documentController = require("../../controllers/documentController");
 const upload = require("../../middleware/documentUpload");
+const { persistUploads } = require("../../services/fileStore");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 
 // Locataire
-router.post("/", verifyToken, requireRole("locataire"), upload.single("fichier"), documentController.uploadDocument);
+router.post("/", verifyToken, requireRole("locataire"), upload.single("fichier"), persistUploads, documentController.uploadDocument);
 router.get("/mes-documents", verifyToken, requireRole("locataire"), documentController.getMesDocuments);
 
 // Bailleur

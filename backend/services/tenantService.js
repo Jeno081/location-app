@@ -2,20 +2,8 @@
 // tenantService.js — Suppression transactionnelle d'un locataire
 // ============================================
 
-const fs = require("fs");
 const db = require("../database/db");
-const { resolveStoredPath } = require("../utils/files");
-
-function removeFiles(paths) {
-  for (const file of paths) {
-    if (!file) continue;
-    try {
-      if (fs.existsSync(file) && fs.statSync(file).isFile()) fs.unlinkSync(file);
-    } catch (err) {
-      console.warn("[tenantService] impossible de supprimer", file, err.message);
-    }
-  }
-}
+const { deleteStoredFiles } = require("./fileStore");
 
 /**
  * Supprime un compte locataire et toutes ses données dépendantes.
@@ -35,7 +23,7 @@ async function deleteTenantAccount(locataireId, executor = null) {
         `SELECT preuve_paiement AS fichier FROM payments WHERE contract_id IN (${placeholders})`,
         ids
       );
-      preuves.forEach((row) => files.push(resolveStoredPath(row.fichier)));
+      preuves.forEach((row) => row.fichier && files.push(row.fichier));
 
       await ex.run(`DELETE FROM reminders WHERE contract_id IN (${placeholders})`, ids);
       await ex.run(`DELETE FROM payments WHERE contract_id IN (${placeholders})`, ids);
@@ -43,15 +31,15 @@ async function deleteTenantAccount(locataireId, executor = null) {
     }
 
     const documents = await ex.all("SELECT chemin AS fichier FROM documents WHERE locataire_id = ?", [locataireId]);
-    documents.forEach((row) => files.push(resolveStoredPath(row.fichier)));
+    documents.forEach((row) => row.fichier && files.push(row.fichier));
     const incidents = await ex.all("SELECT photo AS fichier FROM incidents WHERE locataire_id = ?", [locataireId]);
-    incidents.forEach((row) => files.push(resolveStoredPath(row.fichier)));
+    incidents.forEach((row) => row.fichier && files.push(row.fichier));
 
     await ex.run("DELETE FROM incidents WHERE locataire_id = ?", [locataireId]);
     await ex.run("DELETE FROM documents WHERE locataire_id = ?", [locataireId]);
     const result = await ex.run("DELETE FROM users WHERE id = ? AND role = 'locataire'", [locataireId]);
 
-    removeFiles(files);
+    await deleteStoredFiles(files);
     return result.changes;
   };
 
