@@ -50,6 +50,16 @@ const STEPS = {
       text: "Visualisez les loyers attendus, les fins de contrat, les incidents et les rappels du mois. Envoyez aussi une relance directement depuis le tableau de bord."
     },
     {
+      icon: "📢",
+      title: "Annonces",
+      text: "Envoyez une information à tous vos locataires ou seulement à certains : coupure d'eau, travaux, nouvelle règle… L'annonce apparaît immédiatement dans leur espace."
+    },
+    {
+      icon: "💬",
+      title: "Messages",
+      text: "Recevez les demandes de vos locataires (préavis, question, demande particulière), répondez dans la conversation et marquez la demande comme traitée ou refusée."
+    },
+    {
       icon: "✅",
       title: "Tout est prêt",
       text: "Cliquez sur votre photo de profil pour l'agrandir, complétez votre profil et déconnectez-vous en toute sécurité à la fin de votre session."
@@ -96,6 +106,16 @@ const STEPS = {
       icon: "🕓",
       title: "Historique",
       text: "Retrouvez tous vos contrats, paiements et documents passés, avec leurs PDF, pour garder une trace complète de votre location."
+    },
+    {
+      icon: "📢",
+      title: "Annonces",
+      text: "Consultez les informations et nouveautés publiées par votre bailleur (travaux, coupures, consignes…)."
+    },
+    {
+      icon: "💬",
+      title: "Messages",
+      text: "Envoyez une demande à votre bailleur (préavis de départ, question, demande particulière) et échangez avec lui dans une conversation suivie."
     },
     {
       icon: "✅",

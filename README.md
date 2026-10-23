@@ -1,6 +1,6 @@
 # Location App
 
-Application de gestion locative pour un bailleur unique et ses locataires : biens, contrats, signatures, loyers, quittances, refus motivés et reprise de paiement, relances avec accusé de réception, documents, signalements et calendrier.
+Application de gestion locative pour un bailleur unique et ses locataires : biens, contrats, signatures, loyers, quittances, refus motivés et reprise de paiement, relances avec accusé de réception, annonces et messagerie, documents, signalements et calendrier.
 
 ## Stack
 

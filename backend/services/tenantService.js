@@ -37,6 +37,17 @@ async function deleteTenantAccount(locataireId, executor = null) {
 
     await ex.run("DELETE FROM incidents WHERE locataire_id = ?", [locataireId]);
     await ex.run("DELETE FROM documents WHERE locataire_id = ?", [locataireId]);
+
+    // Conversations et annonces ciblées liées au locataire.
+    const conversations = await ex.all("SELECT id FROM conversations WHERE locataire_id = ?", [locataireId]);
+    const conversationIds = conversations.map((c) => c.id);
+    if (conversationIds.length > 0) {
+      const marques = conversationIds.map(() => "?").join(",");
+      await ex.run(`DELETE FROM messages WHERE conversation_id IN (${marques})`, conversationIds);
+      await ex.run(`DELETE FROM conversations WHERE id IN (${marques})`, conversationIds);
+    }
+    await ex.run("DELETE FROM announcement_recipients WHERE locataire_id = ?", [locataireId]);
+
     const result = await ex.run("DELETE FROM users WHERE id = ? AND role = 'locataire'", [locataireId]);
 
     await deleteStoredFiles(files);

@@ -85,6 +85,8 @@ app.use("/api/notifications", require("./routes/api/notifications"));
 app.use("/api/charts", require("./routes/api/charts"));
 app.use("/api/calendar", require("./routes/api/calendar"));
 app.use("/api/documents", require("./routes/api/documents"));
+app.use("/api/announcements", require("./routes/api/announcements"));
+app.use("/api/conversations", require("./routes/api/conversations"));
 
 app.use("/api", apiNotFound);
 app.use(errorHandler);

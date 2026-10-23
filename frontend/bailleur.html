@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=10">
+  <link rel="stylesheet" href="css/theme.css?v=12">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -46,6 +46,12 @@
         </button>
         <button class="tab" data-tab="calendrier" data-title="Calendrier" data-sub="Loyers, échéances et incidents du mois.">
           <i data-lucide="calendar-days"></i><span>Calendrier</span>
+        </button>
+        <button class="tab" data-tab="annonces" data-title="Annonces" data-sub="Informez vos locataires en une seule fois.">
+          <i data-lucide="megaphone"></i><span>Annonces</span>
+        </button>
+        <button class="tab" data-tab="messages" data-title="Messages" data-sub="Demandes et échanges avec vos locataires.">
+          <i data-lucide="messages-square"></i><span>Messages</span>
         </button>
       </nav>
 
@@ -213,6 +219,51 @@
         <!-- Calendrier -->
         <section id="tab-calendrier" class="tab-content">
           <div id="calendarContent"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Annonces -->
+        <section id="tab-annonces" class="tab-content">
+          <div class="panel" style="margin-bottom:18px;">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">Nouvelle annonce</h2>
+                <p class="panel-sub">Informez tous vos locataires ou seulement certains d'entre eux.</p>
+              </div>
+            </div>
+            <form id="announcementForm">
+              <div class="form-group">
+                <label for="annTitre">Titre</label>
+                <input type="text" id="annTitre" maxlength="150" placeholder="Ex : Coupure d'eau samedi matin" required>
+              </div>
+              <div class="form-group">
+                <label for="annMessage">Message</label>
+                <textarea id="annMessage" rows="4" maxlength="5000" placeholder="Détaillez l'information…" required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="annAudience">Destinataires</label>
+                <select id="annAudience">
+                  <option value="tous">Tous les locataires</option>
+                  <option value="selection">Sélection de locataires</option>
+                </select>
+              </div>
+              <div id="annSelection" class="month-picker" style="display:none;"></div>
+              <button type="submit" class="btn-primary btn-sm"><i data-lucide="send"></i> Envoyer l'annonce</button>
+            </form>
+          </div>
+          <div class="section-head">
+            <div><h2 class="section-title">Annonces envoyées</h2><p class="section-sub">Historique de vos informations.</p></div>
+          </div>
+          <div id="announcementsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Messages -->
+        <section id="tab-messages" class="tab-content">
+          <div class="chat-layout">
+            <aside class="chat-list" id="conversationsList"><p class="empty-message">Chargement…</p></aside>
+            <div class="chat-panel" id="chatPanel">
+              <div class="empty-state"><i data-lucide="messages-square"></i><h3>Aucune conversation</h3><p>Sélectionnez une demande pour répondre.</p></div>
+            </div>
+          </div>
         </section>
       </main>
     </div>
@@ -409,6 +460,27 @@
     </div>
   </div>
 
+  <!-- Modale décision document -->
+  <div id="docDecisionModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeDocDecision()" aria-label="Fermer">&times;</span>
+      <h2 id="docDecisionTitle">Refuser le document</h2>
+      <p id="docDecisionText" class="muted"></p>
+      <input type="hidden" id="docDecisionId">
+      <input type="hidden" id="docDecisionLocataire">
+      <input type="hidden" id="docDecisionStatut">
+      <div class="form-group">
+        <label for="docDecisionComment">Motif / commentaire</label>
+        <textarea id="docDecisionComment" rows="3" maxlength="500" placeholder="Ex : la photo est illisible, merci d'envoyer un scan complet."></textarea>
+        <p class="form-hint">Ce commentaire sera visible par le locataire.</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="closeDocDecision()">Annuler</button>
+        <button class="btn-primary btn-block" id="docDecisionBtn" onclick="confirmDocDecision()">Confirmer</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale valider/refuser un paiement -->
   <div id="validatePaymentModal" class="modal">
     <div class="modal-content">
@@ -430,15 +502,16 @@
     </div>
   </div>
 
-  <script src="js/icons.js?v=10"></script>
-  <script src="js/ui.js?v=10"></script>
-  <script src="js/onboarding.js?v=10"></script>
+  <script src="js/icons.js?v=12"></script>
+  <script src="js/ui.js?v=12"></script>
+  <script src="js/onboarding.js?v=12"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js?v=10"></script>
-  <script src="js/bailleur.js?v=10"></script>
+  <script src="js/navbar.js?v=12"></script>
+  <script src="js/bailleur.js?v=12"></script>
+  <script src="js/chat.js?v=12"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

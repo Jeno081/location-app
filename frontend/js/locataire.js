@@ -31,6 +31,8 @@ function activerOnglet(cible, options = {}) {
   setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
   if (cible === "rappels") loadRappels();
   if (cible === "historique") loadHistory();
+  if (cible === "annonces") loadAnnouncements();
+  if (cible === "messages") loadConversations();
   if (options.majHash !== false) {
     try { history.replaceState(null, "", `#${cible}`); } catch (err) { /* fichier local */ }
   }
@@ -45,7 +47,9 @@ document.querySelectorAll(".tab").forEach(btn => {
 const ongletInitial = window.location.hash.replace(/^#/, "");
 let ongletInitialBtn = null;
 try { ongletInitialBtn = ongletInitial ? document.querySelector(`.tab[data-tab="${ongletInitial}"]`) : null; } catch (err) { ongletInitialBtn = null; }
-if (ongletInitialBtn) activerOnglet(ongletInitial, { majHash: false });
+if (ongletInitialBtn) {
+  document.addEventListener("DOMContentLoaded", () => activerOnglet(ongletInitial, { majHash: false }), { once: true });
+}
 
 // RECHERCHES
 function rechercherContrats() {

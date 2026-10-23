@@ -229,6 +229,64 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   r = await asJson(await fetch(`${baseUrl}/api/contracts/mes-contrats`, { headers: auth(bailleurToken) }));
   assert.strictEqual(r.body.contracts[0].statut, "actif");
 
+  // Annonces : à tous puis à une sélection.
+  r = await asJson(await fetch(`${baseUrl}/api/users/mes-locataires`, { headers: auth(bailleurToken) }));
+  const locataireId = r.body.locataires[0].id;
+
+  r = await asJson(await fetch(`${baseUrl}/api/announcements`, {
+    method: "POST",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ titre: "Information générale", message: "L'eau sera coupée samedi.", audience: "tous" })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/announcements`, {
+    method: "POST",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ titre: "Information ciblée", message: "Merci de vérifier votre compteur.", audience: "selection", locataire_ids: [locataireId] })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/announcements`, { headers: auth(tenantToken) }));
+  const titresAnnonces = r.body.announcements.map((a) => a.titre);
+  assert.ok(titresAnnonces.includes("Information générale"));
+  assert.ok(titresAnnonces.includes("Information ciblée"));
+
+  // Messagerie : demande du locataire, réponse et statut du bailleur.
+  r = await asJson(await fetch(`${baseUrl}/api/conversations`, {
+    method: "POST",
+    headers: auth(tenantToken),
+    body: JSON.stringify({ sujet: "Préavis de départ", message: "Je souhaite quitter le logement en décembre." })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const conversationId = r.body.conversationId;
+
+  r = await asJson(await fetch(`${baseUrl}/api/conversations`, { headers: auth(bailleurToken) }));
+  const conversationListe = r.body.conversations.find((c) => c.id === conversationId);
+  assert.ok(conversationListe);
+  assert.strictEqual(Number(conversationListe.non_lus), 1);
+
+  r = await asJson(await fetch(`${baseUrl}/api/conversations/${conversationId}`, { headers: auth(bailleurToken) }));
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.messages.length, 1);
+
+  r = await asJson(await fetch(`${baseUrl}/api/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ contenu: "Bien reçu, nous en reparlons." })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/conversations/${conversationId}`, { headers: auth(tenantToken) }));
+  assert.strictEqual(r.body.messages.length, 2);
+
+  r = await asJson(await fetch(`${baseUrl}/api/conversations/${conversationId}/statut`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut: "traite" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+
   // Renouvellement du contrat : nouvelle date de fin.
   r = await asJson(await fetch(`${baseUrl}/api/contracts/${contractId}/renouveler`, {
     method: "PUT",
@@ -539,6 +597,37 @@ test("autorisations : incidents et documents protégés", async () => {
     body: JSON.stringify({ ancien_mot_de_passe: tempPassword, nouveau_mot_de_passe: "Incident123" })
   }));
   tenantToken = r.body.token;
+
+  // Document : refus motivé obligatoire, visible par le locataire.
+  const docForm = new FormData();
+  docForm.append("type", "cni");
+  docForm.append("fichier", new Blob(["document"], { type: "image/png" }), "cni.png");
+  r = await asJson(await fetch(`${baseUrl}/api/documents`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: docForm
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  const documentId = r.body.documentId;
+
+  r = await asJson(await fetch(`${baseUrl}/api/documents/${documentId}/statut`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut: "refuse" })
+  }));
+  assert.strictEqual(r.status, 400);
+
+  r = await asJson(await fetch(`${baseUrl}/api/documents/${documentId}/statut`, {
+    method: "PUT",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({ statut: "refuse", commentaire: "La photo est illisible, merci de renvoyer un scan." })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/documents/mes-documents`, { headers: auth(tenantToken) }));
+  const documentRefuse = r.body.documents.find((d) => d.id === documentId);
+  assert.strictEqual(documentRefuse.statut, "refuse");
+  assert.match(documentRefuse.commentaire, /illisible/);
 
   // Le contrat n'est pas encore actif : le signalement est refusé.
   const incidentForm = new FormData();

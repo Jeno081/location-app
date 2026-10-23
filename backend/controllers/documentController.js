@@ -68,6 +68,11 @@ exports.updateDocumentStatus = async (req, res) => {
     return res.status(400).json({ message: "Statut invalide" });
   }
 
+  const commentaireTexte = commentaire ? String(commentaire).trim().slice(0, 500) : null;
+  if (statut === "refuse" && (!commentaireTexte || commentaireTexte.length < 3)) {
+    return res.status(400).json({ message: "Merci d'indiquer un motif de refus (3 caractères minimum)." });
+  }
+
   const doc = await db.get(`
     SELECT d.* FROM documents d
     JOIN contracts c ON c.locataire_id = d.locataire_id
@@ -79,7 +84,7 @@ exports.updateDocumentStatus = async (req, res) => {
   if (!doc) return res.status(404).json({ message: "Document introuvable" });
 
   await db.run("UPDATE documents SET statut = ?, commentaire = ? WHERE id = ?",
-    [statut, commentaire ? String(commentaire).slice(0, 500) : null, req.params.id]);
+    [statut, commentaireTexte, req.params.id]);
   res.json({ message: "Statut mis à jour" });
 };
 

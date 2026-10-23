@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=10">
+  <link rel="stylesheet" href="css/theme.css?v=12">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body class="app-page">
@@ -45,6 +45,12 @@
         </button>
         <button class="tab" data-tab="historique" data-title="Historique" data-sub="Tout votre parcours locatif en un coup d'œil.">
           <i data-lucide="history"></i><span>Historique</span>
+        </button>
+        <button class="tab" data-tab="annonces" data-title="Annonces" data-sub="Les informations de votre bailleur.">
+          <i data-lucide="megaphone"></i><span>Annonces</span>
+        </button>
+        <button class="tab" data-tab="messages" data-title="Messages" data-sub="Vos demandes et échanges avec le bailleur.">
+          <i data-lucide="messages-square"></i><span>Messages</span>
         </button>
       </nav>
 
@@ -143,6 +149,28 @@
           <div id="historyStats" class="stats-grid"><p class="empty-message">Chargement…</p></div>
           <div id="historyContent"></div>
         </section>
+
+        <!-- Annonces -->
+        <section id="tab-annonces" class="tab-content">
+          <div class="section-head">
+            <div><h2 class="section-title">Annonces de votre bailleur</h2><p class="section-sub">Informations, nouvelles et mises à jour.</p></div>
+          </div>
+          <div id="announcementsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Messages -->
+        <section id="tab-messages" class="tab-content">
+          <div class="section-head">
+            <div><h2 class="section-title">Mes demandes</h2><p class="section-sub">Échangez directement avec votre bailleur.</p></div>
+            <button class="btn-primary btn-sm" onclick="openNewRequestModal()"><i data-lucide="plus"></i> Nouvelle demande</button>
+          </div>
+          <div class="chat-layout">
+            <aside class="chat-list" id="conversationsList"><p class="empty-message">Chargement…</p></aside>
+            <div class="chat-panel" id="chatPanel">
+              <div class="empty-state"><i data-lucide="messages-square"></i><h3>Aucune conversation</h3><p>Créez une demande pour contacter votre bailleur.</p></div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -207,6 +235,27 @@
     </div>
   </div>
 
+  <!-- Modale nouvelle demande -->
+  <div id="newRequestModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNewRequestModal()" aria-label="Fermer">&times;</span>
+      <h2>Nouvelle demande</h2>
+      <p class="muted">Préavis de départ, demande particulière, question… votre bailleur recevra votre message.</p>
+      <form id="newRequestForm">
+        <div class="form-group">
+          <label for="requestSujet">Sujet</label>
+          <input type="text" id="requestSujet" maxlength="150" placeholder="Ex : Préavis de départ" required>
+        </div>
+        <div class="form-group">
+          <label for="requestMessage">Message</label>
+          <textarea id="requestMessage" rows="4" maxlength="5000" placeholder="Expliquez votre demande…" required></textarea>
+        </div>
+        <div id="requestFormError" class="form-error" style="display:none;" role="alert"></div>
+        <button type="submit" class="btn-primary btn-block">Envoyer la demande</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Modale signature -->
   <div id="signatureModal" class="modal">
     <div class="modal-content">
@@ -246,13 +295,14 @@
     </div>
   </div>
 
-  <script src="js/icons.js?v=10"></script>
-  <script src="js/ui.js?v=10"></script>
-  <script src="js/onboarding.js?v=10"></script>
+  <script src="js/icons.js?v=12"></script>
+  <script src="js/ui.js?v=12"></script>
+  <script src="js/onboarding.js?v=12"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
-  <script src="js/navbar.js?v=10"></script>
-  <script src="js/locataire.js?v=10"></script>
+  <script src="js/navbar.js?v=12"></script>
+  <script src="js/locataire.js?v=12"></script>
+  <script src="js/chat.js?v=12"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

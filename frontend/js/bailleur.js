@@ -40,6 +40,8 @@ function activerOnglet(cible, options = {}) {
 
   setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
   if (cible === "suivi") loadDashboard();
+  if (cible === "annonces") { preparerSelectionAnnonce(); loadAnnouncements(); }
+  if (cible === "messages") loadConversations();
 
   if (options.majHash !== false) {
     try { history.replaceState(null, "", `#${cible}`); } catch (err) { /* fichier local */ }
@@ -55,7 +57,9 @@ document.querySelectorAll(".tab").forEach(btn => {
 const ongletInitial = window.location.hash.replace(/^#/, "");
 let ongletInitialBtn = null;
 try { ongletInitialBtn = ongletInitial ? document.querySelector(`.tab[data-tab="${ongletInitial}"]`) : null; } catch (err) { ongletInitialBtn = null; }
-if (ongletInitialBtn) activerOnglet(ongletInitial, { majHash: false });
+if (ongletInitialBtn) {
+  document.addEventListener("DOMContentLoaded", () => activerOnglet(ongletInitial, { majHash: false }), { once: true });
+}
 
 // ============================================
 // 1. FILTRES & RECHERCHES
@@ -165,6 +169,7 @@ async function loadTenants() {
     if (!response.ok) return;
     globalData.tenants = data.locataires;
     rechercherLocataires();
+    if (typeof preparerSelectionAnnonce === "function") preparerSelectionAnnonce();
   } catch (err) { console.error(err); }
 }
 
@@ -1060,8 +1065,8 @@ async function openDocsModal(locataireId) {
         <p class="card-note">Ajouté le ${formatDate(d.date_upload)}</p>
         <div class="card-actions">
           <button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/documents/${d.id}/file', 'Document')"><i data-lucide="eye"></i> Voir</button>
-          <button class="btn-secondary btn-sm" onclick="updateDocStatut(${d.id}, 'valide', ${locataireId})"><i data-lucide="check"></i> Valider</button>
-          <button class="btn-ghost btn-sm danger-text" onclick="updateDocStatut(${d.id}, 'refuse', ${locataireId})"><i data-lucide="x"></i> Refuser</button>
+          <button class="btn-secondary btn-sm" onclick="openDocDecision(${d.id}, 'valide', ${locataireId})"><i data-lucide="check"></i> Valider</button>
+          <button class="btn-ghost btn-sm danger-text" onclick="openDocDecision(${d.id}, 'refuse', ${locataireId})"><i data-lucide="x"></i> Refuser</button>
         </div>
       </article>
     `).join("");
@@ -1071,19 +1076,53 @@ async function openDocsModal(locataireId) {
 
 function closeDocsModal() { document.getElementById("docsModal").style.display = "none"; }
 
-async function updateDocStatut(docId, statut, locataireId) {
-  let commentaire = null;
-  if (statut === "refuse") commentaire = prompt("Raison du refus (optionnel) :");
+function openDocDecision(docId, statut, locataireId) {
+  const refuse = statut === "refuse";
+  document.getElementById("docDecisionId").value = docId;
+  document.getElementById("docDecisionLocataire").value = locataireId;
+  document.getElementById("docDecisionStatut").value = statut;
+  document.getElementById("docDecisionTitle").textContent = refuse ? "Refuser le document" : "Valider le document";
+  document.getElementById("docDecisionText").textContent = refuse
+    ? "Indiquez au locataire pourquoi ce document est refusé. Il pourra le remplacer."
+    : "Vous pouvez ajouter un commentaire (facultatif).";
+  document.getElementById("docDecisionComment").value = "";
+  document.getElementById("docDecisionComment").placeholder = refuse
+    ? "Ex : la photo est illisible, merci d'envoyer un scan complet."
+    : "Commentaire facultatif…";
+  const bouton = document.getElementById("docDecisionBtn");
+  bouton.textContent = refuse ? "Refuser le document" : "Valider le document";
+  bouton.style.background = refuse ? "var(--danger)" : "var(--success)";
+  document.getElementById("docDecisionModal").style.display = "flex";
+  setTimeout(() => document.getElementById("docDecisionComment").focus(), 80);
+}
+
+function closeDocDecision() {
+  document.getElementById("docDecisionModal").style.display = "none";
+}
+
+async function confirmDocDecision() {
+  const docId = document.getElementById("docDecisionId").value;
+  const locataireId = document.getElementById("docDecisionLocataire").value;
+  const statut = document.getElementById("docDecisionStatut").value;
+  const commentaire = document.getElementById("docDecisionComment").value.trim();
+
+  if (statut === "refuse" && commentaire.length < 3) {
+    showToast("Merci d'indiquer un motif de refus (3 caractères minimum).", "error");
+    document.getElementById("docDecisionComment").focus();
+    return;
+  }
 
   try {
-    const r = await fetch(API_URL + "/documents/" + docId + "/statut", {
+    const response = await fetch(`${API_URL}/documents/${docId}/statut`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ statut, commentaire })
     });
-    const data = await r.json();
-    if (r.ok) { showToast("Statut mis à jour", "success"); openDocsModal(locataireId); }
-    else showToast(data.message || "Erreur", "error");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { showToast(data.message || "Erreur", "error"); return; }
+    showToast(statut === "refuse" ? "Document refusé" : "Document validé", "success");
+    closeDocDecision();
+    openDocsModal(locataireId);
   } catch (err) { showToast("Erreur", "error"); }
 }
 

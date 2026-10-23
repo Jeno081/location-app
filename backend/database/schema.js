@@ -143,6 +143,55 @@ const SCHEMA = [
     donnees LONGBLOB NOT NULL,
     date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (path)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS announcements (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    bailleur_id INT UNSIGNED NOT NULL,
+    titre VARCHAR(150) NOT NULL,
+    message TEXT NOT NULL,
+    audience ENUM('tous', 'selection') NOT NULL DEFAULT 'tous',
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_announcements_bailleur (bailleur_id),
+    CONSTRAINT fk_announcements_bailleur FOREIGN KEY (bailleur_id) REFERENCES users (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS announcement_recipients (
+    announcement_id INT UNSIGNED NOT NULL,
+    locataire_id INT UNSIGNED NOT NULL,
+    PRIMARY KEY (announcement_id, locataire_id),
+    KEY idx_announcement_recipients_locataire (locataire_id),
+    CONSTRAINT fk_announcement_recipients_ann FOREIGN KEY (announcement_id) REFERENCES announcements (id) ON DELETE CASCADE,
+    CONSTRAINT fk_announcement_recipients_user FOREIGN KEY (locataire_id) REFERENCES users (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS conversations (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    bailleur_id INT UNSIGNED NOT NULL,
+    locataire_id INT UNSIGNED NOT NULL,
+    sujet VARCHAR(150) NOT NULL,
+    statut ENUM('ouvert', 'traite', 'refuse') NOT NULL DEFAULT 'ouvert',
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_maj DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_conversations_bailleur (bailleur_id),
+    KEY idx_conversations_locataire (locataire_id),
+    CONSTRAINT fk_conversations_bailleur FOREIGN KEY (bailleur_id) REFERENCES users (id),
+    CONSTRAINT fk_conversations_locataire FOREIGN KEY (locataire_id) REFERENCES users (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS messages (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    conversation_id INT UNSIGNED NOT NULL,
+    sender_id INT UNSIGNED NOT NULL,
+    contenu TEXT NOT NULL,
+    lu TINYINT(1) NOT NULL DEFAULT 0,
+    date_envoi DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_messages_conversation (conversation_id),
+    CONSTRAINT fk_messages_conversation FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE,
+    CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users (id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

@@ -50,11 +50,19 @@ exports.getNotificationsLocataire = async (req, res) => {
       )
   `, [locataire_id]);
 
+  const messages = await db.get(`
+    SELECT COUNT(*) AS nb
+    FROM messages m
+    JOIN conversations c ON c.id = m.conversation_id
+    WHERE c.locataire_id = ? AND m.sender_id <> ? AND m.lu = 0
+  `, [locataire_id, locataire_id]);
+
   res.json({
     rappels: Number(rappels.nb),
     incidents: Number(incidents.nb),
     paiements: paiementsEnAttente,
-    paiements_refuses: Number(refuses.nb)
+    paiements_refuses: Number(refuses.nb),
+    messages: Number(messages.nb)
   });
 };
 
@@ -106,10 +114,18 @@ exports.getNotificationsBailleur = async (req, res) => {
     if (moisEcoules - payes >= 1) retards++;
   }
 
+  const messages = await db.get(`
+    SELECT COUNT(*) AS nb
+    FROM messages m
+    JOIN conversations c ON c.id = m.conversation_id
+    WHERE c.bailleur_id = ? AND m.sender_id <> ? AND m.lu = 0
+  `, [bailleur_id, bailleur_id]);
+
   res.json({
     incidents: Number(incidents.nb),
     contrats: Number(contrats.nb),
     paiements: Number(paiementsAttente.nb),
-    retards
+    retards,
+    messages: Number(messages.nb)
   });
 };

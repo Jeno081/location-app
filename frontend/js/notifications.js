@@ -23,10 +23,12 @@ async function loadNotifications() {
       updateTabBadge("contrats", data.contrats);
       updateTabBadge("paiements", data.paiements); // 👈 Ajout du badge sur l'onglet Paiements
       updateTabBadge("suivi", data.retards); // 👈 Le badge Suivi affiche maintenant les retards
+      updateTabBadge("messages", data.messages || 0);
     } else {
       updateTabBadge("rappels", data.rappels);
       updateTabBadge("signalements", data.incidents);
       updateTabBadge("paiements", Math.max(data.paiements || 0, data.paiements_refuses || 0));
+      updateTabBadge("messages", data.messages || 0);
     }
   } catch (err) {
     console.error("Erreur notifications:", err);

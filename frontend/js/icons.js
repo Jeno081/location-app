@@ -31,6 +31,7 @@ const EMOJI_TO_LUCIDE = {
   "🎓": "graduation-cap",
   "⭐": "star",
   "💬": "message-circle",
+  "📢": "megaphone",
   "📌": "pin",
   "📝": "file-edit",
   "➕": "plus",
