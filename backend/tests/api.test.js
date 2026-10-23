@@ -9,6 +9,11 @@ const os = require("os");
 const path = require("path");
 const mysql = require("mysql2/promise");
 
+const TODAY = new Date();
+const DATE_DEBUT_TEST = TODAY.toISOString().slice(0, 10);
+const DATE_FIN_TEST = new Date(TODAY.getFullYear() + 1, TODAY.getMonth(), TODAY.getDate())
+  .toISOString().slice(0, 10);
+
 const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "location-app-uploads-"));
 process.env.NODE_ENV = "test";
 process.env.UPLOAD_DIR = uploadDir;
@@ -158,6 +163,21 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.ok(photosListees.includes(photoUrl));
   assert.ok(!photosListees.includes("/uploads/fichier-absent.jpg"));
 
+  // Une date de début passée est refusée avant toute création.
+  r = await asJson(await fetch(`${baseUrl}/api/contracts`, {
+    method: "POST",
+    headers: auth(bailleurToken),
+    body: JSON.stringify({
+      property_id: propertyId,
+      locataire_email: "passe@test.com",
+      locataire_nom: "Date Passée",
+      date_debut: "2020-01-01",
+      montant_loyer: 650
+    })
+  }));
+  assert.strictEqual(r.status, 400);
+  assert.match(r.body.message, /passé/);
+
   r = await asJson(await fetch(`${baseUrl}/api/contracts`, {
     method: "POST",
     headers: auth(bailleurToken),
@@ -166,8 +186,8 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
       locataire_email: "Locataire@Test.com",
       locataire_nom: "Locataire Test",
       locataire_telephone: "0811111111",
-      date_debut: "2026-10-01",
-      date_fin: "2027-10-01",
+      date_debut: DATE_DEBUT_TEST,
+      date_fin: DATE_FIN_TEST,
       montant_loyer: 650,
       clauses_personnalisees: "Le loyer est payable le 5 de chaque mois."
     })
@@ -499,7 +519,7 @@ test("autorisations : incidents et documents protégés", async () => {
       property_id: emptyProperty,
       locataire_email: "incident@test.com",
       locataire_nom: "Incident Test",
-      date_debut: "2026-10-01",
+      date_debut: DATE_DEBUT_TEST,
       montant_loyer: 300
     })
   }));

@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=9">
+  <link rel="stylesheet" href="css/theme.css?v=10">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -227,10 +227,7 @@
         <div class="form-group"><label for="titre">Titre</label><input type="text" id="titre" placeholder="Ex : Appartement 3 pièces" required></div>
         <div class="form-group"><label for="adresse">Adresse</label><input type="text" id="adresse" placeholder="Ex : 12, avenue de la Paix" required></div>
         <div class="form-group"><label for="ville">Ville</label><input type="text" id="ville" placeholder="Kinshasa"></div>
-        <div class="form-row">
-          <div class="form-group"><label for="loyer">Loyer ($)</label><input type="number" id="loyer" required min="0" step="0.01"></div>
-          <div class="form-group"><label for="charges">Charges ($)</label><input type="number" id="charges" min="0" step="0.01" value="0"></div>
-        </div>
+        <div class="form-group"><label for="loyer">Loyer ($)</label><input type="number" id="loyer" required min="0" step="0.01"></div>
         <div class="form-group"><label for="description">Description</label><textarea id="description" rows="3" placeholder="Points forts, équipements, conditions…"></textarea></div>
         <div class="form-group"><label for="photos">Photos (max 5)</label><input type="file" id="photos" accept="image/*" multiple></div>
         <button type="submit" class="btn-primary btn-block">Créer le logement</button>
@@ -262,6 +259,7 @@
           <label for="contractClauses">Clauses personnalisées (optionnel)</label>
           <textarea id="contractClauses" rows="5" placeholder="Ex :&#10;Le préavis de départ est de 2 mois.&#10;Une caution de 2 mois est exigée."></textarea>
         </div>
+        <div id="contractFormError" class="form-error" style="display:none;" role="alert"></div>
         <button type="submit" class="btn-primary btn-block">Créer le contrat</button>
       </form>
     </div>
@@ -321,15 +319,9 @@
             </select>
           </div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="editPropertyLoyer">Loyer ($)</label>
-            <input type="number" id="editPropertyLoyer" min="1" step="0.01" required>
-          </div>
-          <div class="form-group">
-            <label for="editPropertyCharges">Charges ($)</label>
-            <input type="number" id="editPropertyCharges" min="0" step="0.01">
-          </div>
+        <div class="form-group">
+          <label for="editPropertyLoyer">Loyer ($)</label>
+          <input type="number" id="editPropertyLoyer" min="1" step="0.01" required>
         </div>
         <div class="form-group">
           <label for="editPropertyDescription">Description</label>
@@ -438,15 +430,15 @@
     </div>
   </div>
 
-  <script src="js/icons.js"></script>
-  <script src="js/ui.js?v=9"></script>
-  <script src="js/onboarding.js"></script>
+  <script src="js/icons.js?v=10"></script>
+  <script src="js/ui.js?v=10"></script>
+  <script src="js/onboarding.js?v=10"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js?v=9"></script>
-  <script src="js/bailleur.js?v=9"></script>
+  <script src="js/navbar.js?v=10"></script>
+  <script src="js/bailleur.js?v=10"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

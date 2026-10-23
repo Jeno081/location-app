@@ -26,6 +26,11 @@ function estDateValide(value) {
   return !Number.isNaN(date.getTime());
 }
 
+function dateDuJour() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 exports.createContract = async (req, res) => {
   const {
     property_id, locataire_email, locataire_nom, locataire_telephone,
@@ -40,6 +45,9 @@ exports.createContract = async (req, res) => {
   const email = String(locataire_email).trim().toLowerCase();
   if (!EMAIL_RE.test(email)) return res.status(400).json({ message: "Adresse email du locataire invalide." });
   if (!estDateValide(date_debut)) return res.status(400).json({ message: "Date de début invalide." });
+  if (String(date_debut).slice(0, 10) < dateDuJour()) {
+    return res.status(400).json({ message: "La date de début ne peut pas être dans le passé." });
+  }
   if (date_fin && !estDateValide(date_fin)) return res.status(400).json({ message: "Date de fin invalide." });
   if (date_fin && new Date(date_fin) <= new Date(date_debut)) {
     return res.status(400).json({ message: "La date de fin doit être après la date de début." });

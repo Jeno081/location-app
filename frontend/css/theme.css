@@ -1040,3 +1040,26 @@ body.lightbox-open { overflow: hidden; }
 /* Photo de profil cliquable */
 .photo-viewable, .sidebar-user .avatar, .user-menu-btn .avatar { cursor: zoom-in; }
 .photo-viewable:hover { transform: scale(1.02); transition: transform .15s ease; }
+/* Onboarding détaillé */
+.onboarding-modal { max-height: calc(100vh - 32px); overflow-y: auto; }
+.onboarding-points { margin: 12px 0 0; padding: 0; list-style: none; text-align: left; display: grid; gap: 6px; }
+.onboarding-points li { position: relative; padding-left: 18px; font-size: .8rem; color: var(--gray-600); line-height: 1.45; }
+.onboarding-points li::before { content: "✓"; position: absolute; left: 0; top: 0; color: var(--success); font-weight: 800; }
+.onboarding-dots { flex-wrap: wrap; }
+/* Message d'erreur inline dans les modales */
+.form-error {
+  margin: 0 0 12px; padding: 10px 12px; border-radius: 10px;
+  background: var(--danger-soft); border: 1px solid #fecaca;
+  color: #b91c1c; font-size: .8rem; font-weight: 600; line-height: 1.4;
+}
+/* Cartes statistiques : valeurs longues sans débordement */
+.stat-card { overflow: hidden; }
+.stat-card > div:not(.stat-icon) { min-width: 0; flex: 1 1 auto; }
+.stat-value {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-size: clamp(1.05rem, 1.1vw, 1.35rem);
+}
+.stat-label { white-space: normal; line-height: 1.25; }
+@media (max-width: 1600px) {
+  .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

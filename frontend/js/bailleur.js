@@ -23,23 +23,39 @@ let currentFilter = "tous";
 let currentPassword = "";
 
 // ONGLETS
+function activerOnglet(cible, options = {}) {
+  if (!cible) return;
+  let btn = null;
+  try { btn = document.querySelector(`.tab[data-tab="${cible}"]`); } catch (err) { return; }
+  if (!btn) return;
+
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  const section = document.getElementById("tab-" + cible);
+  if (section) section.classList.add("active");
+
+  const overview = document.getElementById("overviewSection");
+  if (overview) overview.style.display = cible === "suivi" ? "" : "none";
+
+  setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
+  if (cible === "suivi") loadDashboard();
+
+  if (options.majHash !== false) {
+    try { history.replaceState(null, "", `#${cible}`); } catch (err) { /* fichier local */ }
+  }
+  if (window.innerWidth < 1024) closeSidebar();
+}
+
 document.querySelectorAll(".tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const cible = btn.dataset.tab;
-    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    btn.classList.add("active");
-    const section = document.getElementById("tab-" + cible);
-    if (section) section.classList.add("active");
-
-    const overview = document.getElementById("overviewSection");
-    if (overview) overview.style.display = cible === "suivi" ? "" : "none";
-
-    setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
-    if (cible === "suivi") loadDashboard();
-    if (window.innerWidth < 1024) closeSidebar();
-  });
+  btn.addEventListener("click", () => activerOnglet(btn.dataset.tab));
 });
+
+// Rouvrir le même onglet après un rafraîchissement.
+const ongletInitial = window.location.hash.replace(/^#/, "");
+let ongletInitialBtn = null;
+try { ongletInitialBtn = ongletInitial ? document.querySelector(`.tab[data-tab="${ongletInitial}"]`) : null; } catch (err) { ongletInitialBtn = null; }
+if (ongletInitialBtn) activerOnglet(ongletInitial, { majHash: false });
 
 // ============================================
 // 1. FILTRES & RECHERCHES
@@ -290,7 +306,7 @@ function renderProperties(properties) {
       <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(p.adresse)}${p.ville ? ` · ${escapeHtml(p.ville)}` : ""}</p>
       <div class="card-metrics">
         <div><span>Loyer</span><strong>${formatMoney(p.loyer)}</strong></div>
-        <div><span>Charges</span><strong>${formatMoney(p.charges)}</strong></div>
+        ${Number(p.charges) > 0 ? `<div><span>Charges</span><strong>${formatMoney(p.charges)}</strong></div>` : ""}
       </div>
       ${p.description ? `<p class="card-desc">${escapeHtml(p.description)}</p>` : ""}
       <div class="card-actions">
@@ -325,7 +341,6 @@ function openEditProperty(propertyId) {
   document.getElementById("editPropertyAdresse").value = property.adresse || "";
   document.getElementById("editPropertyVille").value = property.ville || "";
   document.getElementById("editPropertyLoyer").value = property.loyer ?? "";
-  document.getElementById("editPropertyCharges").value = property.charges ?? 0;
   document.getElementById("editPropertyStatut").value = property.statut || "disponible";
   document.getElementById("editPropertyDescription").value = property.description || "";
   document.getElementById("editPropertyModal").style.display = "flex";
@@ -343,7 +358,6 @@ async function savePropertyEdit(event) {
     adresse: document.getElementById("editPropertyAdresse").value,
     ville: document.getElementById("editPropertyVille").value,
     loyer: Number(document.getElementById("editPropertyLoyer").value),
-    charges: Number(document.getElementById("editPropertyCharges").value),
     statut: document.getElementById("editPropertyStatut").value,
     description: document.getElementById("editPropertyDescription").value
   };
@@ -729,7 +743,6 @@ document.getElementById("propertyForm").addEventListener("submit", async (e) => 
     adresse: document.getElementById("adresse").value,
     ville: document.getElementById("ville").value,
     loyer: parseFloat(document.getElementById("loyer").value),
-    charges: parseFloat(document.getElementById("charges").value) || 0,
     description: document.getElementById("description").value
   };
 
@@ -767,7 +780,24 @@ async function uploadPhotos(propertyId, files) {
   } catch (err) { showToast("Erreur upload", "error"); }
 }
 
+function dateDuJour() {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+function afficherErreurContrat(message) {
+  const box = document.getElementById("contractFormError");
+  if (!box) return;
+  box.textContent = message || "";
+  box.style.display = message ? "block" : "none";
+}
+
 function openContractModal() {
+  afficherErreurContrat("");
+  const debut = document.getElementById("contractDebut");
+  debut.min = dateDuJour();
+  if (!debut.value) debut.value = dateDuJour();
+
   const select = document.getElementById("contractProperty");
   select.innerHTML = '<option value="">-- Choisir --</option>';
   globalData.properties.filter(p => p.statut === "disponible").forEach(p => {
@@ -779,10 +809,15 @@ function openContractModal() {
   };
   document.getElementById("contractModal").style.display = "flex";
 }
-function closeContractModal() { document.getElementById("contractModal").style.display = "none"; }
+function closeContractModal() {
+  afficherErreurContrat("");
+  document.getElementById("contractModal").style.display = "none";
+}
 
 document.getElementById("contractForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  afficherErreurContrat("");
+
   const body = {
     property_id: parseInt(document.getElementById("contractProperty").value),
     locataire_email: document.getElementById("contractLocataire").value,
@@ -793,6 +828,17 @@ document.getElementById("contractForm").addEventListener("submit", async (e) => 
     montant_loyer: parseFloat(document.getElementById("contractMontant").value),
     clauses_personnalisees: document.getElementById("contractClauses").value || null
   };
+
+  if (!body.date_debut || body.date_debut < dateDuJour()) {
+    afficherErreurContrat("La date de début ne peut pas être dans le passé. Choisissez aujourd'hui ou une date future.");
+    document.getElementById("contractDebut").focus();
+    return;
+  }
+  if (body.date_fin && body.date_fin <= body.date_debut) {
+    afficherErreurContrat("La date de fin doit être postérieure à la date de début.");
+    document.getElementById("contractFin").focus();
+    return;
+  }
 
   try {
     const response = await fetch(API_URL + "/contracts", {
@@ -813,8 +859,10 @@ document.getElementById("contractForm").addEventListener("submit", async (e) => 
       }
       loadProperties(); loadContracts(); loadTenants();
       if (window.loadNotifications) window.loadNotifications();
-    } else showToast(data.message, "error");
-  } catch (err) { showToast("Erreur serveur", "error"); }
+    } else {
+      afficherErreurContrat(data.message || "Impossible de créer le contrat.");
+    }
+  } catch (err) { afficherErreurContrat("Erreur serveur. Réessayez dans un instant."); }
 });
 
 function closePasswordModal() {

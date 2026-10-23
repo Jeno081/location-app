@@ -9,36 +9,98 @@ const onboardingUser = JSON.parse(localStorage.getItem("user") || "null");
 const STEPS = {
   bailleur: [
     {
-      icon: "🏠",
+      icon: "👋",
       title: "Bienvenue sur Location App",
-      text: "Votre outil tout-en-un pour gérer vos logements, vos locataires et vos loyers en toute simplicité."
-    },
-    {
-      icon: "📄",
-      title: "Créez des contrats en ligne",
-      text: "Ajoutez un logement, puis créez un contrat. Votre locataire reçoit un mot de passe temporaire pour se connecter et signer."
+      text: "Votre espace bailleur centralise vos biens, vos locataires, vos contrats et vos loyers. Voici comment utiliser chaque onglet.",
+      points: ["Tout se gère depuis la barre latérale", "Les notifications apparaissent sur les onglets concernés"]
     },
     {
       icon: "📊",
-      title: "Suivez vos paiements",
-      text: "Visualisez vos revenus, suivez les retards, envoyez des rappels et téléchargez les quittances en un clic."
+      title: "Tableau de bord",
+      text: "Votre vue d'ensemble : nombre de logements, disponibles et loués, revenu du mois, total encaissé, retards, graphiques et répartition du portefeuille."
+    },
+    {
+      icon: "🏠",
+      title: "Mes biens",
+      text: "Ajoutez un logement avec son loyer et ses photos, puis modifiez-le, archivez-le ou supprimez-le. Un logement avec un historique de contrats doit être archivé plutôt que supprimé."
+    },
+    {
+      icon: "👥",
+      title: "Locataires",
+      text: "Retrouvez les locataires liés à vos contrats en cours, consultez leurs documents (pièce d'identité, fiche de paie) et supprimez un compte si nécessaire."
+    },
+    {
+      icon: "📄",
+      title: "Contrats",
+      text: "Créez un contrat pour un logement disponible : un mot de passe temporaire est généré pour le locataire. Suivez les signatures, téléchargez le PDF, renouvelez avant l'échéance ou mettez fin au contrat."
+    },
+    {
+      icon: "💳",
+      title: "Paiements",
+      text: "Validez ou refusez les preuves de paiement (avec un motif en cas de refus). Les paiements de plusieurs mois sont regroupés en un lot que vous pouvez valider en une fois, avec quittances PDF."
+    },
+    {
+      icon: "🔧",
+      title: "Incidents",
+      text: "Recevez les signalements de vos locataires avec leurs photos, puis faites évoluer leur statut : ouvert, en cours, résolu."
+    },
+    {
+      icon: "📅",
+      title: "Calendrier",
+      text: "Visualisez les loyers attendus, les fins de contrat, les incidents et les rappels du mois. Envoyez aussi une relance directement depuis le tableau de bord."
+    },
+    {
+      icon: "✅",
+      title: "Tout est prêt",
+      text: "Cliquez sur votre photo de profil pour l'agrandir, complétez votre profil et déconnectez-vous en toute sécurité à la fin de votre session."
     }
   ],
   locataire: [
     {
       icon: "👋",
       title: "Bienvenue sur Location App",
-      text: "Accédez à votre logement, vos contrats, vos paiements et signalez tout problème en quelques clics."
+      text: "Votre espace locataire regroupe votre logement, vos contrats, vos paiements et vos démarches. Voici comment utiliser chaque onglet.",
+      points: ["Vos informations restent privées", "Chaque action importante vous est notifiée"]
+    },
+    {
+      icon: "🏠",
+      title: "Mon logement",
+      text: "Consultez les photos et les informations de votre location, les coordonnées de votre bailleur, et déclarez rapidement un paiement de loyer."
+    },
+    {
+      icon: "📄",
+      title: "Mes contrats",
+      text: "Lisez et signez vos contrats en ligne, ouvrez ou téléchargez le PDF, et suivez la date de fin (un renouvellement effectué par le bailleur y apparaît)."
     },
     {
       icon: "💳",
-      title: "Payez votre loyer",
-      text: "Réglez votre loyer par Mobile Money ou carte. Votre quittance est générée automatiquement."
+      title: "Paiements",
+      text: "Sélectionnez un ou plusieurs mois à régler : le total est calculé automatiquement. Joignez votre preuve, suivez la validation, consultez le motif d'un refus et corrigez le paiement si besoin."
+    },
+    {
+      icon: "🔔",
+      title: "Rappels",
+      text: "Retrouvez les messages de votre bailleur. Cliquez sur « Confirmer la réception » pour l'informer que vous avez bien lu la relance."
+    },
+    {
+      icon: "🪪",
+      title: "Documents",
+      text: "Ajoutez vos pièces justificatives (CNI, passeport, fiche de paie) et suivez leur statut de validation par le bailleur."
     },
     {
       icon: "🔧",
-      title: "Signalez un problème",
-      text: "Une fuite, une panne ? Envoyez un signalement avec photo. Le bailleur est prévenu immédiatement."
+      title: "Signalements",
+      text: "Décrivez un problème (une ligne par problème) et ajoutez des photos. Votre bailleur est prévenu et vous suivez la résolution depuis cet onglet."
+    },
+    {
+      icon: "🕓",
+      title: "Historique",
+      text: "Retrouvez tous vos contrats, paiements et documents passés, avec leurs PDF, pour garder une trace complète de votre location."
+    },
+    {
+      icon: "✅",
+      title: "Tout est prêt",
+      text: "Cliquez sur votre photo de profil pour l'agrandir, mettez-la à jour depuis votre profil et déconnectez-vous en toute sécurité."
     }
   ]
 };
@@ -98,6 +160,9 @@ function renderStep() {
     <div class="onboarding-icon" id="onboardingIcon">${step.icon}</div>
     <h2 class="onboarding-title">${step.title}</h2>
     <p class="onboarding-text">${step.text}</p>
+    ${Array.isArray(step.points) && step.points.length
+      ? `<ul class="onboarding-points">${step.points.map((point) => `<li>${point}</li>`).join("")}</ul>`
+      : ""}
   `;
 
   // Traduire l'icône en SVG après l'injection

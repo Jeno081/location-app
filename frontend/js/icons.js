@@ -10,6 +10,8 @@ const EMOJI_TO_LUCIDE = {
   "💳": "credit-card",
   "🔧": "wrench",
   "👤": "user",
+  "🕓": "history",
+  "🏘️": "building-2",
   "🪪": "id-card",
   "🚪": "log-out",
   "🔔": "bell",

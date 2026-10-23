@@ -17,19 +17,35 @@ let globalData = {
   incidents: []
 };
 
+function activerOnglet(cible, options = {}) {
+  if (!cible) return;
+  let btn = null;
+  try { btn = document.querySelector(`.tab[data-tab="${cible}"]`); } catch (err) { return; }
+  if (!btn) return;
+
+  document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  const content = document.getElementById("tab-" + cible);
+  if (content) content.classList.add("active");
+  setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
+  if (cible === "rappels") loadRappels();
+  if (cible === "historique") loadHistory();
+  if (options.majHash !== false) {
+    try { history.replaceState(null, "", `#${cible}`); } catch (err) { /* fichier local */ }
+  }
+  if (window.innerWidth < 1024) closeSidebar();
+}
+
 document.querySelectorAll(".tab").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const cible = btn.dataset.tab;
-    document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
-    btn.classList.add("active");
-    const content = document.getElementById("tab-" + cible);
-    if (content) content.classList.add("active");
-    setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
-    if (cible === "rappels") loadRappels();
-    if (window.innerWidth < 1024) closeSidebar();
-  });
+  btn.addEventListener("click", () => activerOnglet(btn.dataset.tab));
 });
+
+// Rouvrir le même onglet après un rafraîchissement.
+const ongletInitial = window.location.hash.replace(/^#/, "");
+let ongletInitialBtn = null;
+try { ongletInitialBtn = ongletInitial ? document.querySelector(`.tab[data-tab="${ongletInitial}"]`) : null; } catch (err) { ongletInitialBtn = null; }
+if (ongletInitialBtn) activerOnglet(ongletInitial, { majHash: false });
 
 // RECHERCHES
 function rechercherContrats() {
@@ -92,7 +108,7 @@ async function loadMesLocations() {
         <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(p.adresse)}${p.ville ? ` · ${escapeHtml(p.ville)}` : ""}</p>
         <div class="card-metrics">
           <div><span>Loyer</span><strong>${formatMoney(p.loyer)}</strong></div>
-          <div><span>Charges</span><strong>${formatMoney(p.charges)}</strong></div>
+          ${Number(p.charges) > 0 ? `<div><span>Charges</span><strong>${formatMoney(p.charges)}</strong></div>` : ""}
         </div>
         ${p.description ? `<p class="card-desc">${escapeHtml(p.description)}</p>` : ""}
         <div class="landlord-box">
