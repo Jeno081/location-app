@@ -1109,3 +1109,16 @@ body.lightbox-open { overflow: hidden; }
 @media (max-width: 760px) {
   .page-date { display: inline-flex; align-items: center; width: auto; margin-top: 6px; }
 }
+/* Lien mot de passe oublié */
+.forgot-link {
+  display: inline-block; margin-top: 7px; padding: 0; border: 0; background: transparent;
+  color: var(--primary); font-size: .74rem; font-weight: 700; cursor: pointer;
+}
+.forgot-link:hover { text-decoration: underline; }
+/* Affichage des mots de passe temporaires (oubli / demandes) */
+.password-reveal #resetPasswordDisplay,
+.password-reveal #forgotPasswordDisplay {
+  margin-top: 7px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 1.35rem; font-weight: 800; letter-spacing: .08em;
+  color: var(--primary); word-break: break-all;
+}

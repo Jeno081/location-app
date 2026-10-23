@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=12">
+  <link rel="stylesheet" href="css/theme.css?v=13">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body class="auth-body">
@@ -52,6 +52,7 @@
                 <i data-lucide="eye"></i>
               </button>
             </div>
+            <button type="button" class="forgot-link" onclick="openForgotModal()">Mot de passe oublié ?</button>
           </div>
           <button type="submit" class="btn-primary btn-block">
             <i data-lucide="log-in"></i> Se connecter
@@ -68,10 +69,46 @@
     </main>
   </div>
 
-  <script src="js/icons.js?v=12"></script>
-  <script src="js/ui.js?v=12"></script>
+  <!-- Modale mot de passe oublié -->
+  <div id="forgotModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeForgotModal()" aria-label="Fermer">&times;</span>
+      <h2>Mot de passe oublié</h2>
+      <p class="muted" id="forgotIntro">
+        Entrez l'email de votre compte. Le bailleur reçoit un mot de passe temporaire immédiatement ;
+        un locataire envoie une demande à son bailleur.
+      </p>
+
+      <form id="forgotForm">
+        <div class="form-group">
+          <label for="forgotEmail">Adresse email</label>
+          <input type="email" id="forgotEmail" placeholder="vous@exemple.com" autocomplete="email" required>
+        </div>
+        <div id="forgotError" class="form-error" style="display:none;" role="alert"></div>
+        <button type="submit" class="btn-primary btn-block">Continuer</button>
+      </form>
+
+      <div id="forgotResult" style="display:none;">
+        <p id="forgotResultText" class="muted"></p>
+        <div id="forgotPasswordBox" class="password-reveal" style="display:none;">
+          <span>Mot de passe temporaire</span>
+          <div id="forgotPasswordDisplay"></div>
+        </div>
+        <p id="forgotWarning" class="form-hint" style="display:none;">
+          Conservez ce mot de passe en lieu sûr. Vous devrez le changer juste après votre connexion.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary btn-block" onclick="closeForgotModal()">Fermer</button>
+          <button type="button" class="btn-primary btn-block" id="forgotCopyBtn" style="display:none;" onclick="copyForgotPassword()">Copier</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/icons.js?v=13"></script>
+  <script src="js/ui.js?v=13"></script>
   <script src="js/animations.js"></script>
-  <script src="js/login.js?v=12"></script>
+  <script src="js/login.js?v=13"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
     document.getElementById("year").textContent = new Date().getFullYear();

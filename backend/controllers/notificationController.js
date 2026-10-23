@@ -121,11 +121,23 @@ exports.getNotificationsBailleur = async (req, res) => {
     WHERE c.bailleur_id = ? AND m.sender_id <> ? AND m.lu = 0
   `, [bailleur_id, bailleur_id]);
 
+  const demandes = await db.get(`
+    SELECT COUNT(*) AS nb
+    FROM password_reset_requests r
+    WHERE r.statut = 'en_attente'
+      AND EXISTS (
+        SELECT 1 FROM contracts c
+        JOIN properties p ON c.property_id = p.id
+        WHERE c.locataire_id = r.locataire_id AND p.bailleur_id = ?
+      )
+  `, [bailleur_id]);
+
   res.json({
     incidents: Number(incidents.nb),
     contrats: Number(contrats.nb),
     paiements: Number(paiementsAttente.nb),
     retards,
-    messages: Number(messages.nb)
+    messages: Number(messages.nb),
+    demandes: Number(demandes.nb)
   });
 };

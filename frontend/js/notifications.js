@@ -24,6 +24,7 @@ async function loadNotifications() {
       updateTabBadge("paiements", data.paiements); // 👈 Ajout du badge sur l'onglet Paiements
       updateTabBadge("suivi", data.retards); // 👈 Le badge Suivi affiche maintenant les retards
       updateTabBadge("messages", data.messages || 0);
+      updateTabBadge("demandes", data.demandes || 0);
     } else {
       updateTabBadge("rappels", data.rappels);
       updateTabBadge("signalements", data.incidents);

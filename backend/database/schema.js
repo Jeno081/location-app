@@ -192,6 +192,18 @@ const SCHEMA = [
     KEY idx_messages_conversation (conversation_id),
     CONSTRAINT fk_messages_conversation FOREIGN KEY (conversation_id) REFERENCES conversations (id) ON DELETE CASCADE,
     CONSTRAINT fk_messages_sender FOREIGN KEY (sender_id) REFERENCES users (id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS password_reset_requests (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    locataire_id INT UNSIGNED NOT NULL,
+    statut ENUM('en_attente', 'traite') NOT NULL DEFAULT 'en_attente',
+    date_demande DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_traitement DATETIME NULL,
+    PRIMARY KEY (id),
+    KEY idx_password_reset_locataire (locataire_id),
+    KEY idx_password_reset_statut (statut),
+    CONSTRAINT fk_password_reset_locataire FOREIGN KEY (locataire_id) REFERENCES users (id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

@@ -629,6 +629,51 @@ test("autorisations : incidents et documents protégés", async () => {
   assert.strictEqual(documentRefuse.statut, "refuse");
   assert.match(documentRefuse.commentaire, /illisible/);
 
+  // Mot de passe oublié (locataire) : demande visible par le bailleur puis génération.
+  r = await asJson(await fetch(`${baseUrl}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "incident@test.com" })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  assert.strictEqual(r.body.type, "locataire");
+
+  r = await asJson(await fetch(`${baseUrl}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "incident@test.com" })
+  }));
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.dejaEnAttente, true);
+
+  r = await asJson(await fetch(`${baseUrl}/api/users/demandes-reinitialisation`, { headers: auth(bailleurToken) }));
+  const demandeReset = r.body.demandes.find((d) => d.locataire_email === "incident@test.com" && d.statut === "en_attente");
+  assert.ok(demandeReset);
+
+  r = await asJson(await fetch(`${baseUrl}/api/users/demandes-reinitialisation/${demandeReset.id}/generer`, {
+    method: "POST",
+    headers: auth(bailleurToken)
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  const tenantTempPassword = r.body.temporaryPassword;
+  assert.ok(tenantTempPassword);
+
+  r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "incident@test.com", mot_de_passe: tenantTempPassword })
+  }));
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.user.doit_changer_mot_de_passe, 1);
+
+  r = await asJson(await fetch(`${baseUrl}/api/users/changer-mot-de-passe`, {
+    method: "PUT",
+    headers: auth(r.body.token),
+    body: JSON.stringify({ ancien_mot_de_passe: tenantTempPassword, nouveau_mot_de_passe: "Incident123" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  tenantToken = r.body.token;
+
   // Le contrat n'est pas encore actif : le signalement est refusé.
   const incidentForm = new FormData();
   incidentForm.append("property_id", String(emptyProperty));
@@ -653,4 +698,45 @@ test("autorisations : incidents et documents protégés", async () => {
     headers: auth(bailleurToken),
     body: JSON.stringify({ motif: "Nettoyage test" })
   });
+});
+
+test("reinitialisation du mot de passe bailleur", async () => {
+  let r = await asJson(await fetch(`${baseUrl}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "bailleur@test.com" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.type, "bailleur");
+  const tempPassword = r.body.temporaryPassword;
+  assert.ok(tempPassword);
+
+  r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "bailleur@test.com", mot_de_passe: tempPassword })
+  }));
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.user.doit_changer_mot_de_passe, 1);
+
+  r = await asJson(await fetch(`${baseUrl}/api/users/changer-mot-de-passe`, {
+    method: "PUT",
+    headers: auth(r.body.token),
+    body: JSON.stringify({ ancien_mot_de_passe: tempPassword, nouveau_mot_de_passe: "Secret123" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "bailleur@test.com", mot_de_passe: "Secret123" })
+  }));
+  assert.strictEqual(r.status, 200);
+
+  r = await asJson(await fetch(`${baseUrl}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "inconnu@test.com" })
+  }));
+  assert.strictEqual(r.status, 404);
 });

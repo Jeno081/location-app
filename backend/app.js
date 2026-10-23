@@ -73,6 +73,7 @@ app.get("/api", (req, res) => {
 // Limitation de la force brute sur l'authentification.
 app.use("/api/auth/login", createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }));
 app.use("/api/auth/register", createRateLimiter({ windowMs: 60 * 60 * 1000, max: 5 }));
+app.use("/api/auth/forgot-password", createRateLimiter({ windowMs: 15 * 60 * 1000, max: 5 }));
 
 app.use("/api/auth", require("./routes/api/auth"));
 app.use("/api/users", require("./routes/api/users"));

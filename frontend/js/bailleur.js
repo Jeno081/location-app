@@ -40,6 +40,7 @@ function activerOnglet(cible, options = {}) {
 
   setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
   if (cible === "suivi") loadDashboard();
+  if (cible === "demandes") loadPasswordRequests();
   if (cible === "annonces") { preparerSelectionAnnonce(); loadAnnouncements(); }
   if (cible === "messages") loadConversations();
 
@@ -171,6 +172,87 @@ async function loadTenants() {
     rechercherLocataires();
     if (typeof preparerSelectionAnnonce === "function") preparerSelectionAnnonce();
   } catch (err) { console.error(err); }
+}
+
+let resetPasswordValue = "";
+
+async function loadPasswordRequests() {
+  const container = document.getElementById("passwordRequestsList");
+  if (!container) return;
+
+  try {
+    const response = await fetch(API_URL + "/users/demandes-reinitialisation", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json();
+    if (!response.ok) return;
+
+    if (!data.demandes || data.demandes.length === 0) {
+      container.innerHTML = '<div class="empty-state"><i data-lucide="key-round"></i><h3>Aucune demande</h3><p>Les demandes de mot de passe de vos locataires apparaîtront ici.</p></div>';
+      if (typeof lucide !== "undefined") lucide.createIcons();
+      return;
+    }
+
+    container.innerHTML = data.demandes.map((demande) => {
+      const enAttente = demande.statut === "en_attente";
+      return `<article class="property-card card">
+        <div class="card-top">
+          <span class="badge badge-${enAttente ? "warning" : "success"}">${enAttente ? "En attente" : "Traitée"}</span>
+          <span class="card-id">${formatDate(demande.date_demande)}</span>
+        </div>
+        <h3 class="card-title">${escapeHtml(demande.locataire_nom)}</h3>
+        <p class="card-sub"><i data-lucide="mail"></i> ${escapeHtml(demande.locataire_email)}</p>
+        <p class="card-note">${enAttente ? "Mot de passe oublié — demande non traitée." : `Traitée le ${formatDate(demande.date_traitement)}`}</p>
+        <div class="card-actions">
+          <button class="btn-primary btn-sm" onclick="genererMotDePasseDemande(${demande.id})">
+            <i data-lucide="key-round"></i> ${enAttente ? "Générer un mot de passe" : "Regénérer un mot de passe"}
+          </button>
+        </div>
+      </article>`;
+    }).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = '<p class="empty-message">Impossible de charger les demandes.</p>';
+  }
+}
+
+async function genererMotDePasseDemande(id) {
+  try {
+    const response = await fetch(`${API_URL}/users/demandes-reinitialisation/${id}/generer`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) { showToast(data.message || "Génération impossible", "error"); return; }
+
+    resetPasswordValue = data.temporaryPassword;
+    document.getElementById("resetPasswordText").textContent =
+      `${data.locataire_nom} (${data.locataire_email}) — transmettez-lui ce mot de passe temporaire.`;
+    document.getElementById("resetPasswordDisplay").textContent = data.temporaryPassword;
+    document.getElementById("resetPasswordModal").style.display = "flex";
+    loadPasswordRequests();
+    if (window.loadNotifications) window.loadNotifications();
+  } catch (err) { showToast("Erreur serveur", "error"); }
+}
+
+function closeResetPasswordModal() {
+  document.getElementById("resetPasswordModal").style.display = "none";
+  resetPasswordValue = "";
+}
+
+function copyResetPassword() {
+  if (!resetPasswordValue) return;
+  navigator.clipboard.writeText(resetPasswordValue)
+    .then(() => showToast("Mot de passe copié", "success"))
+    .catch(() => {
+      const area = document.createElement("textarea");
+      area.value = resetPasswordValue;
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+      showToast("Mot de passe copié", "success");
+    });
 }
 
 async function loadContracts() {

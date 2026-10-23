@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=12">
+  <link rel="stylesheet" href="css/theme.css?v=13">
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -34,6 +34,9 @@
         </button>
         <button class="tab" data-tab="locataires" data-title="Locataires" data-sub="Tous les locataires liés à vos contrats en cours.">
           <i data-lucide="users"></i><span>Locataires</span>
+        </button>
+        <button class="tab" data-tab="demandes" data-title="Demandes" data-sub="Demandes de mot de passe de vos locataires.">
+          <i data-lucide="key-round"></i><span>Demandes</span>
         </button>
         <button class="tab" data-tab="contrats" data-title="Contrats" data-sub="Suivez les signatures et l'état de vos contrats.">
           <i data-lucide="file-text"></i><span>Contrats</span>
@@ -214,6 +217,14 @@
             </div>
           </div>
           <div id="incidentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Demandes -->
+        <section id="tab-demandes" class="tab-content">
+          <div class="section-head">
+            <div><h2 class="section-title">Demandes de mot de passe</h2><p class="section-sub">Générez un mot de passe temporaire et transmettez-le au locataire.</p></div>
+          </div>
+          <div id="passwordRequestsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
         </section>
 
         <!-- Calendrier -->
@@ -460,6 +471,24 @@
     </div>
   </div>
 
+  <!-- Modale mot de passe temporaire (demande locataire) -->
+  <div id="resetPasswordModal" class="modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeResetPasswordModal()" aria-label="Fermer">&times;</span>
+      <h2>Mot de passe temporaire</h2>
+      <p class="muted" id="resetPasswordText"></p>
+      <div class="password-reveal">
+        <span>Mot de passe temporaire</span>
+        <div id="resetPasswordDisplay"></div>
+      </div>
+      <p class="form-hint">Transmettez-le au locataire (WhatsApp, SMS…). Il devra le changer à la première connexion.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-block" onclick="closeResetPasswordModal()">Fermer</button>
+        <button class="btn-primary btn-block" onclick="copyResetPassword()">Copier</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modale décision document -->
   <div id="docDecisionModal" class="modal">
     <div class="modal-content">
@@ -502,16 +531,16 @@
     </div>
   </div>
 
-  <script src="js/icons.js?v=12"></script>
-  <script src="js/ui.js?v=12"></script>
-  <script src="js/onboarding.js?v=12"></script>
+  <script src="js/icons.js?v=13"></script>
+  <script src="js/ui.js?v=13"></script>
+  <script src="js/onboarding.js?v=13"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js?v=12"></script>
-  <script src="js/bailleur.js?v=12"></script>
-  <script src="js/chat.js?v=12"></script>
+  <script src="js/navbar.js?v=13"></script>
+  <script src="js/bailleur.js?v=13"></script>
+  <script src="js/chat.js?v=13"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>

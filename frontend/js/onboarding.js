@@ -30,6 +30,11 @@ const STEPS = {
       text: "Retrouvez les locataires liés à vos contrats en cours, consultez leurs documents (pièce d'identité, fiche de paie) et supprimez un compte si nécessaire."
     },
     {
+      icon: "🔑",
+      title: "Demandes",
+      text: "Quand un locataire a oublié son mot de passe, sa demande apparaît ici. Générez un mot de passe temporaire, copiez-le et transmettez-le par WhatsApp ou SMS."
+    },
+    {
       icon: "📄",
       title: "Contrats",
       text: "Créez un contrat pour un logement disponible : un mot de passe temporaire est généré pour le locataire. Suivez les signatures, téléchargez le PDF, renouvelez avant l'échéance ou mettez fin au contrat."
