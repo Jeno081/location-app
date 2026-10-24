@@ -382,16 +382,281 @@ const EN = {
   "Impossible de charger les annonces.": "Unable to load announcements.",
   "Impossible de charger les conversations.": "Unable to load conversations.",
   "Impossible de charger les demandes.": "Unable to load requests.",
-  "5 fichiers maximum par signalement.": "5 files maximum per report."
+  "5 fichiers maximum par signalement.": "5 files maximum per report.",
+
+  // Compléments issus de l'audit de l'interface
+  "-- Choisir --": "-- Choose --",
+  "8 caractères minimum": "At least 8 characters",
+  "Aperçu": "Preview",
+  "Aucun logement actif pour déclarer un paiement": "No active property to declare a payment",
+  "Aucun logement attribué pour le moment": "No property assigned yet",
+  "Aucune photo pour ce logement": "No photo for this property",
+  "Capture d'écran, reçu ou photo — obligatoire pour la validation.": "Screenshot, receipt or photo — required for validation.",
+  "Carte d'identité": "ID card",
+  "Ce commentaire sera visible par le locataire.": "This comment will be visible to the tenant.",
+  "Ce motif sera visible par le locataire, qui pourra corriger et déclarer un nouveau paiement pour le même mois.": "This reason will be visible to the tenant, who can correct it and declare a new payment for the same month.",
+  "Compte locataire créé": "Tenant account created",
+  "Confirmer la fin du contrat": "Confirm the end of the contract",
+  "Confirmez-vous avoir bien reçu ce paiement ?": "Do you confirm that you received this payment?",
+  "Contrat": "Contract",
+  "Contrat CTR-": "Contract CTR-",
+  "Contrats, signatures et PDF": "Contracts, signatures and PDFs",
+  "Créez l'espace bailleur et invitez vos locataires. Tout le reste se passe ici, en privé.": "Create the landlord account and invite your tenants. Everything else happens here, privately.",
+  "Demande impossible.": "Request failed.",
+  "Demande marquée :": "Request marked:",
+  "Demandez vos identifiants au bailleur ou connectez-vous si vous êtes déjà inscrit.": "Ask your landlord for your credentials or sign in if you already have an account.",
+  "Document": "Document",
+  "Documents de": "Documents of",
+  "Documents du locataire": "Tenant documents",
+  "Décrivez le problème": "Describe the issue",
+  "Détaillez l'information…": "Describe the information…",
+  "En confirmant, vous acceptez les termes de ce contrat. Cette action est définitive.": "By confirming, you accept the terms of this contract. This action is final.",
+  "Erreur": "Error",
+  "Erreur d'export": "Export error",
+  "Erreur de téléchargement": "Download error",
+  "Erreur inconnue": "Unknown error",
+  "Erreur lors de la signature": "Signing error",
+  "Erreur serveur. Réessayez.": "Server error. Please try again.",
+  "Erreur upload": "Upload error",
+  "Fermer l'aperçu": "Close preview",
+  "Fermer le document": "Close document",
+  "Génération impossible": "Generation failed",
+  "Image précédente": "Previous image",
+  "Impossible d'ouvrir le fichier": "Unable to open the file",
+  "Impossible d'ouvrir le média": "Unable to open the media",
+  "Impossible de changer le mot de passe.": "Unable to change the password.",
+  "Impossible de changer le statut": "Unable to change the status",
+  "Impossible de contacter le serveur.": "Unable to reach the server.",
+  "Impossible de créer le contrat.": "Unable to create the contract.",
+  "Inscription désactivée": "Registration disabled",
+  "JPG, PNG, WEBP, MP4, WEBM ou MOV — 5 fichiers maximum, 25 Mo par fichier.": "JPG, PNG, WEBP, MP4, WEBM or MOV — 5 files maximum, 25 MB per file.",
+  "Le compte bailleur est unique : il administre toute la plateforme.": "There is a single landlord account: it manages the entire platform.",
+  "Le contrat sera prolongé jusqu'à la nouvelle date de fin. Le locataire verra la mise à jour dans son espace.": "The contract will be extended to the new end date. The tenant will see the update in their space.",
+  "Le logement redeviendra disponible. Si le locataire n'a plus d'autre contrat, son compte sera supprimé.": "The property will become available again. If the tenant has no other contract, their account will be deleted.",
+  "Le mot de passe doit contenir au moins 8 caractères.": "The password must contain at least 8 characters.",
+  "Le mot de passe doit contenir au moins une lettre et un chiffre.": "The password must contain at least one letter and one digit.",
+  "Les deux nouveaux mots de passe ne correspondent pas.": "The two new passwords do not match.",
+  "Les mots de passe ne correspondent pas": "Passwords do not match",
+  "Locataire supprimé": "Tenant deleted",
+  "Locataires à jour, en attente ou en retard.": "Tenants up to date, pending or late.",
+  "Location App. Conçu pour les bailleurs et leurs locataires.": "Location App. Built for landlords and their tenants.",
+  "Location App. Votre compte, vos accès.": "Location App. Your account, your access.",
+  "Logement mis à jour": "Property updated",
+  "Lot validé.": "Batch approved.",
+  "Merci d'indiquer un motif de refus (5 caractères minimum).": "Please give a rejection reason (at least 5 characters).",
+  "Mes pièces justificatives": "My supporting documents",
+  "Message non envoyé": "Message not sent",
+  "Mot de passe changé !": "Password changed!",
+  "Mot de passe changé ! Redirection…": "Password changed! Redirecting…",
+  "Motif de la fin (optionnel)": "Reason for ending (optional)",
+  "Média indisponible": "Media unavailable",
+  "Nouvelle date de fin": "New end date",
+  "Paiement déclaré ! En attente de validation.": "Payment declared! Awaiting validation.",
+  "Paiement refusé — le locataire peut corriger et repayer.": "Payment rejected — the tenant can correct it and pay again.",
+  "Paiement validé.": "Payment approved.",
+  "Paiements, quittances et relances": "Payments, receipts and reminders",
+  "Photo mise à jour !": "Photo updated!",
+  "Photos (max 5)": "Photos (max 5)",
+  "Photos / vidéos (optionnel, 5 maximum)": "Photos / videos (optional, 5 maximum)",
+  "Portefeuille de biens et locataires": "Property and tenant portfolio",
+  "Profil mis à jour !": "Profile updated!",
+  "Prolongez la durée du contrat.": "Extend the contract duration.",
+  "Préavis de départ, demande particulière, question… votre bailleur recevra votre message.": "Notice to leave, special request, question… your landlord will receive your message.",
+  "Rechercher un bien…": "Search a property…",
+  "Rechercher un contrat (locataire, bien)…": "Search a contract (tenant, property)…",
+  "Rechercher un contrat…": "Search a contract…",
+  "Rechercher un incident (locataire, description)…": "Search a report (tenant, description)…",
+  "Rechercher un locataire (nom, email, logement)…": "Search a tenant (name, email, property)…",
+  "Rechercher un paiement (locataire, mois)…": "Search a payment (tenant, month)…",
+  "Rechercher un paiement…": "Search a payment…",
+  "Rechercher un signalement…": "Search a report…",
+  "Refuser le document": "Reject the document",
+  "Renouveler le contrat": "Renew the contract",
+  "Rester connecté": "Stay signed in",
+  "Retapez le nouveau mot de passe": "Re-enter the new password",
+  "Se déconnecter": "Sign out",
+  "Se déconnecter ?": "Sign out?",
+  "Signer le contrat": "Sign the contract",
+  "Suivi des paiements": "Payment tracking",
+  "Supprimer ce logement ?": "Delete this property?",
+  "Sélectionnez un ou plusieurs mois à régler.": "Select one or more months to pay.",
+  "Tous": "All",
+  "Téléchargement impossible": "Download failed",
+  "Un compte bailleur existe déjà sur cette installation.": "A landlord account already exists on this installation.",
+  "Un espace bailleur": "A landlord space",
+  "Un espace unique pour vos biens, vos contrats, vos loyers et vos locataires — sans cahier ni tableur.": "One space for your properties, contracts, rent and tenants — without notebooks or spreadsheets.",
+  "Un mot de passe": "A password",
+  "Une lettre et un chiffre": "One letter and one digit",
+  "Valider le nouveau mot de passe": "Confirm the new password",
+  "Valider le paiement": "Approve the payment",
+  "Vidéo": "Video",
+  "Voir tous les paiements": "View all payments",
+  "Vos anciennes sessions sont déconnectées": "Your previous sessions are signed out",
+  "Vos documents sont privés et consultables uniquement par votre bailleur.": "Your documents are private and only visible to your landlord.",
+  "Votre bailleur vous a remis un mot de passe temporaire. Définissez maintenant un mot de passe personnel pour sécuriser votre espace.": "Your landlord gave you a temporary password. Set a personal password now to secure your space.",
+  "Votre espace est prêt. Connectez-vous pour retrouver vos biens, vos contrats et vos loyers.": "Your space is ready. Sign in to access your properties, contracts and rent.",
+  "Votre mot de passe": "Your password",
+  "Vous allez quitter votre espace. Vous devrez vous reconnecter pour y accéder.": "You are about to leave your space. You will need to sign in again.",
+  "Vous allez supprimer": "You are about to delete",
+  "À signer": "To sign",
+  "Événements": "Events",
+  "← Retour à l'accueil": "← Back to home",
+  "✅ Compte créé avec succès ! Redirection...": "✅ Account created successfully! Redirecting…",
+  "✅ Connexion réussie ! Redirection...": "✅ Signed in successfully! Redirecting…",
+  "Le mot de passe est obligatoire.": "Password is required.",
+  "L'email est obligatoire.": "Email is required.",
+  "Adresse email invalide.": "Invalid email address.",
+  "Aucun compte ne correspond à cet email.": "No account matches this email.",
+  "Mot de passe temporaire généré. Conservez-le puis changez-le après connexion.": "Temporary password generated. Keep it and change it after signing in.",
+  "Votre demande est déjà en attente. Votre bailleur va générer un mot de passe temporaire.": "Your request is already pending. Your landlord will generate a temporary password.",
+  "Votre demande a été transmise à votre bailleur. Il vous communiquera un mot de passe temporaire.": "Your request has been sent to your landlord. They will give you a temporary password.",
+  "Demande introuvable.": "Request not found.",
+  "5 fichiers maximum par signalement.": "5 files maximum per report.",
+
+  // Messages du serveur
+  "Accès refusé : rôle insuffisant": "Access denied: insufficient role",
+  "Adresse email du locataire invalide.": "Invalid tenant email address.",
+  "Ancien mot de passe incorrect": "Current password is incorrect",
+  "Aucun bailleur associé à votre compte.": "No landlord is linked to your account.",
+  "Aucun fichier envoyé": "No file sent",
+  "Aucun paiement à exporter": "No payment to export",
+  "Aucun paiement en attente pour ce lot.": "No pending payment for this batch.",
+  "Aucune photo disponible": "No photo available",
+  "Aucune photo envoyée": "No photo sent",
+  "Aucune preuve disponible": "No proof available",
+  "Authentification requise": "Authentication required",
+  "Ce contrat est à durée indéterminée : aucune reconduction nécessaire.": "This contract is open-ended: no renewal is needed.",
+  "Ce contrat est terminé et ne peut plus être signé.": "This contract has ended and can no longer be signed.",
+  "Ce contrat n'est pas actif.": "This contract is not active.",
+  "Ce locataire a encore des contrats en cours.": "This tenant still has ongoing contracts.",
+  "Ce logement possède des signalements. Archivez-le au lieu de le supprimer.": "This property has reports. Archive it instead of deleting it.",
+  "Ce logement possède un historique de contrats. Archivez-le au lieu de le supprimer.": "This property has contract history. Archive it instead of deleting it.",
+  "Ce paiement est déjà validé.": "This payment is already approved.",
+  "Cet email est déjà utilisé": "This email is already in use",
+  "Cette donnée existe déjà.": "This record already exists.",
+  "Champ de fichier inattendu": "Unexpected file field",
+  "Champs manquants": "Missing fields",
+  "Champs obligatoires manquants": "Required fields are missing",
+  "Clauses mises à jour": "Clauses updated",
+  "Compte créé avec succès": "Account created successfully",
+  "Compte introuvable": "Account not found",
+  "Connexion réussie": "Signed in successfully",
+  "Contrat créé": "Contract created",
+  "Contrat introuvable": "Contract not found",
+  "Contrat signé": "Contract signed",
+  "Corps de requête JSON invalide": "Invalid JSON request body",
+  "Date de début invalide.": "Invalid start date.",
+  "Date de fin invalide.": "Invalid end date.",
+  "Déconnecté": "Signed out",
+  "Description trop longue (2000 caractères max).": "Description too long (2000 characters max).",
+  "Document introuvable": "Document not found",
+  "Document supprimé": "Document deleted",
+  "Document uploadé avec succès": "Document uploaded successfully",
+  "Email et mot de passe requis": "Email and password are required",
+  "Email ou mot de passe incorrect": "Incorrect email or password",
+  "Erreur de génération du fichier": "File generation error",
+  "Erreur lors de la génération de la quittance": "Error generating the receipt",
+  "Erreur lors de la génération du PDF": "Error generating the PDF",
+  "Erreur lors de la terminaison du contrat.": "Error while ending the contract.",
+  "Fichier introuvable": "File not found",
+  "Format de token invalide": "Invalid token format",
+  "Impossible de modifier un contrat terminé.": "An ended contract cannot be edited.",
+  "Impossible de supprimer ce locataire.": "Unable to delete this tenant.",
+  "Incident introuvable ou non autorisé": "Report not found or not authorized",
+  "Incident introuvable": "Report not found",
+  "Inscription publique désactivée. Contactez le bailleur.": "Public registration is disabled. Contact the landlord.",
+  "La date de début ne peut pas être dans le passé.": "The start date cannot be in the past.",
+  "La date de fin doit être après la date de début.": "The end date must be after the start date.",
+  "La nouvelle date de fin doit être postérieure à l'actuelle.": "The new end date must be later than the current one.",
+  "La nouvelle date de fin est trop lointaine (10 ans maximum).": "The new end date is too far away (10 years maximum).",
+  "La preuve de paiement est obligatoire.": "Payment proof is required.",
+  "Le loyer doit être positif.": "The rent must be positive.",
+  "Le loyer doit être un montant positif.": "The rent must be a positive amount.",
+  "Le message est vide.": "The message is empty.",
+  "Le montant doit être positif.": "The amount must be positive.",
+  "Le nom doit contenir entre 2 et 100 caractères.": "The name must contain between 2 and 100 characters.",
+  "Le nom du locataire est obligatoire.": "The tenant name is required.",
+  "Le nouveau mot de passe doit être différent.": "The new password must be different.",
+  "Le sujet et le message sont obligatoires.": "The subject and message are required.",
+  "Le titre et le message sont obligatoires.": "The title and message are required.",
+  "Locataire introuvable": "Tenant not found",
+  "Locataire supprimé avec succès": "Tenant deleted successfully",
+  "Logement créé avec succès": "Property created successfully",
+  "Logement et description obligatoires": "Property and description are required",
+  "Logement introuvable": "Property not found",
+  "Logement mis à jour avec succès": "Property updated successfully",
+  "Logement supprimé avec succès": "Property deleted successfully",
+  "Loyer invalide.": "Invalid rent.",
+  "Média introuvable": "Media not found",
+  "Merci d'indiquer un motif de refus (3 caractères minimum).": "Please give a rejection reason (at least 3 characters).",
+  "Message trop long (500 caractères max).": "Message too long (500 characters max).",
+  "Message trop long (5000 caractères max).": "Message too long (5000 characters max).",
+  "Mot de passe changé avec succès": "Password changed successfully",
+  "Mot de passe temporaire généré.": "Temporary password generated.",
+  "Motif trop long (500 caractères max).": "Reason too long (500 characters max).",
+  "Nom obligatoire": "Name is required",
+  "Nom trop long.": "Name too long.",
+  "Non autorisé": "Not authorized",
+  "Nouvelle date de fin invalide.": "Invalid new end date.",
+  "Opération impossible : des données liées existent encore.": "Operation impossible: related data still exists.",
+  "Paiement introuvable": "Payment not found",
+  "Photo mise à jour": "Photo updated",
+  "Profil mis à jour": "Profile updated",
+  "Rappel introuvable": "Reminder not found",
+  "Rappel marqué comme lu": "Reminder marked as read",
+  "Réception confirmée": "Receipt confirmed",
+  "Réception déjà confirmée": "Receipt already confirmed",
+  "Ressource introuvable": "Resource not found",
+  "Sélectionnez au moins un locataire.": "Select at least one tenant.",
+  "Session expirée ou token invalide": "Session expired or invalid token",
+  "Session expirée": "Session expired",
+  "Seul le bailleur peut changer le statut.": "Only the landlord can change the status.",
+  "Seul un contrat actif peut être renouvelé.": "Only an active contract can be renewed.",
+  "Seul un locataire peut créer une demande.": "Only a tenant can create a request.",
+  "Signalement envoyé avec succès": "Report sent successfully",
+  "Statut invalide": "Invalid status",
+  "Statut invalide.": "Invalid status.",
+  "Sujet trop long (150 caractères max).": "Subject too long (150 characters max).",
+  "Téléphone invalide.": "Invalid phone number.",
+  "Titre et adresse obligatoires.": "Title and address are required.",
+  "Titre ou adresse trop long.": "Title or address too long.",
+  "Titre trop long (150 caractères max).": "Title too long (150 characters max)."
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"];
 
+const MOTIFS = [
+  [/^Ajouté le (.+)$/, "Added on $1"],
+  [/^Signalé le (.+)$/, "Reported on $1"],
+  [/^Terminé le (.+)$/, "Ended on $1"],
+  [/^Traitée le (.+)$/, "Handled on $1"],
+  [/^Confirmé le (.+)$/, "Confirmed on $1"],
+  [/^Réception confirmée le (.+)$/, "Receipt confirmed on $1"],
+  [/^Événements du (.+)$/, "Events of $1"],
+  [/^Documents de (.+)$/, "Documents of $1"],
+  [/^Loyer de (.+) reçu$/, "Rent for $1 received"],
+  [/^Paiement groupé · (\d+) mois$/, "Grouped payment · $1 months"],
+  [/^(\d+) mois déclarés? — en attente de validation\.?$/, "$1 months declared — awaiting validation."],
+  [/^(\d+) mois sélectionné\(s\)\.?$/, "$1 month(s) selected."],
+  [/^(\d+) mois en retard$/, "$1 months late"],
+  [/^Expire dans (\d+) jours?$/, "Expires in $1 day(s)"],
+  [/^Supprimer (.+) et toutes ses données \?$/, "Delete $1 and all their data?"],
+  [/^(\d+) fichiers? maximum par signalement\.?$/, "$1 files maximum per report."]
+];
+
 function traduireTexte(texte) {
   const brut = String(texte || "");
   const cle = brut.trim();
-  if (!cle || !EN[cle]) return texte;
-  return brut.replace(cle, EN[cle]);
+  if (!cle) return texte;
+  if (EN[cle]) return brut.replace(cle, EN[cle]);
+
+  for (const [motif, remplacement] of MOTIFS) {
+    if (motif.test(cle)) {
+      const traduit = cle.replace(motif, remplacement);
+      return brut.replace(cle, traduit);
+    }
+  }
+  return texte;
 }
 
 function doitIgnorer(node) {
@@ -438,14 +703,44 @@ function injecterSelecteurLangue() {
     window.location.reload();
   });
 
+  const navActions = document.querySelector(".simple-nav-actions");
   const footer = document.querySelector(".sidebar-footer");
-  if (footer) footer.prepend(bouton);
-  else {
+
+  if (navActions) {
+    bouton.classList.add("lang-switch-inline");
+    navActions.prepend(bouton);
+  } else if (footer) {
+    footer.prepend(bouton);
+  } else {
     bouton.classList.add("lang-switch-floating");
     document.body.appendChild(bouton);
   }
 
   if (typeof lucide !== "undefined") lucide.createIcons();
+}
+
+if (currentLang === "en" && typeof window.fetch === "function") {
+  const fetchOriginal = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    const response = await fetchOriginal(...args);
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) return response;
+
+    try {
+      const data = await response.clone().json();
+      if (data && typeof data.message === "string") {
+        data.message = traduireTexte(data.message);
+        const headers = new Headers(response.headers);
+        headers.delete("content-length");
+        return new Response(JSON.stringify(data), {
+          status: response.status,
+          statusText: response.statusText,
+          headers
+        });
+      }
+    } catch (err) { /* réponse non JSON ou vide */ }
+    return response;
+  };
 }
 
 document.addEventListener("DOMContentLoaded", () => {

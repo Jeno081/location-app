@@ -1146,11 +1146,12 @@ async function openDocsModal(locataireId) {
 
     const labels = { cni: "Carte d'identité", passeport: "Passeport", fiche_paie: "Fiche de paie", autre: "Autre" };
     const tone = { valide: "success", refuse: "danger", en_attente: "warning" };
+    const statuts = { valide: "Validé", refuse: "Refusé", en_attente: "En attente" };
 
     container.innerHTML = data.documents.map(d => `
       <article class="property-card card">
         <div class="card-top">
-          <span class="badge badge-${tone[d.statut] || "neutral"}">${escapeHtml((d.statut || "").replace("_", " "))}</span>
+          <span class="badge badge-${tone[d.statut] || "neutral"}">${escapeHtml(statuts[d.statut] || d.statut)}</span>
           <span class="card-id">${escapeHtml(labels[d.type] || d.type)}</span>
         </div>
         <h3 class="card-title">${escapeHtml(d.nom_fichier)}</h3>

@@ -884,7 +884,7 @@ body.lightbox-open { overflow: hidden; }
   .topbar { padding: 0 16px; height: 66px; }
   .topbar-title { font-size: .9rem; }
   .page-head { align-items: flex-start; }
-  .page-date { display: none; }
+  .page-date { display: inline-flex; align-items: center; width: 100%; margin-top: 2px; }
   .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .stat-card { padding: 12px; gap: 9px; }
   .stat-icon { width: 38px; height: 38px; }
@@ -1141,12 +1141,13 @@ body.lightbox-open { overflow: hidden; }
 .video-viewer-body { flex: 1; display: grid; place-items: center; padding: 14px; background: #0b1220; }
 .video-viewer-body video { max-width: 100%; max-height: calc(100vh - 90px); border-radius: 10px; background: #000; }
 
-/* Modale documents : plus large et responsive sur tablette/ordinateur */
-#docsModal .modal-content { width: min(1100px, 94vw); max-width: 1100px; }
-#docsModalContent { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-@media (min-width: 1400px) {
-  #docsModal .modal-content { width: min(1240px, 92vw); max-width: 1240px; }
-  #docsModalContent { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+/* Modale documents : contenu centré, sans espace vide sur les grands écrans */
+#docsModal .modal-content { width: min(780px, 94vw); max-width: 780px; }
+#docsModalContent {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
+  justify-content: center;
+  gap: 14px;
 }
 @media (max-width: 640px) {
   #docsModal .modal-content { width: 96vw; }
@@ -1166,3 +1167,9 @@ body.lightbox-open { overflow: hidden; }
   position: fixed; top: 14px; right: 14px; z-index: 950; width: auto;
   padding: 9px 13px; box-shadow: var(--shadow); background: var(--white);
 }
+/* Sélecteur de langue intégré à la barre de navigation */
+.lang-switch-inline {
+  width: auto; margin: 0; padding: 8px 12px; gap: 7px;
+  border-radius: 9px; background: var(--gray-50);
+}
+.lang-switch-inline span { font-size: .74rem; }
