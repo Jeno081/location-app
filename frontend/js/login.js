@@ -4,6 +4,32 @@
 
 const API_URL = "/api";
 
+// Ouverture depuis l'application installée : un utilisateur déjà connecté va directement à son espace.
+(function redirigerUtilisateurConnecte() {
+  try {
+    const token = localStorage.getItem("token");
+    const utilisateur = JSON.parse(localStorage.getItem("user") || "null");
+    if (!token || !utilisateur) return;
+
+    const partie = (token.split(".")[1] || "").replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(partie));
+    if (!payload.exp || payload.exp * 1000 <= Date.now()) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      return;
+    }
+
+    if (utilisateur.doit_changer_mot_de_passe) {
+      window.location.replace("changer-mot-de-passe.html");
+      return;
+    }
+    window.location.replace(utilisateur.role === "bailleur" ? "bailleur.html" : "locataire.html");
+  } catch (err) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  }
+})();
+
 let forgotPasswordValue = "";
 
 function afficherErreurForgot(message) {

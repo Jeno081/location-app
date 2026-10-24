@@ -54,6 +54,9 @@ app.use(express.static(config.FRONTEND_DIR, {
   maxAge: config.IS_PRODUCTION ? "1h" : 0,
   setHeaders: (res, filePath) => {
     if (filePath.endsWith(".html")) res.setHeader("Cache-Control", "no-cache");
+    if (filePath.endsWith("sw.js") || filePath.endsWith("manifest.json")) {
+      res.setHeader("Cache-Control", "no-cache");
+    }
   }
 }));
 

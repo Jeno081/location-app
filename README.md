@@ -2,6 +2,20 @@
 
 Application de gestion locative pour un bailleur unique et ses locataires : biens, contrats, signatures, loyers, quittances, refus motivés et reprise de paiement, relances avec accusé de réception, annonces et messagerie, réinitialisation des mots de passe, documents, signalements et calendrier.
 
+## Application installable (PWA)
+
+Location App peut être installée sur Android et iPhone depuis le navigateur, sans magasin d'applications :
+
+- `frontend/manifest.json` — nom, icônes, mode standalone, couleur de thème ;
+- `frontend/sw.js` — cache des ressources statiques et page hors ligne ;
+- `frontend/js/pwa.js` — enregistrement du Service Worker et bouton d'installation ;
+- `frontend/offline.html` — écran hors ligne ;
+- `frontend/icons/` — icônes 192, 512, maskable 512, Apple 180 et favicon.
+
+Le Service Worker ne met jamais en cache les réponses `/api/` ni les fichiers privés `/uploads/`. Il faut servir l'application en HTTPS (Render le fait) ou sur `localhost` pour que l'installation fonctionne.
+
+Les supports imprimables (QR code vers l'application déployée) se trouvent dans `print/` : `location-app-qr.png`, `location-app-qr.svg`, `location-app-affiche-A4.png` et `location-app-affiche-A4.pdf`.
+
 ## Stack
 
 - **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer

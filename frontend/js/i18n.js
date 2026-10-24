@@ -620,7 +620,14 @@ const EN = {
   "Téléphone invalide.": "Invalid phone number.",
   "Titre et adresse obligatoires.": "Title and address are required.",
   "Titre ou adresse trop long.": "Title or address too long.",
-  "Titre trop long (150 caractères max).": "Title too long (150 characters max)."
+  "Titre trop long (150 caractères max).": "Title too long (150 characters max).",
+
+  // Installation PWA
+  "Installer Location App": "Install Location App",
+  "Accès rapide depuis votre écran d'accueil, comme une application.": "Quick access from your home screen, like an app.",
+  "Appuyez sur Partager puis « Sur l'écran d'accueil ».": "Tap Share, then “Add to Home Screen”.",
+  "Application installée": "App installed",
+  "Installer": "Install"
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"];
