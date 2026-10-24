@@ -107,6 +107,17 @@ const SCHEMA = [
     CONSTRAINT fk_incidents_locataire FOREIGN KEY (locataire_id) REFERENCES users (id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+  `CREATE TABLE IF NOT EXISTS incident_media (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    incident_id INT UNSIGNED NOT NULL,
+    path VARCHAR(255) NOT NULL,
+    type ENUM('image', 'video') NOT NULL DEFAULT 'image',
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_incident_media_incident (incident_id),
+    CONSTRAINT fk_incident_media_incident FOREIGN KEY (incident_id) REFERENCES incidents (id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
   `CREATE TABLE IF NOT EXISTS documents (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     locataire_id INT UNSIGNED NOT NULL,

@@ -16,14 +16,19 @@ exports.createIncident = async (req, res) => {
   const property_id = Number(req.body.property_id);
   const description = String(req.body.description || "").trim();
   const locataire_id = req.user.id;
+  const fichiers = req.files || [];
 
   if (!property_id || !description) {
-    unlinkUploaded(req.files);
+    unlinkUploaded(fichiers);
     return res.status(400).json({ message: "Logement et description obligatoires" });
   }
   if (description.length > 2000) {
-    unlinkUploaded(req.files);
+    unlinkUploaded(fichiers);
     return res.status(400).json({ message: "Description trop longue (2000 caractères max)." });
+  }
+  if (fichiers.length > 5) {
+    unlinkUploaded(fichiers);
+    return res.status(400).json({ message: "5 fichiers maximum par signalement." });
   }
 
   // Un locataire ne peut signaler un problème que dans un logement qu'il loue.
@@ -34,37 +39,64 @@ exports.createIncident = async (req, res) => {
   `, [property_id, locataire_id]);
 
   if (!contrat) {
-    unlinkUploaded(req.files);
+    unlinkUploaded(fichiers);
     return res.status(403).json({ message: "Vous ne louez pas ce logement." });
   }
 
-  const lignes = description.split("\n").map((l) => l.trim()).filter(Boolean).slice(0, 10);
-  if (lignes.length === 0) {
-    unlinkUploaded(req.files);
-    return res.status(400).json({ message: "Aucun problème valide" });
-  }
+  const premier = fichiers[0] ? "/uploads/documents/" + fichiers[0].filename : null;
 
-  const photos = req.files || [];
-  const ids = [];
+  const incidentId = await db.transaction(async (tx) => {
+    const result = await tx.run(`
+      INSERT INTO incidents (property_id, locataire_id, description, photo)
+      VALUES (?, ?, ?, ?)
+    `, [property_id, locataire_id, description, premier]);
 
-  await db.transaction(async (tx) => {
-    for (let index = 0; index < lignes.length; index++) {
-      const photoPath = photos[index] ? "/uploads/documents/" + photos[index].filename : null;
-      const result = await tx.run(`
-        INSERT INTO incidents (property_id, locataire_id, description, photo)
-        VALUES (?, ?, ?, ?)
-      `, [property_id, locataire_id, lignes[index], photoPath]);
-      ids.push(result.insertId);
+    for (const fichier of fichiers) {
+      const chemin = "/uploads/documents/" + fichier.filename;
+      const type = String(fichier.mimetype || "").startsWith("video/") ? "video" : "image";
+      await tx.run(`
+        INSERT INTO incident_media (incident_id, path, type) VALUES (?, ?, ?)
+      `, [result.insertId, chemin, type]);
     }
+
+    return result.insertId;
   });
 
   res.status(201).json({
-    message: `${lignes.length} incident(s) signalé(s) avec succès`,
-    incidentIds: ids,
-    count: lignes.length,
-    photos_count: photos.length
+    message: "Signalement envoyé avec succès",
+    incidentId,
+    count: 1,
+    medias_count: fichiers.length
   });
 };
+
+async function attacherMedias(incidents) {
+  if (incidents.length === 0) return incidents;
+  const ids = incidents.map((i) => i.id);
+  const placeholders = ids.map(() => "?").join(",");
+  const medias = await db.all(`
+    SELECT id, incident_id, type FROM incident_media
+    WHERE incident_id IN (${placeholders}) ORDER BY id
+  `, ids);
+
+  const parIncident = new Map();
+  for (const media of medias) {
+    if (!parIncident.has(media.incident_id)) parIncident.set(media.incident_id, []);
+    parIncident.get(media.incident_id).push({
+      id: media.id,
+      type: media.type,
+      url: `/api/incidents/${media.incident_id}/media/${media.id}`
+    });
+  }
+
+  for (const incident of incidents) {
+    incident.medias = parIncident.get(incident.id) || [];
+    if (incident.medias.length === 0 && incident.photo) {
+      incident.medias = [{ id: null, type: "image", url: `/api/incidents/${incident.id}/photo` }];
+    }
+  }
+  return incidents;
+}
 
 exports.getMyIncidents = async (req, res) => {
   const incidents = await db.all(`
@@ -74,6 +106,7 @@ exports.getMyIncidents = async (req, res) => {
     WHERE i.locataire_id = ?
     ORDER BY i.date_creation DESC
   `, [req.user.id]);
+  await attacherMedias(incidents);
   res.json({ incidents });
 };
 
@@ -86,6 +119,7 @@ exports.getIncidentsForBailleur = async (req, res) => {
     WHERE p.bailleur_id = ?
     ORDER BY i.date_creation DESC
   `, [req.user.id]);
+  await attacherMedias(incidents);
   res.json({ incidents });
 };
 
@@ -123,4 +157,23 @@ exports.getIncidentPhoto = async (req, res) => {
   res.setHeader("Cache-Control", "private, max-age=0");
   const sent = await sendStoredFile(res, incident.photo, { inlineName: "photo-signalement" });
   if (!sent) return res.status(404).json({ message: "Aucune photo disponible" });
+};
+
+exports.getIncidentMedia = async (req, res) => {
+  const media = await db.get(`
+    SELECT m.path, m.type, i.locataire_id, p.bailleur_id
+    FROM incident_media m
+    JOIN incidents i ON i.id = m.incident_id
+    JOIN properties p ON i.property_id = p.id
+    WHERE m.id = ? AND m.incident_id = ?
+  `, [req.params.mediaId, req.params.id]);
+
+  if (!media) return res.status(404).json({ message: "Média introuvable" });
+  const autorise = (req.user.role === "bailleur" && media.bailleur_id === req.user.id)
+    || (req.user.role === "locataire" && media.locataire_id === req.user.id);
+  if (!autorise) return res.status(403).json({ message: "Non autorisé" });
+
+  res.setHeader("Cache-Control", "private, max-age=0");
+  const sent = await sendStoredFile(res, media.path, { inlineName: `signalement-${media.type}` });
+  if (!sent) return res.status(404).json({ message: "Média indisponible" });
 };

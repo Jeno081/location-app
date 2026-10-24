@@ -6,6 +6,36 @@ const ONBOARDING_API = "/api";
 const onboardingToken = localStorage.getItem("token");
 const onboardingUser = JSON.parse(localStorage.getItem("user") || "null");
 
+const STEPS_EN = {
+  bailleur: [
+    { icon: "👋", title: "Welcome to Location App", text: "Your landlord space brings together properties, tenants, contracts and rent. Here is how each tab works.", points: ["Everything is managed from the sidebar", "Notifications appear on the relevant tabs"] },
+    { icon: "📊", title: "Dashboard", text: "Your overview: number of properties, available and rented, monthly income, total collected, late payments, charts and portfolio breakdown." },
+    { icon: "🏠", title: "My properties", text: "Add a property with its rent and photos, then edit, archive or delete it. A property with contract history should be archived rather than deleted." },
+    { icon: "👥", title: "Tenants", text: "Find tenants linked to your current contracts, view their documents (ID, payslip) and delete an account if needed." },
+    { icon: "🔑", title: "Requests", text: "When a tenant forgets their password, their request appears here. Generate a temporary password, copy it and send it via WhatsApp or SMS." },
+    { icon: "📄", title: "Contracts", text: "Create a contract for an available property: a temporary password is generated for the tenant. Track signatures, download the PDF, renew before expiry or end the contract." },
+    { icon: "💳", title: "Payments", text: "Approve or reject payment proofs (with a reason when rejecting). Multi-month payments are grouped into a batch you can approve at once, with PDF receipts." },
+    { icon: "🔧", title: "Incidents", text: "Receive tenant reports with photos and videos, then update their status: open, in progress, resolved." },
+    { icon: "📅", title: "Calendar", text: "See expected rent, contract end dates, incidents and reminders for the month. You can also send a reminder from the dashboard." },
+    { icon: "📢", title: "Announcements", text: "Send information to all your tenants or only some of them: water outage, works, new rules… The announcement appears immediately in their space." },
+    { icon: "💬", title: "Messages", text: "Receive tenant requests (notice, question, special request), reply in the conversation and mark the request as handled or rejected." },
+    { icon: "✅", title: "All set", text: "Click your profile photo to enlarge it, complete your profile and log out securely at the end of your session." }
+  ],
+  locataire: [
+    { icon: "👋", title: "Welcome to Location App", text: "Your tenant space brings together your home, contracts, payments and requests. Here is how each tab works.", points: ["Your information stays private", "Every important action is notified"] },
+    { icon: "🏠", title: "My home", text: "View photos and information about your rental, your landlord's contact details, and quickly declare a rent payment." },
+    { icon: "📄", title: "My contracts", text: "Read and sign your contracts online, open or download the PDF, and track the end date (a renewal made by the landlord appears there)." },
+    { icon: "💳", title: "Payments", text: "Select one or more months to pay: the total is calculated automatically. Attach your proof, track approval, read a rejection reason and correct the payment if needed." },
+    { icon: "🔔", title: "Reminders", text: "Find messages from your landlord. Click “Confirm receipt” to let them know you have read the reminder." },
+    { icon: "🪪", title: "Documents", text: "Add your supporting documents (ID, passport, payslip) and track their validation status by the landlord." },
+    { icon: "🔧", title: "Reports", text: "Describe an issue and add photos or videos (up to 5). Your landlord is notified and you can follow the resolution here." },
+    { icon: "🕓", title: "History", text: "Find all your past contracts, payments and documents, with their PDFs, to keep a complete record of your rental." },
+    { icon: "📢", title: "Announcements", text: "Read information and updates published by your landlord (works, outages, instructions…)." },
+    { icon: "💬", title: "Messages", text: "Send a request to your landlord (notice to leave, question, special request) and chat in a tracked conversation." },
+    { icon: "✅", title: "All set", text: "Click your profile photo to enlarge it, update it from your profile and log out securely." }
+  ]
+};
+
 const STEPS = {
   bailleur: [
     {
@@ -149,7 +179,8 @@ let currentStep = 0;
 let steps = [];
 
 function showOnboarding() {
-  steps = STEPS[onboardingUser.role] || STEPS.locataire;
+  const source = localStorage.getItem("lang") === "en" ? STEPS_EN : STEPS;
+  steps = source[onboardingUser.role] || source.locataire;
   currentStep = 0;
 
   // Créer l'overlay

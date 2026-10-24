@@ -288,6 +288,17 @@ function renderPayments(payments) {
   if (typeof lucide !== "undefined") lucide.createIcons();
 }
 
+function mediaIncidentHtml(incident) {
+  const medias = incident.medias || [];
+  if (medias.length === 0) return "";
+  return `<div class="incident-medias">
+    ${medias.map((media, index) => `<button type="button" class="incident-media" onclick="openProtectedMedia('${media.url}', '${media.type}')">
+      <i data-lucide="${media.type === "video" ? "video" : "image"}"></i>
+      ${media.type === "video" ? "Vidéo" : "Photo"} ${index + 1}
+    </button>`).join("")}
+  </div>`;
+}
+
 function renderIncidents(incidents) {
   const container = document.getElementById("incidentsList");
   if (incidents.length === 0) {
@@ -307,9 +318,7 @@ function renderIncidents(incidents) {
       <p class="card-sub"><i data-lucide="map-pin"></i> ${escapeHtml(i.property_adresse)}</p>
       <p class="card-desc">${escapeHtml(i.description)}</p>
       <p class="card-note">Signalé le ${formatDate(i.date_creation)}</p>
-      <div class="card-actions">
-        ${i.photo ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/incidents/${i.id}/photo', 'Photo du signalement')"><i data-lucide="image"></i> Voir la photo</button>` : ""}
-      </div>
+      ${mediaIncidentHtml(i)}
     </article>`;
   }).join("");
   if (typeof lucide !== "undefined") lucide.createIcons();
@@ -568,6 +577,10 @@ document.getElementById("incidentForm").addEventListener("submit", async (e) => 
   const description = document.getElementById("incidentDescription").value;
   const propertyId = document.getElementById("incidentPropertyId").value;
   const photos = document.getElementById("incidentPhotos").files;
+  if (photos.length > 5) {
+    showToast("5 fichiers maximum par signalement.", "error");
+    return;
+  }
   const formData = new FormData();
   formData.append("property_id", propertyId);
   formData.append("description", description);
@@ -576,7 +589,7 @@ document.getElementById("incidentForm").addEventListener("submit", async (e) => 
     const response = await fetch(API_URL + "/incidents", { method: "POST", headers: { "Authorization": "Bearer " + token }, body: formData });
     const data = await response.json();
     if (response.ok) {
-      showToast(data.count + " incident(s) signalé(s) !", "success");
+      showToast(data.message || "Signalement envoyé !", "success");
       document.getElementById("incidentForm").reset();
       closeIncidentModal();
       loadMyIncidents();

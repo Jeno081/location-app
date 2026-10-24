@@ -52,7 +52,7 @@ async function loadAnnouncements() {
           <span class="card-id">${formatDate(a.date_creation)}</span>
         </div>
         <h3 class="card-title">${escapeHtml(a.titre)}</h3>
-        <p class="card-desc">${escapeHtml(a.message)}</p>
+        <p class="card-desc" data-no-i18n>${escapeHtml(a.message)}</p>
         <p class="card-note">${user.role === "bailleur"
           ? `Destinataires : ${escapeHtml(destinataires || "Tous les locataires")}`
           : `Par ${escapeHtml(a.bailleur_nom || "votre bailleur")}`}</p>
@@ -99,7 +99,7 @@ function heureCourte(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? ""
-    : date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    : date.toLocaleTimeString(typeof localeCourante === "function" ? localeCourante() : "fr-FR", { hour: "2-digit", minute: "2-digit" });
 }
 
 function libelleStatut(statut) {
@@ -185,7 +185,7 @@ async function openConversation(id) {
     const bulles = document.getElementById("chatBubbles");
     bulles.innerHTML = messages.map((m) => {
       const moi = Number(m.sender_id) === Number(user.id);
-      return `<div class="chat-bubble ${moi ? "me" : "them"}">
+      return `<div class="chat-bubble ${moi ? "me" : "them"}" data-no-i18n>
         ${escapeHtml(m.contenu)}
         <div class="chat-time">${escapeHtml(m.sender_nom || "")} · ${formatDate(m.date_envoi)} ${heureCourte(m.date_envoi)}</div>
       </div>`;

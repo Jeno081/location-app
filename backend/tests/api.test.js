@@ -229,6 +229,32 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   r = await asJson(await fetch(`${baseUrl}/api/contracts/mes-contrats`, { headers: auth(bailleurToken) }));
   assert.strictEqual(r.body.contracts[0].statut, "actif");
 
+  // Signalement avec plusieurs photos et une vidéo (5 médias maximum).
+  const incidentForm = new FormData();
+  incidentForm.append("property_id", String(propertyId));
+  incidentForm.append("description", "Fuite sous l'évier avec dégât visible.");
+  incidentForm.append("photos", new Blob(["photo1"], { type: "image/png" }), "photo1.png");
+  incidentForm.append("photos", new Blob(["photo2"], { type: "image/jpeg" }), "photo2.jpg");
+  incidentForm.append("photos", new Blob(["video"], { type: "video/mp4" }), "video.mp4");
+  r = await asJson(await fetch(`${baseUrl}/api/incidents`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${tenantToken}` },
+    body: incidentForm
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+  assert.strictEqual(r.body.medias_count, 3);
+  const incidentId = r.body.incidentId;
+
+  r = await asJson(await fetch(`${baseUrl}/api/incidents/mes-incidents`, { headers: auth(tenantToken) }));
+  const incidentCree = r.body.incidents.find((i) => i.id === incidentId);
+  assert.strictEqual(incidentCree.medias.length, 3);
+  assert.strictEqual(incidentCree.medias.filter((m) => m.type === "video").length, 1);
+
+  const mediaImage = incidentCree.medias.find((m) => m.type === "image");
+  const mediaResponse = await fetch(`${baseUrl}${mediaImage.url}`, { headers: { Authorization: `Bearer ${tenantToken}` } });
+  assert.strictEqual(mediaResponse.status, 200);
+  assert.match(mediaResponse.headers.get("content-type"), /^image\//);
+
   // Annonces : à tous puis à une sélection.
   r = await asJson(await fetch(`${baseUrl}/api/users/mes-locataires`, { headers: auth(bailleurToken) }));
   const locataireId = r.body.locataires[0].id;

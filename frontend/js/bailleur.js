@@ -783,6 +783,17 @@ async function confirmValidatePayment() {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
+function mediaIncidentHtml(incident) {
+  const medias = incident.medias || [];
+  if (medias.length === 0) return "";
+  return `<div class="incident-medias">
+    ${medias.map((media, index) => `<button type="button" class="incident-media" onclick="openProtectedMedia('${media.url}', '${media.type}')">
+      <i data-lucide="${media.type === "video" ? "video" : "image"}"></i>
+      ${media.type === "video" ? "Vidéo" : "Photo"} ${index + 1}
+    </button>`).join("")}
+  </div>`;
+}
+
 function renderIncidents(incidents) {
   const container = document.getElementById("incidentsList");
   if (incidents.length === 0) {
@@ -804,8 +815,8 @@ function renderIncidents(incidents) {
       <p class="card-sub"><i data-lucide="user"></i> ${escapeHtml(i.locataire_nom)} · ${escapeHtml(i.locataire_tel || "—")}</p>
       <p class="card-desc">${escapeHtml(i.description)}</p>
       <p class="card-note">Signalé le ${formatDate(i.date_creation)}</p>
+      ${mediaIncidentHtml(i)}
       <div class="card-actions">
-        ${i.photo ? `<button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/incidents/${i.id}/photo', 'Photo du signalement')"><i data-lucide="image"></i> Voir la photo</button>` : ""}
         <select onchange="updateIncidentStatus(${i.id}, this.value)" class="input input-sm" aria-label="Statut de l'incident">
           <option value="ouvert" ${i.statut === "ouvert" ? "selected" : ""}>Ouvert</option>
           <option value="en_cours" ${i.statut === "en_cours" ? "selected" : ""}>En cours</option>

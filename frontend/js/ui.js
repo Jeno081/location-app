@@ -11,22 +11,27 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+function localeCourante() {
+  return localStorage.getItem("lang") === "en" ? "en-GB" : "fr-FR";
+}
+
 function formatMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return `${n.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} $`;
+  return `${n.toLocaleString(localeCourante(), { maximumFractionDigits: 2 })} $`;
 }
 
 function formatDate(value, options = {}) {
   if (!value) return "—";
+  const locale = localeCourante();
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [annee, mois, jour] = value.split("-");
     return new Date(Number(annee), Number(mois) - 1, Number(jour))
-      .toLocaleDateString("fr-FR", options.day || options.month || options.year ? options : { day: "2-digit", month: "short", year: "numeric" });
+      .toLocaleDateString(locale, options.day || options.month || options.year ? options : { day: "2-digit", month: "short", year: "numeric" });
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return date.toLocaleDateString("fr-FR", options.day || options.month || options.year ? options : { day: "2-digit", month: "short", year: "numeric" });
+  return date.toLocaleDateString(locale, options.day || options.month || options.year ? options : { day: "2-digit", month: "short", year: "numeric" });
 }
 
 const MOIS_FR = [
@@ -34,10 +39,16 @@ const MOIS_FR = [
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
+const MOIS_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 function formatMonth(value) {
   if (!value || !/^\d{4}-\d{2}$/.test(value)) return value || "—";
   const [annee, mois] = value.split("-").map(Number);
-  return `${MOIS_FR[mois - 1]} ${annee}`;
+  const noms = localeCourante() === "en-GB" ? MOIS_EN : MOIS_FR;
+  return `${noms[mois - 1]} ${annee}`;
 }
 
 function showToast(message, type = "success") {
@@ -51,7 +62,7 @@ function showToast(message, type = "success") {
   icon.textContent = type === "success" ? "✓" : type === "info" ? "i" : "!";
 
   const text = document.createElement("span");
-  text.textContent = String(message || "");
+  text.textContent = typeof traduireTexte === "function" ? traduireTexte(String(message || "")) : String(message || "");
 
   toast.append(icon, text);
   document.body.appendChild(toast);
@@ -257,6 +268,66 @@ async function openPdfViewer(objectUrl, title = "Document", filename = "document
   }
 }
 
+async function openProtectedMedia(url, type = "image", title = "Signalement") {
+  const token = localStorage.getItem("token");
+  try {
+    const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      showToast(data.message || "Média indisponible", "error");
+      return;
+    }
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const revoke = () => URL.revokeObjectURL(objectUrl);
+
+    if (type === "video" || (blob.type || "").startsWith("video/")) {
+      openVideoViewer(objectUrl, title, revoke);
+    } else {
+      openImageLightbox([objectUrl], 0, title, revoke);
+    }
+  } catch (err) {
+    showToast("Impossible d'ouvrir le média", "error");
+  }
+}
+
+function openVideoViewer(objectUrl, title = "Vidéo", onClose = null) {
+  closeVideoViewer();
+  const overlay = document.createElement("div");
+  overlay.id = "videoViewer";
+  overlay.className = "video-viewer";
+  overlay.innerHTML = `
+    <header class="pdf-viewer-head">
+      <button type="button" class="pdf-viewer-btn" data-video-close aria-label="Fermer">
+        <i data-lucide="arrow-left"></i><span>Retour</span>
+      </button>
+      <span class="pdf-viewer-title">${escapeHtml(title)}</span>
+      <button type="button" class="pdf-viewer-btn" data-video-close aria-label="Fermer"><i data-lucide="x"></i></button>
+    </header>
+    <div class="video-viewer-body">
+      <video src="${objectUrl}" controls autoplay playsinline></video>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.body.style.overflow = "hidden";
+  if (typeof lucide !== "undefined") lucide.createIcons();
+  requestAnimationFrame(() => overlay.classList.add("show"));
+
+  const close = () => { closeVideoViewer(); if (typeof onClose === "function") onClose(); };
+  overlay.querySelectorAll("[data-video-close]").forEach((btn) => btn.addEventListener("click", close));
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  document.addEventListener("keydown", function onKey(event) {
+    if (event.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
+  });
+}
+
+function closeVideoViewer() {
+  const viewer = document.getElementById("videoViewer");
+  if (!viewer) return;
+  viewer.classList.remove("show");
+  document.body.style.overflow = "";
+  setTimeout(() => viewer.remove(), 180);
+}
+
 async function openProtectedFile(url, title = "Aperçu") {
   const token = localStorage.getItem("token");
   try {
@@ -362,7 +433,7 @@ function fillUserIdentity() {
   if (target) target.textContent = firstName ? `${firstName} !` : "!";
   const date = document.getElementById("pageDate");
   if (date) {
-    date.textContent = new Date().toLocaleDateString("fr-FR", {
+    date.textContent = new Date().toLocaleDateString(localeCourante(), {
       weekday: "long", day: "numeric", month: "long", year: "numeric"
     });
   }
@@ -374,6 +445,7 @@ window.formatDate = formatDate;
 window.formatMonth = formatMonth;
 window.showToast = showToast;
 window.openProtectedFile = openProtectedFile;
+window.openProtectedMedia = openProtectedMedia;
 window.openImageLightbox = openImageLightbox;
 window.closeImageLightbox = closeImageLightbox;
 window.downloadProtectedFile = downloadProtectedFile;

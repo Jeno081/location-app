@@ -34,6 +34,12 @@ async function deleteTenantAccount(locataireId, executor = null) {
     documents.forEach((row) => row.fichier && files.push(row.fichier));
     const incidents = await ex.all("SELECT photo AS fichier FROM incidents WHERE locataire_id = ?", [locataireId]);
     incidents.forEach((row) => row.fichier && files.push(row.fichier));
+    const mediasIncidents = await ex.all(`
+      SELECT m.path AS fichier FROM incident_media m
+      JOIN incidents i ON i.id = m.incident_id
+      WHERE i.locataire_id = ?
+    `, [locataireId]);
+    mediasIncidents.forEach((row) => row.fichier && files.push(row.fichier));
 
     await ex.run("DELETE FROM incidents WHERE locataire_id = ?", [locataireId]);
     await ex.run("DELETE FROM documents WHERE locataire_id = ?", [locataireId]);
