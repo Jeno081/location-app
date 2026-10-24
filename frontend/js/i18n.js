@@ -627,7 +627,9 @@ const EN = {
   "Accès rapide depuis votre écran d'accueil, comme une application.": "Quick access from your home screen, like an app.",
   "Appuyez sur Partager puis « Sur l'écran d'accueil ».": "Tap Share, then “Add to Home Screen”.",
   "Application installée": "App installed",
-  "Installer": "Install"
+  "Installer": "Install",
+  "Impossible de lire cette vidéo sur cet appareil.": "This video cannot be played on this device.",
+  "Télécharger la vidéo": "Download the video"
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"];

@@ -8,9 +8,43 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const { execFile } = require("child_process");
+const util = require("util");
 const sharp = require("sharp");
 const db = require("../database/db");
 const config = require("../config");
+
+const execFileAsync = util.promisify(execFile);
+
+let ffmpegPath = null;
+try {
+  ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+} catch (err) {
+  console.warn("[files] ffmpeg indisponible : les vidéos seront conservées telles quelles.");
+}
+
+// Convertit une vidéo en MP4 H.264/AAC pour une lecture sur Android, iPhone et navigateurs.
+async function convertirEnMp4(entree, sortie) {
+  if (!ffmpegPath) return false;
+  try {
+    await execFileAsync(ffmpegPath, [
+      "-y",
+      "-i", entree,
+      "-c:v", "libx264",
+      "-preset", "veryfast",
+      "-crf", "24",
+      "-c:a", "aac",
+      "-b:a", "128k",
+      "-movflags", "+faststart",
+      sortie
+    ], { timeout: 120000, windowsHide: true, maxBuffer: 10 * 1024 * 1024 });
+    return fs.existsSync(sortie) && fs.statSync(sortie).size > 0;
+  } catch (err) {
+    console.warn("[files] conversion vidéo impossible :", err.message);
+    return false;
+  }
+}
 
 function publicPath(absolutePath) {
   const relative = path.relative(config.UPLOAD_DIR, absolutePath).split(path.sep).join("/");
@@ -35,12 +69,24 @@ async function compressImage(file) {
 
 async function persistFile(file) {
   if (!file || !file.path) return null;
-  const stored = publicPath(file.path);
 
-  let buffer = await fs.promises.readFile(file.path);
+  let chemin = file.path;
   let mime = file.mimetype || "application/octet-stream";
 
-  const compressed = await compressImage(file);
+  if (String(mime).startsWith("video/")) {
+    const sortie = file.path.replace(/\.[^.]+$/, "") + "-h264.mp4";
+    const converti = await convertirEnMp4(file.path, sortie);
+    if (converti) {
+      chemin = sortie;
+      mime = "video/mp4";
+      await fs.promises.unlink(file.path).catch(() => {});
+    }
+  }
+
+  const stored = publicPath(chemin);
+  let buffer = await fs.promises.readFile(chemin);
+
+  const compressed = await compressImage({ ...file, path: chemin, mimetype: mime });
   if (compressed) {
     buffer = compressed.buffer;
     mime = compressed.mime;
@@ -50,7 +96,39 @@ async function persistFile(file) {
     REPLACE INTO files (path, mime, taille, donnees) VALUES (?, ?, ?, ?)
   `, [stored, mime, buffer.length, buffer]);
 
-  await fs.promises.unlink(file.path).catch(() => {});
+  await fs.promises.unlink(chemin).catch(() => {});
+  return stored;
+}
+
+// Convertit à la demande une ancienne vidéo (souvent .mov) déjà stockée.
+async function ensurePlayableVideo(stored) {
+  if (!stored) return stored;
+  const row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
+  if (!row || !String(row.mime).startsWith("video/") || row.mime === "video/mp4") return stored;
+  if (!ffmpegPath) return stored;
+
+  const base = path.join(config.UPLOAD_DIR, `video-${crypto.randomUUID()}`);
+  const entree = `${base}-source${path.extname(stored) || ".mov"}`;
+  const sortie = `${base}.mp4`;
+
+  try {
+    await fs.promises.mkdir(config.UPLOAD_DIR, { recursive: true });
+    await fs.promises.writeFile(entree, row.donnees);
+    const converti = await convertirEnMp4(entree, sortie);
+    if (!converti) return stored;
+
+    const nouveau = await persistLocalFile(sortie, "video/mp4");
+    if (nouveau) {
+      await deleteStoredFiles([stored]);
+      return nouveau;
+    }
+  } catch (err) {
+    console.warn("[files] conversion à la demande impossible :", err.message);
+  } finally {
+    await fs.promises.unlink(entree).catch(() => {});
+    await fs.promises.unlink(sortie).catch(() => {});
+  }
+
   return stored;
 }
 
@@ -139,5 +217,6 @@ module.exports = {
   persistLocalFile,
   sendStoredFile,
   deleteStoredFiles,
+  ensurePlayableVideo,
   publicPath
 };

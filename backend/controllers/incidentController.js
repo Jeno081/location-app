@@ -4,7 +4,7 @@
 
 const db = require("../database/db");
 const fs = require("fs");
-const { sendStoredFile } = require("../services/fileStore");
+const { sendStoredFile, ensurePlayableVideo } = require("../services/fileStore");
 
 function unlinkUploaded(files) {
   for (const file of files || []) {
@@ -173,7 +173,17 @@ exports.getIncidentMedia = async (req, res) => {
     || (req.user.role === "locataire" && media.locataire_id === req.user.id);
   if (!autorise) return res.status(403).json({ message: "Non autorisé" });
 
+  let chemin = media.path;
+  if (media.type === "video") {
+    const converti = await ensurePlayableVideo(chemin);
+    if (converti && converti !== chemin) {
+      await db.run("UPDATE incident_media SET path = ? WHERE id = ?", [converti, req.params.mediaId]);
+      await db.run("UPDATE incidents SET photo = ? WHERE photo = ?", [converti, chemin]);
+      chemin = converti;
+    }
+  }
+
   res.setHeader("Cache-Control", "private, max-age=0");
-  const sent = await sendStoredFile(res, media.path, { inlineName: `signalement-${media.type}` });
+  const sent = await sendStoredFile(res, chemin, { inlineName: `signalement-${media.type}` });
   if (!sent) return res.status(404).json({ message: "Média indisponible" });
 };

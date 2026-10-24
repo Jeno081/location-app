@@ -1201,3 +1201,6 @@ body.lightbox-open { overflow: hidden; }
   .pwa-banner-text strong { font-size: .78rem; }
   .pwa-banner-text span { font-size: .66rem; }
 }
+/* Erreur de lecture vidéo */
+.video-error { text-align: center; color: #cbd5e1; padding: 28px 18px; font-size: .9rem; }
+.video-error a { display: inline-block; margin-top: 10px; color: #a5b4fc; font-weight: 700; text-decoration: underline; }
