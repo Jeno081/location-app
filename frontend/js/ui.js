@@ -1,5 +1,5 @@
-// ============================================
-// ui.js — Helpers d'interface partagés
+﻿// ============================================
+// ui.js â€” Helpers d'interface partagÃ©s
 // ============================================
 
 function escapeHtml(value) {
@@ -17,12 +17,12 @@ function localeCourante() {
 
 function formatMoney(value) {
   const n = Number(value);
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "â€”";
   return `${n.toLocaleString(localeCourante(), { maximumFractionDigits: 2 })} $`;
 }
 
 function formatDate(value, options = {}) {
-  if (!value) return "—";
+  if (!value) return "â€”";
   const locale = localeCourante();
   if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [annee, mois, jour] = value.split("-");
@@ -35,8 +35,8 @@ function formatDate(value, options = {}) {
 }
 
 const MOIS_FR = [
-  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
-  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+  "Janvier", "FÃ©vrier", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "AoÃ»t", "Septembre", "Octobre", "Novembre", "DÃ©cembre"
 ];
 
 const MOIS_EN = [
@@ -45,7 +45,7 @@ const MOIS_EN = [
 ];
 
 function formatMonth(value) {
-  if (!value || !/^\d{4}-\d{2}$/.test(value)) return value || "—";
+  if (!value || !/^\d{4}-\d{2}$/.test(value)) return value || "â€”";
   const [annee, mois] = value.split("-").map(Number);
   const noms = localeCourante() === "en-GB" ? MOIS_EN : MOIS_FR;
   return `${noms[mois - 1]} ${annee}`;
@@ -59,7 +59,7 @@ function showToast(message, type = "success") {
 
   const icon = document.createElement("span");
   icon.className = "toast-icon";
-  icon.textContent = type === "success" ? "✓" : type === "info" ? "i" : "!";
+  icon.textContent = type === "success" ? "âœ“" : type === "info" ? "i" : "!";
 
   const text = document.createElement("span");
   text.textContent = typeof traduireTexte === "function" ? traduireTexte(String(message || "")) : String(message || "");
@@ -107,7 +107,7 @@ function updateLightbox() {
   image.classList.add("loading");
   image.src = urls[index];
   image.alt = title || "Photo";
-  caption.textContent = title || "Aperçu";
+  caption.textContent = title || "AperÃ§u";
   counter.textContent = urls.length > 1 ? `${index + 1} / ${urls.length}` : "";
   if (prev) prev.style.visibility = urls.length > 1 ? "visible" : "hidden";
   if (next) next.style.visibility = urls.length > 1 ? "visible" : "hidden";
@@ -123,15 +123,15 @@ function openImageLightbox(urls, startIndex = 0, title = "", onClose = null) {
   overlay.id = "imageLightbox";
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
-  overlay.setAttribute("aria-label", title || "Aperçu de l'image");
+  overlay.setAttribute("aria-label", title || "AperÃ§u de l'image");
   overlay.innerHTML = `
-    <button class="lightbox-close" type="button" aria-label="Fermer l'aperçu">&times;</button>
-    <button class="lightbox-nav lightbox-prev" type="button" aria-label="Image précédente">‹</button>
+    <button class="lightbox-close" type="button" aria-label="Fermer l'aperÃ§u">&times;</button>
+    <button class="lightbox-nav lightbox-prev" type="button" aria-label="Image prÃ©cÃ©dente">â€¹</button>
     <figure class="lightbox-figure">
       <div class="lightbox-media"><img alt=""></div>
       <figcaption class="lightbox-caption"><span class="lightbox-title"></span><span class="lightbox-counter"></span></figcaption>
     </figure>
-    <button class="lightbox-nav lightbox-next" type="button" aria-label="Image suivante">›</button>
+    <button class="lightbox-nav lightbox-next" type="button" aria-label="Image suivante">â€º</button>
   `;
   document.body.appendChild(overlay);
   document.body.classList.add("lightbox-open");
@@ -181,10 +181,10 @@ function loadPdfJs() {
   if (pdfJsPromise) return pdfJsPromise;
   pdfJsPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js";
+    script.src = "/vendor/pdf.min.js?v=17";
     script.onload = () => {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+        "/vendor/pdf.worker.min.js?v=17";
       resolve(window.pdfjsLib);
     };
     script.onerror = () => reject(new Error("Visionneuse PDF indisponible"));
@@ -217,14 +217,14 @@ async function openPdfViewer(objectUrl, title = "Document", filename = "document
         <i data-lucide="arrow-left"></i><span>Retour</span>
       </button>
       <span class="pdf-viewer-title">${escapeHtml(title)}</span>
-      <a class="pdf-viewer-btn" href="${objectUrl}" download="${escapeHtml(filename)}" aria-label="Télécharger le PDF">
-        <i data-lucide="download"></i><span>Télécharger</span>
+      <a class="pdf-viewer-btn" href="${objectUrl}" download="${escapeHtml(filename)}" aria-label="TÃ©lÃ©charger le PDF">
+        <i data-lucide="download"></i><span>TÃ©lÃ©charger</span>
       </a>
       <button type="button" class="pdf-viewer-btn" data-pdf-close aria-label="Fermer">
         <i data-lucide="x"></i>
       </button>
     </header>
-    <div class="pdf-viewer-body"><p class="pdf-viewer-loading">Chargement du document…</p></div>
+    <div class="pdf-viewer-body"><p class="pdf-viewer-loading">Chargement du documentâ€¦</p></div>
   `;
   document.body.appendChild(overlay);
   if (typeof lucide !== "undefined") lucide.createIcons();
@@ -262,8 +262,8 @@ async function openPdfViewer(objectUrl, title = "Document", filename = "document
   } catch (err) {
     body.innerHTML = `
       <p class="pdf-viewer-error">
-        Impossible d'afficher l'aperçu sur cet appareil.<br>
-        <a href="${objectUrl}" download="${escapeHtml(filename)}" style="color:#93c5fd;text-decoration:underline;">Télécharger le PDF</a>
+        Impossible d'afficher l'aperÃ§u sur cet appareil.<br>
+        <a href="${objectUrl}" download="${escapeHtml(filename)}" style="color:#93c5fd;text-decoration:underline;">TÃ©lÃ©charger le PDF</a>
       </p>`;
   }
 }
@@ -274,7 +274,7 @@ async function openProtectedMedia(url, type = "image", title = "Signalement") {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      showToast(data.message || "Média indisponible", "error");
+      showToast(data.message || "MÃ©dia indisponible", "error");
       return;
     }
     const blob = await response.blob();
@@ -287,11 +287,11 @@ async function openProtectedMedia(url, type = "image", title = "Signalement") {
       openImageLightbox([objectUrl], 0, title, revoke);
     }
   } catch (err) {
-    showToast("Impossible d'ouvrir le média", "error");
+    showToast("Impossible d'ouvrir le mÃ©dia", "error");
   }
 }
 
-function openVideoViewer(objectUrl, title = "Vidéo", onClose = null) {
+function openVideoViewer(objectUrl, title = "VidÃ©o", onClose = null) {
   closeVideoViewer();
   const overlay = document.createElement("div");
   overlay.id = "videoViewer";
@@ -328,7 +328,7 @@ function closeVideoViewer() {
   setTimeout(() => viewer.remove(), 180);
 }
 
-async function openProtectedFile(url, title = "Aperçu") {
+async function openProtectedFile(url, title = "AperÃ§u") {
   const token = localStorage.getItem("token");
   try {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -367,7 +367,7 @@ async function downloadProtectedFile(url, filename) {
     const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      showToast(data.message || "Téléchargement impossible", "error");
+      showToast(data.message || "TÃ©lÃ©chargement impossible", "error");
       return;
     }
     const blob = await response.blob();
@@ -383,7 +383,7 @@ async function downloadProtectedFile(url, filename) {
       URL.revokeObjectURL(objectUrl);
     }, 1500);
   } catch (err) {
-    showToast("Erreur de téléchargement", "error");
+    showToast("Erreur de tÃ©lÃ©chargement", "error");
   }
 }
 
@@ -453,3 +453,4 @@ window.setPageHeading = setPageHeading;
 window.confirmAction = confirmAction;
 window.openPdfViewer = openPdfViewer;
 window.closePdfViewer = closePdfViewer;
+

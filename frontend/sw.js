@@ -2,7 +2,7 @@
 // sw.js — Service Worker de Location App
 // ============================================
 
-const CACHE_VERSION = "location-app-v16";
+const CACHE_VERSION = "location-app-v17";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
@@ -21,24 +21,28 @@ const PRECACHE = [
   "/manifest.json",
   "/css/style.css",
   "/css/animations.css",
-  "/css/theme.css?v=16",
-  "/js/icons.js?v=16",
-  "/js/ui.js?v=16",
-  "/js/onboarding.js?v=16",
+  "/css/theme.css?v=17",
+  "/js/icons.js?v=17",
+  "/js/ui.js?v=17",
+  "/js/onboarding.js?v=17",
   "/js/animations.js",
   "/js/notifications.js?v=6",
   "/js/charts.js",
   "/js/calendar.js",
-  "/js/navbar.js?v=16",
-  "/js/bailleur.js?v=16",
-  "/js/chat.js?v=16",
-  "/js/i18n.js?v=16",
-  "/js/login.js?v=16",
+  "/js/navbar.js?v=17",
+  "/js/bailleur.js?v=17",
+  "/js/chat.js?v=17",
+  "/js/i18n.js?v=17",
+  "/js/login.js?v=17",
   "/js/index.js",
-  "/js/locataire.js?v=16",
-  "/js/profil.js?v=16",
-  "/js/changer-mot-de-passe.js?v=16",
-  "/js/pwa.js?v=16",
+  "/js/locataire.js?v=17",
+  "/js/profil.js?v=17",
+  "/js/changer-mot-de-passe.js?v=17",
+  "/js/pwa.js?v=17",
+  "/vendor/lucide.min.js?v=17",
+  "/vendor/chart.umd.min.js?v=17",
+  "/vendor/pdf.min.js?v=17",
+  "/vendor/pdf.worker.min.js?v=17",
   "/assets/hero-bg.jpeg",
   "/icons/icon.svg",
   "/icons/icon-192.png",
@@ -73,7 +77,7 @@ self.addEventListener("message", (event) => {
 });
 
 function isCacheable(response) {
-  return response && (response.ok || response.type === "opaque");
+  return response && response.ok;
 }
 
 self.addEventListener("fetch", (event) => {
@@ -83,10 +87,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.protocol !== "http:" && url.protocol !== "https:") return;
 
+  // Les ressources tierces (polices, etc.) ne sont jamais interceptées ni mises en cache.
+  if (url.origin !== self.location.origin) return;
+
   // Les données métier et les fichiers privés ne sont jamais mis en cache.
-  if (url.origin === self.location.origin && (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/"))) {
-    return;
-  }
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/uploads/")) return;
 
   // Navigation : réseau d'abord, cache ensuite, page hors ligne en dernier recours.
   if (request.mode === "navigate") {
