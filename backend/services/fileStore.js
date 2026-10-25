@@ -103,8 +103,19 @@ async function persistFile(file) {
 // Convertit à la demande une ancienne vidéo (souvent .mov) déjà stockée.
 async function ensurePlayableVideo(stored) {
   if (!stored) return stored;
-  const row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
-  if (!row || !String(row.mime).startsWith("video/") || row.mime === "video/mp4") return stored;
+  let row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
+
+  // Ancien enregistrement pointant encore vers le .mov alors que le MP4 converti existe.
+  if (!row) {
+    const candidat = stored.replace(/\.[^.]+$/, "-h264.mp4");
+    if (candidat !== stored) {
+      const converti = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [candidat]);
+      if (converti) return candidat;
+    }
+    return stored;
+  }
+
+  if (!String(row.mime).startsWith("video/") || row.mime === "video/mp4") return stored;
   if (!ffmpegPath) return stored;
 
   const base = path.join(config.UPLOAD_DIR, `video-${crypto.randomUUID()}`);
@@ -141,7 +152,9 @@ async function persistUploads(req, res, next) {
     else if (req.files && typeof req.files === "object") {
       for (const values of Object.values(req.files)) files.push(...values);
     }
-    for (const file of files) await persistFile(file);
+    for (const file of files) {
+      file.storedPath = await persistFile(file);
+    }
     next();
   } catch (err) {
     next(err);

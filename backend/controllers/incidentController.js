@@ -43,7 +43,9 @@ exports.createIncident = async (req, res) => {
     return res.status(403).json({ message: "Vous ne louez pas ce logement." });
   }
 
-  const premier = fichiers[0] ? "/uploads/documents/" + fichiers[0].filename : null;
+  const premier = fichiers[0]
+    ? (fichiers[0].storedPath || "/uploads/documents/" + fichiers[0].filename)
+    : null;
 
   const incidentId = await db.transaction(async (tx) => {
     const result = await tx.run(`
@@ -52,7 +54,7 @@ exports.createIncident = async (req, res) => {
     `, [property_id, locataire_id, description, premier]);
 
     for (const fichier of fichiers) {
-      const chemin = "/uploads/documents/" + fichier.filename;
+      const chemin = fichier.storedPath || "/uploads/documents/" + fichier.filename;
       const type = String(fichier.mimetype || "").startsWith("video/") ? "video" : "image";
       await tx.run(`
         INSERT INTO incident_media (incident_id, path, type) VALUES (?, ?, ?)
