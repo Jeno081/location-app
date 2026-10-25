@@ -2,7 +2,8 @@
 // pushService.js — Notifications Web Push via FCM
 // ============================================
 
-const admin = require("firebase-admin");
+const { initializeApp, getApps, cert } = require("firebase-admin/app");
+const { getMessaging } = require("firebase-admin/messaging");
 const db = require("../database/db");
 const config = require("../config");
 
@@ -40,9 +41,9 @@ function initialiser() {
       }
       return null;
     }
-    firebaseApp = admin.apps.length
-      ? admin.app()
-      : admin.initializeApp({ credential: admin.credential.cert(compte) });
+    firebaseApp = getApps().length
+      ? getApps()[0]
+      : initializeApp({ credential: cert(compte) });
     return firebaseApp;
   } catch (err) {
     console.error("[push] Initialisation Firebase impossible :", err.message);
@@ -86,7 +87,7 @@ async function envoyerAuxTokens(tokens, payload) {
   for (let i = 0; i < tokens.length; i += 500) {
     const lot = tokens.slice(i, i + 500);
     try {
-      const resultat = await admin.messaging().sendEachForMulticast({ ...messageBase, tokens: lot });
+      const resultat = await getMessaging().sendEachForMulticast({ ...messageBase, tokens: lot });
       envoyes += resultat.successCount;
       resultat.responses.forEach((reponse, index) => {
         if (!reponse.success) {
