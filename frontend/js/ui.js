@@ -181,10 +181,10 @@ function loadPdfJs() {
   if (pdfJsPromise) return pdfJsPromise;
   pdfJsPromise = new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "/vendor/pdf.min.js?v=18";
+    script.src = "/vendor/pdf.min.js?v=19";
     script.onload = () => {
       window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-        "/vendor/pdf.worker.min.js?v=18";
+        "/vendor/pdf.worker.min.js?v=19";
       resolve(window.pdfjsLib);
     };
     script.onerror = () => reject(new Error("Visionneuse PDF indisponible"));

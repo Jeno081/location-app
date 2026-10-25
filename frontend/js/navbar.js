@@ -68,7 +68,7 @@ function renderSimpleNavbar() {
   container.innerHTML = `
     <header class="simple-nav">
       <a class="simple-brand" href="${back}">
-        <span class="brand-mark"><i data-lucide="building-2"></i></span>
+        <span class="brand-mark"><img src="/icons/logo.png" alt="Location App"></span>
         <span class="brand-text"><strong>Location<span>.</span></strong><small>Gestion locative</small></span>
       </a>
       <div class="simple-nav-actions">
