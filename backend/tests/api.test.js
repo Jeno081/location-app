@@ -766,3 +766,35 @@ test("reinitialisation du mot de passe bailleur", async () => {
   }));
   assert.strictEqual(r.status, 404);
 });
+
+test("abonnements aux notifications push", async () => {
+  let r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: "bailleur@test.com", mot_de_passe: "Secret123" })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  const token = r.body.token;
+  const fakeToken = "TEST-FCM-" + "x".repeat(40);
+
+  r = await asJson(await fetch(`${baseUrl}/api/push/subscribe`, {
+    method: "POST",
+    headers: auth(token),
+    body: JSON.stringify({ token: fakeToken, platform: "web" })
+  }));
+  assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/push/test`, {
+    method: "POST",
+    headers: auth(token)
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.sent, 0);
+
+  r = await asJson(await fetch(`${baseUrl}/api/push/subscribe`, {
+    method: "DELETE",
+    headers: auth(token),
+    body: JSON.stringify({ token: fakeToken })
+  }));
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+});

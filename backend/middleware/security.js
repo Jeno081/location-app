@@ -19,7 +19,7 @@ function securityHeaders(req, res, next) {
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob:",
       "media-src 'self' blob:",
-      "connect-src 'self' blob:",
+      "connect-src 'self' blob: https://*.googleapis.com https://*.google.com",
       "worker-src 'self' blob: https://cdn.jsdelivr.net",
       "object-src 'none'",
       "base-uri 'self'",

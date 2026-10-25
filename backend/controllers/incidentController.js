@@ -5,6 +5,7 @@
 const db = require("../database/db");
 const fs = require("fs");
 const { sendStoredFile, ensurePlayableVideo } = require("../services/fileStore");
+const pushService = require("../services/pushService");
 
 function unlinkUploaded(files) {
   for (const file of files || []) {
@@ -70,6 +71,21 @@ exports.createIncident = async (req, res) => {
     count: 1,
     medias_count: fichiers.length
   });
+
+  try {
+    const logement = await db.get("SELECT bailleur_id, titre FROM properties WHERE id = ?", [property_id]);
+    if (logement) {
+      pushService.sendToUser(logement.bailleur_id, {
+        title: "Nouveau signalement",
+        body: `${logement.titre} : ${description.slice(0, 120)}`,
+        url: "/bailleur.html#incidents",
+        tag: `incident-${incidentId}`,
+        type: "incident"
+      }).catch((err) => console.warn("[push] signalement :", err.message));
+    }
+  } catch (err) {
+    console.warn("[push] signalement :", err.message);
+  }
 };
 
 async function attacherMedias(incidents) {

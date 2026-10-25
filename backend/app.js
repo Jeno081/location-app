@@ -91,6 +91,7 @@ app.use("/api/calendar", require("./routes/api/calendar"));
 app.use("/api/documents", require("./routes/api/documents"));
 app.use("/api/announcements", require("./routes/api/announcements"));
 app.use("/api/conversations", require("./routes/api/conversations"));
+app.use("/api/push", require("./routes/api/push"));
 
 app.use("/api", apiNotFound);
 app.use(errorHandler);

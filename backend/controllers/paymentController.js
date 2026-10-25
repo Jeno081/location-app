@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const pushService = require("../services/pushService");
 const crypto = require("crypto");
 const { Parser } = require("json2csv");
 const { normaliserMois } = require("../database/migrate");
@@ -119,6 +120,21 @@ exports.createPayment = async (req, res) => {
       mois_labels: moisListe.map(moisLabel),
       total: montantNombre
     });
+
+    try {
+      const logement = await db.get("SELECT bailleur_id, titre FROM properties WHERE id = ?", [contract.property_id]);
+      if (logement) {
+        pushService.sendToUser(logement.bailleur_id, {
+          title: "Nouveau paiement",
+          body: `${req.user.nom || "Un locataire"} a déclaré ${montantNombre} $ pour ${moisListe.map(moisLabel).join(", ")}.`,
+          url: "/bailleur.html#paiements",
+          tag: `payment-${ids[0]}`,
+          type: "payment"
+        }).catch((err) => console.warn("[push] paiement :", err.message));
+      }
+    } catch (err) {
+      console.warn("[push] paiement :", err.message);
+    }
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({ message: "Un paiement est déjà en attente pour un de ces mois." });
@@ -169,7 +185,8 @@ exports.validerPaiement = async (req, res) => {
   }
 
   const payment = await db.get(`
-    SELECT pay.* FROM payments pay
+    SELECT pay.*, c.locataire_id, p.titre AS property_titre
+    FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE pay.id = ? AND p.bailleur_id = ?
@@ -206,6 +223,16 @@ exports.validerPaiement = async (req, res) => {
     statut_bailleur,
     motif_refus: statut_bailleur === "refuse" ? motif : null
   });
+
+  pushService.sendToUser(payment.locataire_id, {
+    title: statut_bailleur === "valide" ? "Paiement validé" : "Paiement refusé",
+    body: statut_bailleur === "valide"
+      ? `Votre paiement de ${payment.montant} $ a été validé.`
+      : `Motif : ${motif}`,
+    url: "/locataire.html#paiements",
+    tag: `payment-${payment.id}`,
+    type: "payment"
+  }).catch((err) => console.warn("[push] décision paiement :", err.message));
 };
 
 exports.validerLot = async (req, res) => {
@@ -221,7 +248,8 @@ exports.validerLot = async (req, res) => {
   }
 
   const paiements = await db.all(`
-    SELECT pay.id FROM payments pay
+    SELECT pay.id, pay.montant, c.locataire_id
+    FROM payments pay
     JOIN contracts c ON pay.contract_id = c.id
     JOIN properties p ON c.property_id = p.id
     WHERE pay.lot_id = ? AND pay.statut_bailleur = 'en_attente' AND p.bailleur_id = ?
@@ -247,6 +275,17 @@ exports.validerLot = async (req, res) => {
     count: paiements.length,
     statut_bailleur
   });
+
+  const locataires = [...new Set(paiements.map((paiement) => paiement.locataire_id))];
+  pushService.sendToUsers(locataires, {
+    title: statut_bailleur === "valide" ? "Paiements validés" : "Paiements refusés",
+    body: statut_bailleur === "valide"
+      ? `${paiements.length} mois ont été validés par votre bailleur.`
+      : `${paiements.length} paiement(s) refusé(s). Motif : ${motif}`,
+    url: "/locataire.html#paiements",
+    tag: `lot-${lotId}`,
+    type: "payment"
+  }).catch((err) => console.warn("[push] lot paiement :", err.message));
 };
 
 exports.getPaymentById = async (req, res) => {

@@ -16,6 +16,10 @@ Le Service Worker ne met jamais en cache les réponses `/api/` ni les fichiers p
 
 Les supports imprimables (QR code vers l'application déployée) se trouvent dans `print/` : `location-app-qr.png`, `location-app-qr.svg`, `location-app-affiche-A4.png` et `location-app-affiche-A4.pdf`.
 
+## Notifications push
+
+Les notifications Web Push (messages, annonces, signalements, paiements) utilisent Firebase Cloud Messaging. La procédure complète de configuration et de test se trouve dans [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md).
+
 ## Stack
 
 - **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer

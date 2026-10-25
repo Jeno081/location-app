@@ -629,7 +629,25 @@ const EN = {
   "Application installée": "App installed",
   "Installer": "Install",
   "Impossible de lire cette vidéo sur cet appareil.": "This video cannot be played on this device.",
-  "Télécharger la vidéo": "Download the video"
+  "Télécharger la vidéo": "Download the video",
+
+  // Notifications
+  "Recevez une alerte sur votre téléphone pour les nouveaux messages, annonces, signalements et paiements, même lorsque l'application est fermée.": "Get an alert on your phone for new messages, announcements, reports and payments, even when the app is closed.",
+  "Activer les notifications": "Enable notifications",
+  "Désactiver": "Disable",
+  "Tester": "Test",
+  "Activées": "Enabled",
+  "Désactivées": "Disabled",
+  "Non configuré": "Not configured",
+  "Non compatible": "Not supported",
+  "Bloquées": "Blocked",
+  "Installez l'app": "Install the app",
+  "Les notifications ne sont pas encore configurées sur ce serveur.": "Notifications are not configured on this server yet.",
+  "Ce navigateur ne prend pas en charge les notifications.": "This browser does not support notifications.",
+  "Autorisez les notifications dans les réglages du navigateur, puis réessayez.": "Allow notifications in your browser settings, then try again.",
+  "Sur iPhone, ajoutez d'abord l'application à l'écran d'accueil, puis activez les notifications.": "On iPhone, first add the app to your home screen, then enable notifications.",
+  "Vous recevrez une notification sur cet appareil.": "You will receive notifications on this device.",
+  "Vous ne recevrez plus de notifications sur cet appareil.": "You will no longer receive notifications on this device."
 };
 
 const ATTRS = ["placeholder", "title", "aria-label", "alt"];

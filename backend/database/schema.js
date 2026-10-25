@@ -215,6 +215,20 @@ const SCHEMA = [
     KEY idx_password_reset_locataire (locataire_id),
     KEY idx_password_reset_statut (statut),
     CONSTRAINT fk_password_reset_locataire FOREIGN KEY (locataire_id) REFERENCES users (id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    user_id INT UNSIGNED NOT NULL,
+    token VARCHAR(512) NOT NULL,
+    platform VARCHAR(30) NOT NULL DEFAULT 'web',
+    user_agent VARCHAR(255) NULL,
+    date_creation DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    date_maj DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_push_subscriptions_token (token),
+    KEY idx_push_subscriptions_user (user_id),
+    CONSTRAINT fk_push_subscriptions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

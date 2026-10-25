@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const pushService = require("../services/pushService");
 
 async function bailleurDuLocataire(locataireId) {
   const row = await db.get(`
@@ -66,6 +67,29 @@ exports.createAnnouncement = async (req, res) => {
     announcementId,
     destinataires: destinataires.length
   });
+
+  try {
+    let cibles = destinataires;
+    if (audience === "tous") {
+      const lignes = await db.all(`
+        SELECT DISTINCT c.locataire_id
+        FROM contracts c
+        JOIN properties p ON c.property_id = p.id
+        WHERE p.bailleur_id = ?
+      `, [bailleur_id]);
+      cibles = lignes.map((ligne) => ligne.locataire_id);
+    }
+
+    pushService.sendToUsers(cibles, {
+      title: "Nouvelle annonce",
+      body: titre,
+      url: "/locataire.html#annonces",
+      tag: `annonce-${announcementId}`,
+      type: "announcement"
+    }).catch((err) => console.warn("[push] annonce :", err.message));
+  } catch (err) {
+    console.warn("[push] annonce :", err.message);
+  }
 };
 
 exports.getAnnouncements = async (req, res) => {

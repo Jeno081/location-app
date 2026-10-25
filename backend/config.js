@@ -93,5 +93,10 @@ module.exports = {
   DOCUMENT_DIR: path.join(UPLOAD_DIR, "documents"),
   AVATAR_DIR: path.join(UPLOAD_DIR, "avatars"),
   FRONTEND_DIR: path.join(__dirname, "..", "frontend"),
-  MAX_UPLOAD_BYTES: 10 * 1024 * 1024
+  MAX_UPLOAD_BYTES: 10 * 1024 * 1024,
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID || "",
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || "",
+  FIREBASE_PRIVATE_KEY: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
+  FIREBASE_SERVICE_ACCOUNT_JSON: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "",
+  APP_URL: process.env.APP_URL || ""
 };

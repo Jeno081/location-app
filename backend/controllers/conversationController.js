@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const pushService = require("../services/pushService");
 
 async function chargerConversation(id, user) {
   const conversation = await db.get(`
@@ -74,6 +75,14 @@ exports.createConversation = async (req, res) => {
   });
 
   res.status(201).json({ message: "Demande envoyée.", conversationId });
+
+  pushService.sendToUser(lien.bailleur_id, {
+    title: "Nouvelle demande",
+    body: `${req.user.nom || "Un locataire"} : ${sujet}`,
+    url: "/bailleur.html#messages",
+    tag: `conversation-${conversationId}`,
+    type: "conversation"
+  }).catch((err) => console.warn("[push] demande :", err.message));
 };
 
 exports.getConversation = async (req, res) => {
@@ -115,6 +124,21 @@ exports.sendMessage = async (req, res) => {
   });
 
   res.status(201).json({ message: "Message envoyé.", data: message });
+
+  const destinataire = req.user.role === "bailleur"
+    ? conversation.locataire_id
+    : conversation.bailleur_id;
+  const url = req.user.role === "bailleur"
+    ? "/locataire.html#messages"
+    : "/bailleur.html#messages";
+
+  pushService.sendToUser(destinataire, {
+    title: "Nouveau message",
+    body: `${req.user.nom || "Location App"} : ${contenu.slice(0, 120)}`,
+    url,
+    tag: `conversation-${conversation.id}`,
+    type: "message"
+  }).catch((err) => console.warn("[push] message :", err.message));
 };
 
 exports.updateConversationStatus = async (req, res) => {

@@ -136,13 +136,22 @@ function logout() {
 
 async function performLogout() {
   const token = localStorage.getItem("token");
+  const fcmToken = localStorage.getItem("fcm_token");
   try {
+    if (token && fcmToken) {
+      await fetch("/api/push/subscribe", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ token: fcmToken })
+      });
+    }
     if (token) {
       await fetch("/api/auth/logout", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
     }
   } catch (err) {
     // La déconnexion locale reste valable même si le serveur est indisponible.
   } finally {
+    localStorage.removeItem("fcm_token");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     window.location.href = "login.html";
