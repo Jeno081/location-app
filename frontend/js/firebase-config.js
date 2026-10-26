@@ -6,12 +6,12 @@
 // La clé VAPID se trouve dans Cloud Messaging > Certificats Web Push.
 
 self.FIREBASE_CONFIG = {
-  apiKey: "REMPLACER_PAR_API_KEY",
-  authDomain: "REMPLACER.firebaseapp.com",
-  projectId: "REMPLACER_PROJECT_ID",
-  storageBucket: "REMPLACER.appspot.com",
-  messagingSenderId: "REMPLACER_SENDER_ID",
-  appId: "REMPLACER_APP_ID"
+ apiKey: "AIzaSyC0XRDN_R0o6tYIhPmPwJuFD9g9AVho4EA",
+  authDomain: "location-app-4dacd.firebaseapp.com",
+  projectId: "location-app-4dacd",
+  storageBucket: "location-app-4dacd.firebasestorage.app",
+  messagingSenderId: "522844539927",
+  appId: "1:522844539927:web:57b87a2f39f05199cb2052"
 };
 
-self.FIREBASE_VAPID_KEY = "REMPLACER_PAR_CLE_VAPID";
+self.FIREBASE_VAPID_KEY = "BDWyL_5A7gn10mJaVXewtM6alG-gwEAVH4MZKa-fhx-RgYpHZRWlyLLdK_dNnwZgBdm6QJ6kQZhJFDTFaHX4Ihw";
