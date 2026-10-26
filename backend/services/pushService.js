@@ -115,7 +115,9 @@ async function sendToUser(userId, payload) {
     "SELECT token FROM push_subscriptions WHERE user_id = ?",
     [userId]
   );
-  return envoyerAuxTokens(abonnements.map((a) => a.token), payload);
+  const envoyes = await envoyerAuxTokens(abonnements.map((a) => a.token), payload);
+  console.log(`[push] utilisateur ${userId} : ${abonnements.length} abonnement(s), ${envoyes} notification(s) envoyée(s)`);
+  return envoyes;
 }
 
 async function sendToUsers(userIds, payload) {
