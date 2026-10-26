@@ -148,15 +148,44 @@ async function envoyerNotificationTest() {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
     });
     const data = await response.json().catch(() => ({}));
-    if (response.ok) showToast(data.message || "Notification envoyée", data.sent ? "success" : "info");
-    else showToast(data.message || "Envoi impossible", "error");
+    const diagnostic = data.diagnostic || {};
+    const details = `Abonnements : ${diagnostic.subscriptions ?? 0} · Serveur Firebase : ${diagnostic.configured ? "configuré" : "non configuré"}${diagnostic.error ? ` · ${diagnostic.error}` : ""}`;
+
+    if (response.ok && data.sent > 0) {
+      showToast(data.message || "Notification envoyée", "success");
+      return;
+    }
+
+    const hint = document.getElementById("pushHint");
+    if (hint) hint.textContent = details;
+    showToast(`${data.message || "Notification non envoyée."} ${details}`, "error");
   } catch (err) {
     showToast("Impossible de contacter le serveur", "error");
   }
 }
 
+async function verifierStatutServeur() {
+  const element = document.getElementById("pushServerStatus");
+  if (!element) return;
+  try {
+    const response = await fetch("/api/push/status", {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+    if (!response.ok) return;
+    const status = await response.json();
+    const clientProject = (self.FIREBASE_CONFIG && self.FIREBASE_CONFIG.projectId) || null;
+    const mismatch = Boolean(clientProject && status.projectId && clientProject !== status.projectId);
+    element.textContent = `Serveur Firebase : ${status.configured ? "configuré" : "non configuré"} (${status.projectId || "—"}) · Client : ${clientProject || "—"} · Abonnements : ${status.subscriptions ?? 0}${status.error ? ` · ${status.error}` : ""}`;
+    element.style.color = status.configured && !mismatch ? "" : "var(--danger)";
+    if (mismatch) {
+      element.textContent += " — les deux projets Firebase doivent être identiques.";
+    }
+  } catch (err) { /* diagnostic facultatif */ }
+}
+
 async function initialiserNotificationsUI() {
   initialiserMessaging();
+  verifierStatutServeur();
 
   if (!document.getElementById("pushStatus")) {
     if (pushConfigure() && pushSupporte() && Notification.permission === "granted") {

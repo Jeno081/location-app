@@ -10,6 +10,7 @@ const config = require("../config");
 let firebaseApp = null;
 let initTried = false;
 let warningShown = false;
+let lastError = null;
 
 function chargerCompteService() {
   if (config.FIREBASE_SERVICE_ACCOUNT_JSON) {
@@ -35,6 +36,7 @@ function initialiser() {
   try {
     const compte = chargerCompteService();
     if (!compte) {
+      lastError = "Firebase Admin non configuré : variables FIREBASE_* manquantes.";
       if (!warningShown) {
         console.warn("[push] Firebase non configuré : notifications push désactivées.");
         warningShown = true;
@@ -44,8 +46,10 @@ function initialiser() {
     firebaseApp = getApps().length
       ? getApps()[0]
       : initializeApp({ credential: cert(compte) });
+    lastError = null;
     return firebaseApp;
   } catch (err) {
+    lastError = err.message;
     console.error("[push] Initialisation Firebase impossible :", err.message);
     return null;
   }
@@ -63,8 +67,13 @@ async function supprimerTokens(tokens) {
 }
 
 async function envoyerAuxTokens(tokens, payload) {
-  if (!initialiser() || tokens.length === 0) return 0;
+  if (!initialiser()) return 0;
+  if (tokens.length === 0) {
+    lastError = "Aucun abonnement push enregistré pour cet utilisateur.";
+    return 0;
+  }
 
+  lastError = null;
   const messageBase = {
     data: {
       title: String(payload.title || "Location App"),
@@ -97,11 +106,13 @@ async function envoyerAuxTokens(tokens, payload) {
             || code === "messaging/invalid-argument") {
             invalides.push(lot[index]);
           } else {
-            console.warn("[push] Envoi impossible :", code || reponse.error);
+            lastError = `${code || "FCM"} : ${reponse.error && reponse.error.message ? reponse.error.message : "envoi impossible"}`;
+            console.warn("[push] Envoi impossible :", lastError);
           }
         }
       });
     } catch (err) {
+      lastError = err.message;
       console.error("[push] Erreur d'envoi FCM :", err.message);
     }
   }
@@ -127,4 +138,34 @@ async function sendToUsers(userIds, payload) {
   return total;
 }
 
-module.exports = { sendToUser, sendToUsers };
+async function getStatus(userId) {
+  let configured = false;
+  let projectId = config.FIREBASE_PROJECT_ID || null;
+  try {
+    const compte = chargerCompteService();
+    configured = Boolean(compte);
+    if (compte && compte.project_id) projectId = compte.project_id;
+  } catch (err) {
+    lastError = `Configuration Firebase invalide : ${err.message}`;
+  }
+  const app = initialiser();
+
+  let subscriptions = null;
+  if (userId) {
+    const row = await db.get(
+      "SELECT COUNT(*) AS nb FROM push_subscriptions WHERE user_id = ?",
+      [userId]
+    );
+    subscriptions = Number(row ? row.nb : 0);
+  }
+
+  return {
+    configured,
+    initialized: Boolean(app),
+    subscriptions,
+    error: lastError,
+    projectId
+  };
+}
+
+module.exports = { sendToUser, sendToUsers, getStatus };

@@ -38,6 +38,20 @@ exports.unsubscribe = async (req, res) => {
   res.json({ message: "Notifications désactivées." });
 };
 
+exports.health = async (req, res) => {
+  const status = await pushService.getStatus(null);
+  res.json({
+    configured: status.configured,
+    initialized: status.initialized,
+    projectId: status.projectId,
+    error: status.error ? "Firebase initialization failed" : null
+  });
+};
+
+exports.status = async (req, res) => {
+  res.json(await pushService.getStatus(req.user.id));
+};
+
 exports.test = async (req, res) => {
   const destination = req.user.role === "bailleur"
     ? "/bailleur.html#messages"
@@ -50,11 +64,13 @@ exports.test = async (req, res) => {
     tag: "test-notification",
     type: "test"
   });
+  const diagnostic = await pushService.getStatus(req.user.id);
 
   res.json({
     message: envoyes > 0
       ? "Notification de test envoyée."
-      : "Aucune notification envoyée. Vérifiez que les notifications sont activées sur cet appareil.",
-    sent: envoyes
+      : "Aucune notification envoyée. Vérifiez la configuration Firebase et l'abonnement de cet appareil.",
+    sent: envoyes,
+    diagnostic
   });
 };
