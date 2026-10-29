@@ -6,6 +6,7 @@ const { initializeApp, getApps, cert } = require("firebase-admin/app");
 const { getMessaging } = require("firebase-admin/messaging");
 const db = require("../database/db");
 const config = require("../config");
+const badgeService = require("./badgeService");
 
 let firebaseApp = null;
 let initTried = false;
@@ -80,7 +81,8 @@ async function envoyerAuxTokens(tokens, payload) {
       body: String(payload.body || ""),
       url: String(payload.url || "/"),
       tag: String(payload.tag || "location-app"),
-      type: String(payload.type || "info")
+      type: String(payload.type || "info"),
+      badge: String(payload.badge ?? "")
     },
     webpush: {
       headers: { Urgency: "high" },
@@ -122,12 +124,25 @@ async function envoyerAuxTokens(tokens, payload) {
 }
 
 async function sendToUser(userId, payload) {
+  if (config.NODE_ENV === "test") return 0;
+
   const abonnements = await db.all(
     "SELECT token FROM push_subscriptions WHERE user_id = ?",
     [userId]
   );
-  const envoyes = await envoyerAuxTokens(abonnements.map((a) => a.token), payload);
-  console.log(`[push] utilisateur ${userId} : ${abonnements.length} abonnement(s), ${envoyes} notification(s) envoyée(s)`);
+
+  let badge = 0;
+  try {
+    badge = (await badgeService.compter(userId)).total || 0;
+  } catch (err) {
+    console.warn("[push] calcul du badge impossible :", err.message);
+  }
+
+  const envoyes = await envoyerAuxTokens(
+    abonnements.map((a) => a.token),
+    { ...payload, badge }
+  );
+  console.log(`[push] utilisateur ${userId} : ${abonnements.length} abonnement(s), ${envoyes} notification(s) envoyée(s), badge ${badge}`);
   return envoyes;
 }
 

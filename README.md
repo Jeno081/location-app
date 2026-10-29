@@ -18,7 +18,13 @@ Les supports imprimables (QR code vers l'application déployée) se trouvent dan
 
 ## Notifications push
 
-Les notifications Web Push (messages, annonces, signalements, paiements) utilisent Firebase Cloud Messaging. La procédure complète de configuration et de test se trouve dans [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md).
+Les notifications Web Push (messages, annonces, signalements, paiements, documents, contrats, mots de passe) utilisent Firebase Cloud Messaging. La procédure complète de configuration et de test se trouve dans [PUSH_NOTIFICATIONS.md](PUSH_NOTIFICATIONS.md).
+
+L'application affiche aussi :
+
+- des badges sur les onglets Documents, Rappels, Annonces, Messages, Paiements, Incidents, etc. ;
+- un badge numérique sur l'icône de l'application installée (Badging API) ;
+- l'actualisation par glissement vers le bas sur les tableaux de bord bailleur et locataire.
 
 ## Stack
 

@@ -151,6 +151,9 @@ async function performLogout() {
   } catch (err) {
     // La déconnexion locale reste valable même si le serveur est indisponible.
   } finally {
+    if (typeof navigator.clearAppBadge === "function") {
+      navigator.clearAppBadge().catch(() => {});
+    }
     localStorage.removeItem("fcm_token");
     localStorage.removeItem("token");
     localStorage.removeItem("user");

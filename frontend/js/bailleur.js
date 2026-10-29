@@ -40,6 +40,7 @@ function activerOnglet(cible, options = {}) {
 
   setPageHeading(btn.dataset.title || btn.textContent.trim(), btn.dataset.sub || "");
   if (cible === "suivi") loadDashboard();
+  if (cible === "documents") loadBailleurDocuments();
   if (cible === "demandes") loadPasswordRequests();
   if (cible === "annonces") { preparerSelectionAnnonce(); loadAnnouncements(); }
   if (cible === "messages") loadConversations();
@@ -1127,6 +1128,51 @@ async function deleteTenant(id) {
   } catch (err) { showToast("Erreur", "error"); }
 }
 
+let decisionDepuisOnglet = false;
+
+async function loadBailleurDocuments() {
+  const container = document.getElementById("bailleurDocumentsList");
+  if (!container) return;
+
+  try {
+    const response = await fetch(`${API_URL}/documents/bailleur`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await response.json();
+    if (!response.ok) { container.innerHTML = '<p class="empty-message">Erreur.</p>'; return; }
+
+    if (!data.documents || data.documents.length === 0) {
+      container.innerHTML = '<div class="empty-state"><i data-lucide="files"></i><h3>Aucun document</h3><p>Les pièces envoyées par vos locataires apparaîtront ici.</p></div>';
+      if (typeof lucide !== "undefined") lucide.createIcons();
+      return;
+    }
+
+    const labels = { cni: "Carte d'identité", passeport: "Passeport", fiche_paie: "Fiche de paie", autre: "Autre" };
+    const tone = { valide: "success", refuse: "danger", en_attente: "warning" };
+    const statuts = { valide: "Validé", refuse: "Refusé", en_attente: "En attente" };
+
+    container.innerHTML = data.documents.map((d) => `
+      <article class="property-card card">
+        <div class="card-top">
+          <span class="badge badge-${tone[d.statut] || "neutral"}">${statuts[d.statut] || d.statut}</span>
+          <span class="card-id">${escapeHtml(labels[d.type] || d.type)}</span>
+        </div>
+        <h3 class="card-title">${escapeHtml(d.locataire_nom || "Locataire")}</h3>
+        <p class="card-sub">${escapeHtml(d.nom_fichier)}</p>
+        ${d.commentaire ? `<p class="card-desc">${escapeHtml(d.commentaire)}</p>` : ""}
+        <p class="card-note">Ajouté le ${formatDate(d.date_upload)}</p>
+        <div class="card-actions">
+          <button class="btn-secondary btn-sm" onclick="openProtectedFile('/api/documents/${d.id}/file', 'Document')"><i data-lucide="eye"></i> Voir</button>
+          <button class="btn-secondary btn-sm" onclick="openDocDecision(${d.id}, 'valide', ${d.locataire_id}, true)"><i data-lucide="check"></i> Valider</button>
+          <button class="btn-ghost btn-sm danger-text" onclick="openDocDecision(${d.id}, 'refuse', ${d.locataire_id}, true)"><i data-lucide="x"></i> Refuser</button>
+        </div>
+      </article>`).join("");
+    if (typeof lucide !== "undefined") lucide.createIcons();
+  } catch (err) {
+    container.innerHTML = '<p class="empty-message">Impossible de charger les documents.</p>';
+  }
+}
+
 async function openDocsModal(locataireId) {
   const locataire = globalData.tenants.find(t => Number(t.id) === Number(locataireId));
   const nom = locataire ? locataire.nom : "Locataire";
@@ -1170,7 +1216,8 @@ async function openDocsModal(locataireId) {
 
 function closeDocsModal() { document.getElementById("docsModal").style.display = "none"; }
 
-function openDocDecision(docId, statut, locataireId) {
+function openDocDecision(docId, statut, locataireId, depuisOnglet = false) {
+  decisionDepuisOnglet = depuisOnglet;
   const refuse = statut === "refuse";
   document.getElementById("docDecisionId").value = docId;
   document.getElementById("docDecisionLocataire").value = locataireId;
@@ -1216,7 +1263,9 @@ async function confirmDocDecision() {
     if (!response.ok) { showToast(data.message || "Erreur", "error"); return; }
     showToast(statut === "refuse" ? "Document refusé" : "Document validé", "success");
     closeDocDecision();
-    openDocsModal(locataireId);
+    if (decisionDepuisOnglet) loadBailleurDocuments();
+    else openDocsModal(locataireId);
+    if (typeof window.loadNotifications === "function") window.loadNotifications();
   } catch (err) { showToast("Erreur", "error"); }
 }
 
@@ -1338,6 +1387,21 @@ loadContracts();
 loadTenants();
 loadPayments();
 loadIncidents();
+
+window.rafraichirApplication = async () => {
+  await Promise.allSettled([
+    loadDashboard(),
+    loadProperties(),
+    loadContracts(),
+    loadTenants(),
+    loadPayments(),
+    loadIncidents(),
+    typeof loadBailleurDocuments === "function" ? loadBailleurDocuments() : null,
+    typeof loadAnnouncements === "function" ? loadAnnouncements() : null,
+    typeof loadConversations === "function" ? loadConversations() : null
+  ]);
+  if (typeof window.loadNotifications === "function") window.loadNotifications();
+};
 
 // LANCEMENT DES GRAPHIQUES
 if (typeof window.loadChartRevenus === "function") {

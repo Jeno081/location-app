@@ -5,6 +5,7 @@
 const db = require("../database/db");
 const bcrypt = require("bcryptjs");
 const { genererMotDePasse } = require("../utils/password");
+const pushService = require("../services/pushService");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -64,6 +65,26 @@ exports.demanderReinitialisation = async (req, res) => {
     type: "locataire",
     message: "Votre demande a été transmise à votre bailleur. Il vous communiquera un mot de passe temporaire."
   });
+
+  try {
+    const lien = await db.get(`
+      SELECT p.bailleur_id
+      FROM contracts c JOIN properties p ON c.property_id = p.id
+      WHERE c.locataire_id = ?
+      ORDER BY (c.statut = 'actif') DESC, c.id DESC LIMIT 1
+    `, [user.id]);
+    if (lien) {
+      pushService.sendToUser(lien.bailleur_id, {
+        title: "Demande de mot de passe",
+        body: `${user.nom || "Un locataire"} a demandé un nouveau mot de passe.`,
+        url: "/bailleur.html#demandes",
+        tag: `password-request-${user.id}`,
+        type: "password_reset"
+      }).catch((err) => console.warn("[push] demande mot de passe :", err.message));
+    }
+  } catch (err) {
+    console.warn("[push] demande mot de passe :", err.message);
+  }
 };
 
 // Bailleur : liste des demandes de ses locataires.

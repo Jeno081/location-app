@@ -5,6 +5,7 @@
 const db = require("../database/db");
 const fs = require("fs");
 const { sendStoredFile, deleteStoredFiles } = require("../services/fileStore");
+const pushService = require("../services/pushService");
 
 const TYPES = ["cni", "passeport", "fiche_paie", "autre"];
 
@@ -28,6 +29,26 @@ exports.uploadDocument = async (req, res) => {
     `, [locataire_id, type, req.file.originalname.slice(0, 255), chemin]);
 
     res.status(201).json({ message: "Document uploadé avec succès", documentId: result.insertId });
+
+    try {
+      const lien = await db.get(`
+        SELECT p.bailleur_id
+        FROM contracts c JOIN properties p ON c.property_id = p.id
+        WHERE c.locataire_id = ?
+        ORDER BY (c.statut = 'actif') DESC, c.id DESC LIMIT 1
+      `, [locataire_id]);
+      if (lien) {
+        pushService.sendToUser(lien.bailleur_id, {
+          title: "Nouveau document",
+          body: `${req.user.nom || "Un locataire"} a envoyé un document.`,
+          url: "/bailleur.html#documents",
+          tag: `document-${result.insertId}`,
+          type: "document"
+        }).catch((err) => console.warn("[push] document :", err.message));
+      }
+    } catch (err) {
+      console.warn("[push] document :", err.message);
+    }
   } catch (err) {
     try { fs.unlinkSync(req.file.path); } catch (e) { /* ignoré */ }
     throw err;
@@ -62,6 +83,21 @@ exports.getDocumentsLocataire = async (req, res) => {
   res.json({ documents });
 };
 
+exports.getDocumentsBailleur = async (req, res) => {
+  const documents = await db.all(`
+    SELECT d.*, u.nom AS locataire_nom, u.email AS locataire_email
+    FROM documents d
+    JOIN users u ON u.id = d.locataire_id
+    WHERE EXISTS (
+      SELECT 1 FROM contracts c
+      JOIN properties p ON c.property_id = p.id
+      WHERE c.locataire_id = d.locataire_id AND p.bailleur_id = ?
+    )
+    ORDER BY (d.statut = 'en_attente') DESC, d.date_upload DESC
+  `, [req.user.id]);
+  res.json({ documents });
+};
+
 exports.updateDocumentStatus = async (req, res) => {
   const { statut, commentaire } = req.body;
   if (!["en_attente", "valide", "refuse"].includes(statut)) {
@@ -86,6 +122,16 @@ exports.updateDocumentStatus = async (req, res) => {
   await db.run("UPDATE documents SET statut = ?, commentaire = ? WHERE id = ?",
     [statut, commentaireTexte, req.params.id]);
   res.json({ message: "Statut mis à jour" });
+
+  pushService.sendToUser(doc.locataire_id, {
+    title: statut === "valide" ? "Document validé" : "Document refusé",
+    body: statut === "valide"
+      ? "Votre document a été validé par le bailleur."
+      : `Votre document a été refusé. ${commentaireTexte || ""}`.trim(),
+    url: "/locataire.html#documents",
+    tag: `document-${doc.id}`,
+    type: "document"
+  }).catch((err) => console.warn("[push] décision document :", err.message));
 };
 
 exports.deleteDocument = async (req, res) => {

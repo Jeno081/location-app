@@ -18,9 +18,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/animations.css">
-  <link rel="stylesheet" href="css/theme.css?v=24">
-  <script src="/vendor/lucide.min.js?v=24"></script>
-  <script src="/vendor/chart.umd.min.js?v=24"></script>
+  <link rel="stylesheet" href="css/theme.css?v=28">
+  <script src="/vendor/lucide.min.js?v=28"></script>
+  <script src="/vendor/chart.umd.min.js?v=28"></script>
 </head>
 <body class="app-page">
 
@@ -41,6 +41,9 @@
         </button>
         <button class="tab" data-tab="locataires" data-title="Locataires" data-sub="Tous les locataires liés à vos contrats en cours.">
           <i data-lucide="users"></i><span>Locataires</span>
+        </button>
+        <button class="tab" data-tab="documents" data-title="Documents" data-sub="Les pièces envoyées par vos locataires.">
+          <i data-lucide="files"></i><span>Documents</span>
         </button>
         <button class="tab" data-tab="demandes" data-title="Demandes" data-sub="Demandes de mot de passe de vos locataires.">
           <i data-lucide="key-round"></i><span>Demandes</span>
@@ -190,6 +193,14 @@
             </div>
           </div>
           <div id="tenantsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
+        </section>
+
+        <!-- Documents -->
+        <section id="tab-documents" class="tab-content">
+          <div class="section-head">
+            <div><h2 class="section-title">Documents des locataires</h2><p class="section-sub">Validez ou refusez les pièces reçues.</p></div>
+          </div>
+          <div id="bailleurDocumentsList" class="properties-grid"><p class="empty-message">Chargement…</p></div>
         </section>
 
         <!-- Contrats -->
@@ -538,25 +549,26 @@
     </div>
   </div>
 
-  <script src="js/icons.js?v=24"></script>
-  <script src="js/ui.js?v=24"></script>
-  <script src="js/onboarding.js?v=24"></script>
+  <script src="js/icons.js?v=28"></script>
+  <script src="js/ui.js?v=28"></script>
+  <script src="js/onboarding.js?v=28"></script>
   <script src="js/animations.js"></script>
   <script src="js/notifications.js?v=6"></script>
   <script src="js/charts.js"></script>
   <script src="js/calendar.js"></script>
-  <script src="js/navbar.js?v=24"></script>
-  <script src="js/bailleur.js?v=24"></script>
-  <script src="js/chat.js?v=24"></script>
+  <script src="js/navbar.js?v=28"></script>
+  <script src="js/bailleur.js?v=28"></script>
+  <script src="js/chat.js?v=28"></script>
   <script>
     if (typeof lucide !== "undefined") lucide.createIcons();
   </script>
-  <script src="/vendor/firebase-app-compat.js?v=24"></script>
-  <script src="/vendor/firebase-messaging-compat.js?v=24"></script>
-  <script src="js/firebase-config.js?v=24"></script>
-  <script src="js/push.js?v=24"></script>
+  <script src="/vendor/firebase-app-compat.js?v=28"></script>
+  <script src="/vendor/firebase-messaging-compat.js?v=28"></script>
+  <script src="js/firebase-config.js?v=28"></script>
+  <script src="js/push.js?v=28"></script>
+  <script src="js/pullToRefresh.js?v=28"></script>
 
-    <script src="js/pwa.js?v=24"></script>
-  <script src="js/i18n.js?v=24"></script>
+    <script src="js/pwa.js?v=28"></script>
+  <script src="js/i18n.js?v=28"></script>
 </body>
 </html>

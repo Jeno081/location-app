@@ -125,7 +125,11 @@ exports.getAnnouncements = async (req, res) => {
   if (!bailleurId) return res.json({ announcements: [] });
 
   const annonces = await db.all(`
-    SELECT a.*, b.nom AS bailleur_nom
+    SELECT a.*, b.nom AS bailleur_nom,
+      EXISTS (
+        SELECT 1 FROM announcement_reads ar
+        WHERE ar.announcement_id = a.id AND ar.user_id = ?
+      ) AS lu
     FROM announcements a
     JOIN users b ON b.id = a.bailleur_id
     WHERE a.bailleur_id = ?
@@ -137,7 +141,32 @@ exports.getAnnouncements = async (req, res) => {
         )
       )
     ORDER BY a.date_creation DESC, a.id DESC
-  `, [bailleurId, req.user.id]);
+  `, [req.user.id, bailleurId, req.user.id]);
 
   res.json({ announcements: annonces });
+};
+
+exports.marquerAnnoncesLues = async (req, res) => {
+  if (req.user.role !== "locataire") {
+    return res.status(403).json({ message: "Non autorisé" });
+  }
+
+  const bailleurId = await bailleurDuLocataire(req.user.id);
+  if (!bailleurId) return res.json({ message: "Aucune annonce à marquer.", count: 0 });
+
+  const result = await db.run(`
+    INSERT IGNORE INTO announcement_reads (announcement_id, user_id)
+    SELECT a.id, ?
+    FROM announcements a
+    WHERE a.bailleur_id = ?
+      AND (
+        a.audience = 'tous'
+        OR EXISTS (
+          SELECT 1 FROM announcement_recipients ar
+          WHERE ar.announcement_id = a.id AND ar.locataire_id = ?
+        )
+      )
+  `, [req.user.id, bailleurId, req.user.id]);
+
+  res.json({ message: "Annonces marquées comme lues.", count: result.affectedRows || 0 });
 };

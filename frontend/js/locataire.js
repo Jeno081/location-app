@@ -521,6 +521,7 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
       document.getElementById("uploadForm").reset();
       closeUploadModal();
       loadDocuments();
+      if (window.loadNotifications) window.loadNotifications();
     } else { const data = await response.json(); showToast(data.message, "error"); }
   } catch (err) { showToast("Erreur serveur", "error"); }
 });
@@ -758,3 +759,18 @@ loadRappels();
 loadDocuments();
 loadMyIncidents();
 loadHistory();
+
+window.rafraichirApplication = async () => {
+  await Promise.allSettled([
+    loadMesLocations(),
+    loadContracts(),
+    loadPayments(),
+    loadRappels(),
+    loadDocuments(),
+    loadMyIncidents(),
+    loadHistory(),
+    typeof loadAnnouncements === "function" ? loadAnnouncements() : null,
+    typeof loadConversations === "function" ? loadConversations() : null
+  ]);
+  if (typeof window.loadNotifications === "function") window.loadNotifications();
+};

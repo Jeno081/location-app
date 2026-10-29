@@ -2,7 +2,7 @@
 // sw.js — Service Worker de Location App
 // ============================================
 
-const CACHE_VERSION = "location-app-v24";
+const CACHE_VERSION = "location-app-v28";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
@@ -21,32 +21,33 @@ const PRECACHE = [
   "/manifest.json",
   "/css/style.css",
   "/css/animations.css",
-  "/css/theme.css?v=24",
-  "/js/icons.js?v=24",
-  "/js/ui.js?v=24",
-  "/js/onboarding.js?v=24",
+  "/css/theme.css?v=28",
+  "/js/icons.js?v=28",
+  "/js/ui.js?v=28",
+  "/js/onboarding.js?v=28",
   "/js/animations.js",
   "/js/notifications.js?v=6",
   "/js/charts.js",
   "/js/calendar.js",
-  "/js/navbar.js?v=24",
-  "/js/bailleur.js?v=24",
-  "/js/chat.js?v=24",
-  "/js/i18n.js?v=24",
-  "/js/login.js?v=24",
+  "/js/navbar.js?v=28",
+  "/js/bailleur.js?v=28",
+  "/js/chat.js?v=28",
+  "/js/i18n.js?v=28",
+  "/js/login.js?v=28",
   "/js/index.js",
-  "/js/locataire.js?v=24",
-  "/js/profil.js?v=24",
-  "/js/changer-mot-de-passe.js?v=24",
-  "/js/pwa.js?v=24",
-  "/js/push.js?v=24",
-  "/js/firebase-config.js?v=24",
-  "/vendor/firebase-app-compat.js?v=24",
-  "/vendor/firebase-messaging-compat.js?v=24",
-  "/vendor/lucide.min.js?v=24",
-  "/vendor/chart.umd.min.js?v=24",
-  "/vendor/pdf.min.js?v=24",
-  "/vendor/pdf.worker.min.js?v=24",
+  "/js/locataire.js?v=28",
+  "/js/profil.js?v=28",
+  "/js/changer-mot-de-passe.js?v=28",
+  "/js/pwa.js?v=28",
+  "/js/pullToRefresh.js?v=28",
+  "/js/push.js?v=28",
+  "/js/firebase-config.js?v=28",
+  "/vendor/firebase-app-compat.js?v=28",
+  "/vendor/firebase-messaging-compat.js?v=28",
+  "/vendor/lucide.min.js?v=28",
+  "/vendor/chart.umd.min.js?v=28",
+  "/vendor/pdf.min.js?v=28",
+  "/vendor/pdf.worker.min.js?v=28",
   "/assets/hero-bg.jpeg",
   "/icons/logo.png",
   "/icons/icon-192.png",
@@ -149,8 +150,9 @@ self.addEventListener("push", (event) => {
   const body = data.body || notification.body || "";
   const url = data.url || (payload.fcmOptions && payload.fcmOptions.link) || "/";
   const tag = data.tag || "location-app";
+  const badge = Number(data.badge);
 
-  event.waitUntil(
+  const taches = [
     self.registration.showNotification(title, {
       body,
       icon: "/icons/icon-192.png",
@@ -159,7 +161,23 @@ self.addEventListener("push", (event) => {
       renotify: true,
       data: { url }
     })
-  );
+  ];
+
+  const badgeApi = typeof self.registration.setAppBadge === "function"
+    ? self.registration
+    : (self.navigator && typeof self.navigator.setAppBadge === "function" ? self.navigator : null);
+
+  if (Number.isFinite(badge) && badgeApi) {
+    taches.push(
+      badge > 0
+        ? badgeApi.setAppBadge(badge).catch(() => {})
+        : (typeof badgeApi.clearAppBadge === "function"
+          ? badgeApi.clearAppBadge().catch(() => {})
+          : Promise.resolve())
+    );
+  }
+
+  event.waitUntil(Promise.all(taches));
 });
 
 self.addEventListener("notificationclick", (event) => {

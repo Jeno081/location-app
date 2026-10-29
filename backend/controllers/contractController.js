@@ -4,6 +4,7 @@
 
 const crypto = require("crypto");
 const db = require("../database/db");
+const pushService = require("../services/pushService");
 const bcrypt = require("bcryptjs");
 const { deleteTenantAccount } = require("../services/tenantService");
 
@@ -193,6 +194,15 @@ exports.signContract = async (req, res) => {
   });
 
   res.json({ message: "Contrat signé" });
+
+  const destinataire = role === "bailleur" ? contract.locataire_id : contract.bailleur_id;
+  pushService.sendToUser(destinataire, {
+    title: "Contrat signé",
+    body: `${req.user.nom || "L'autre partie"} a signé le contrat.`,
+    url: role === "bailleur" ? "/locataire.html#contrats" : "/bailleur.html#contrats",
+    tag: `contract-${contract.id}`,
+    type: "contract"
+  }).catch((err) => console.warn("[push] contrat :", err.message));
 };
 
 exports.terminerContrat = async (req, res) => {

@@ -5,7 +5,10 @@ Location App envoie des notifications Web Push via Firebase Cloud Messaging (FCM
 - nouveau message ou nouvelle demande ;
 - nouvelle annonce ;
 - nouveau signalement ;
-- paiement déclaré, validé ou refusé.
+- paiement déclaré, validé ou refusé ;
+- document envoyé par un locataire, validé ou refusé ;
+- contrat signé ;
+- demande de réinitialisation de mot de passe.
 
 Le Service Worker reçoit les messages même lorsque l'application est fermée. Sur iPhone, l'application doit être installée sur l'écran d'accueil (iOS 16.4+).
 

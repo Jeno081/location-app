@@ -177,6 +177,16 @@ const SCHEMA = [
     CONSTRAINT fk_announcement_recipients_user FOREIGN KEY (locataire_id) REFERENCES users (id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+  `CREATE TABLE IF NOT EXISTS announcement_reads (
+    announcement_id INT UNSIGNED NOT NULL,
+    user_id INT UNSIGNED NOT NULL,
+    date_lecture DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (announcement_id, user_id),
+    KEY idx_announcement_reads_user (user_id),
+    CONSTRAINT fk_announcement_reads_ann FOREIGN KEY (announcement_id) REFERENCES announcements (id) ON DELETE CASCADE,
+    CONSTRAINT fk_announcement_reads_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
   `CREATE TABLE IF NOT EXISTS conversations (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     bailleur_id INT UNSIGNED NOT NULL,

@@ -59,9 +59,25 @@ async function loadAnnouncements() {
       </article>`;
     }).join("");
     if (typeof lucide !== "undefined") lucide.createIcons();
+    const ongletAnnonces = document.getElementById("tab-annonces");
+    if (user.role === "locataire" && ongletAnnonces && ongletAnnonces.classList.contains("active")) {
+      marquerAnnoncesLues();
+    }
   } catch (err) {
     conteneur.innerHTML = '<p class="empty-message">Impossible de charger les annonces.</p>';
   }
+}
+
+async function marquerAnnoncesLues() {
+  try {
+    const response = await fetch(`${API_URL}/announcements/lu`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (response.ok && typeof window.loadNotifications === "function") {
+      window.loadNotifications();
+    }
+  } catch (err) { /* badge facultatif */ }
 }
 
 async function envoyerAnnonce(event) {

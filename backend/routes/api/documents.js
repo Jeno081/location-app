@@ -14,6 +14,7 @@ router.post("/", verifyToken, requireRole("locataire"), upload.single("fichier")
 router.get("/mes-documents", verifyToken, requireRole("locataire"), documentController.getMesDocuments);
 
 // Bailleur
+router.get("/bailleur", verifyToken, requireRole("bailleur"), documentController.getDocumentsBailleur);
 router.get("/locataire/:id", verifyToken, requireRole("bailleur"), documentController.getDocumentsLocataire);
 router.get("/:id/file", verifyToken, documentController.getDocumentFile);
 router.put("/:id/statut", verifyToken, requireRole("bailleur"), documentController.updateDocumentStatus);

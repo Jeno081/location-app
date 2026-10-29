@@ -1211,3 +1211,20 @@ body.lightbox-open { overflow: hidden; }
 .push-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 14px 0 4px; }
 .push-actions .badge { flex: none; }
 #pushHint { min-height: 18px; }
+/* Actualisation par glissement (pull-to-refresh) */
+.pull-refresh {
+  position: fixed; top: max(10px, env(safe-area-inset-top)); left: 50%;
+  width: 42px; height: 42px; z-index: 1600;
+  display: grid; place-items: center;
+  background: var(--white); color: var(--gray-500);
+  border: 1px solid var(--border); border-radius: 50%;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .18);
+  transform: translate(-50%, -70px); opacity: 0;
+  transition: transform .18s ease, opacity .18s ease, color .18s ease;
+  pointer-events: none;
+}
+.pull-refresh.visible { transform: translate(-50%, 0); opacity: 1; }
+.pull-refresh.ready { color: var(--primary); border-color: var(--primary); }
+.pull-refresh.refreshing svg { animation: pull-spin .9s linear infinite; }
+.pull-refresh svg { width: 19px; height: 19px; }
+@keyframes pull-spin { to { transform: rotate(360deg); } }

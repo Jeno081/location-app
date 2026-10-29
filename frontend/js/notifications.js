@@ -18,22 +18,41 @@ async function loadNotifications() {
     const data = await response.json();
     if (!response.ok) return;
 
-        if (notifUser.role === "bailleur") {
+    if (notifUser.role === "bailleur") {
       updateTabBadge("incidents", data.incidents);
       updateTabBadge("contrats", data.contrats);
-      updateTabBadge("paiements", data.paiements); // 👈 Ajout du badge sur l'onglet Paiements
-      updateTabBadge("suivi", data.retards); // 👈 Le badge Suivi affiche maintenant les retards
+      updateTabBadge("paiements", data.paiements);
+      updateTabBadge("suivi", data.retards);
       updateTabBadge("messages", data.messages || 0);
       updateTabBadge("demandes", data.demandes || 0);
+      updateTabBadge("documents", data.documents || 0);
     } else {
       updateTabBadge("rappels", data.rappels);
       updateTabBadge("signalements", data.incidents);
       updateTabBadge("paiements", Math.max(data.paiements || 0, data.paiements_refuses || 0));
       updateTabBadge("messages", data.messages || 0);
+      updateTabBadge("documents", data.documents || 0);
+      updateTabBadge("annonces", data.annonces || 0);
     }
+
+    const total = Number.isFinite(Number(data.total))
+      ? Number(data.total)
+      : Object.values(data).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    updateAppBadge(total);
   } catch (err) {
     console.error("Erreur notifications:", err);
   }
+}
+
+function updateAppBadge(count) {
+  const nombre = Math.max(0, Number(count) || 0);
+  try {
+    if (nombre > 0 && typeof navigator.setAppBadge === "function") {
+      navigator.setAppBadge(nombre).catch(() => {});
+    } else if (nombre === 0 && typeof navigator.clearAppBadge === "function") {
+      navigator.clearAppBadge().catch(() => {});
+    }
+  } catch (err) { /* API non disponible */ }
 }
 
 function updateTabBadge(tabName, count) {
@@ -63,3 +82,4 @@ setInterval(loadNotifications, 60000);
 
 // Exposer globalement pour rafraîchir après une action
 window.loadNotifications = loadNotifications;
+window.updateAppBadge = updateAppBadge;
