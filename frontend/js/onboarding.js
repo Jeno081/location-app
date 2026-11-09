@@ -211,13 +211,19 @@ function renderStep() {
   const nextBtn = document.getElementById("onboardingNext");
 
   const step = steps[currentStep];
+  const appName = (window.APP_CONFIG && window.APP_CONFIG.appName) || "Location App";
+  const titre = String(step.title).replace(/Location App/g, appName);
+  const texte = String(step.text).replace(/Location App/g, appName);
+  const points = Array.isArray(step.points)
+    ? step.points.map((point) => String(point).replace(/Location App/g, appName))
+    : [];
 
     content.innerHTML = `
     <div class="onboarding-icon" id="onboardingIcon">${step.icon}</div>
-    <h2 class="onboarding-title">${step.title}</h2>
-    <p class="onboarding-text">${step.text}</p>
-    ${Array.isArray(step.points) && step.points.length
-      ? `<ul class="onboarding-points">${step.points.map((point) => `<li>${point}</li>`).join("")}</ul>`
+    <h2 class="onboarding-title">${titre}</h2>
+    <p class="onboarding-text">${texte}</p>
+    ${points.length
+      ? `<ul class="onboarding-points">${points.map((point) => `<li>${point}</li>`).join("")}</ul>`
       : ""}
   `;
 

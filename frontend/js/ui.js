@@ -12,13 +12,15 @@ function escapeHtml(value) {
 }
 
 function localeCourante() {
-  return localStorage.getItem("lang") === "en" ? "en-GB" : "fr-FR";
+  if (localStorage.getItem("lang") === "en") return "en-GB";
+  return (window.APP_CONFIG && window.APP_CONFIG.locale) || "fr-FR";
 }
 
 function formatMoney(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return `${n.toLocaleString(localeCourante(), { maximumFractionDigits: 2 })} $`;
+  const symbole = (window.APP_CONFIG && window.APP_CONFIG.currencySymbol) || "$";
+  return `${n.toLocaleString(localeCourante(), { maximumFractionDigits: 2 })} ${symbole}`;
 }
 
 function formatDate(value, options = {}) {

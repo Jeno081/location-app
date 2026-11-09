@@ -6,7 +6,7 @@ Application de gestion locative pour un bailleur unique et ses locataires : bien
 
 Location App peut être installée sur Android et iPhone depuis le navigateur, sans magasin d'applications :
 
-- `frontend/manifest.json` — nom, icônes, mode standalone, couleur de thème ;
+- `frontend/manifest.json` — manifeste de secours ; le manifeste PWA réel est généré dynamiquement depuis `/api/config` ;
 - `frontend/sw.js` — cache des ressources statiques et page hors ligne ;
 - `frontend/js/pwa.js` — enregistrement du Service Worker et bouton d'installation ;
 - `frontend/offline.html` — écran hors ligne ;
@@ -25,6 +25,12 @@ L'application affiche aussi :
 - des badges sur les onglets Documents, Rappels, Annonces, Messages, Paiements, Incidents, etc. ;
 - un badge numérique sur l'icône de l'application installée (Badging API) ;
 - l'actualisation par glissement vers le bas sur les tableaux de bord bailleur et locataire.
+
+## Branding par instance
+
+Le nom, le logo, les couleurs, la devise et la locale sont configurables par les variables `APP_*` (voir `.env.example`). Ils sont exposés publiquement par `/api/config`, injectés dans `/app-config.js` et utilisés dans le manifeste PWA généré par `/manifest.json`.
+
+Les PDF (contrats et quittances) utilisent également le nom de l'application et le symbole monétaire configurés.
 
 ## Stack
 

@@ -37,7 +37,7 @@ async function loadChartRevenus() {
       data: {
         labels: data.labels,
         datasets: [{
-          label: "Revenus ($)",
+          label: `Revenus (${(window.APP_CONFIG && window.APP_CONFIG.currencySymbol) || "$"})`,
           data: data.valeurs,
           backgroundColor: gradient,
           borderRadius: isMobile ? 4 : 8,

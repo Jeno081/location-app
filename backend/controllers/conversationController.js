@@ -4,6 +4,7 @@
 
 const db = require("../database/db");
 const pushService = require("../services/pushService");
+const config = require("../config");
 
 async function chargerConversation(id, user) {
   const conversation = await db.get(`
@@ -134,7 +135,7 @@ exports.sendMessage = async (req, res) => {
 
   pushService.sendToUser(destinataire, {
     title: "Nouveau message",
-    body: `${req.user.nom || "Location App"} : ${contenu.slice(0, 120)}`,
+    body: `${req.user.nom || config.APP_NAME || "Location App"} : ${contenu.slice(0, 120)}`,
     url,
     tag: `conversation-${conversation.id}`,
     type: "message"

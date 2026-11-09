@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const config = require("../config");
 const {
   createDocument,
   drawHeader,
@@ -172,7 +173,7 @@ function buildReceiptPDF(doc, payment) {
     doc,
     refuse
       ? "Ce document ne constitue pas une quittance. Il conserve la trace du paiement refusé et du motif indiqué par le bailleur."
-      : "Cette quittance ne vaut pas pour les périodes futures. Elle est générée automatiquement par Location App et conservée dans l'espace locatif.",
+      : `Cette quittance ne vaut pas pour les périodes futures. Elle est générée automatiquement par ${config.APP_NAME} et conservée dans l'espace locatif.`,
     { size: 7.4, color: COLORS.soft, lineGap: 2 }
   );
 }

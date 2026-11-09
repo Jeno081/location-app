@@ -32,15 +32,16 @@ function afficherBanniereInstallation(mode = "prompt") {
   if (estInstallee() || banniereDejaRejetee() || document.getElementById("pwaInstallBanner")) return;
 
   const ios = mode === "ios";
+  const appName = (window.APP_CONFIG && window.APP_CONFIG.appName) || "Location App";
   const banniere = document.createElement("aside");
   banniere.id = "pwaInstallBanner";
   banniere.className = "pwa-banner";
   banniere.setAttribute("role", "dialog");
-  banniere.setAttribute("aria-label", "Installer Location App");
+  banniere.setAttribute("aria-label", `Installer ${appName}`);
   banniere.innerHTML = `
-    <img class="pwa-banner-icon" src="/icons/icon-192.png" alt="">
+    <img class="pwa-banner-icon" src="${(window.APP_CONFIG && window.APP_CONFIG.icon192Url) || "/icons/icon-192.png"}" alt="">
     <div class="pwa-banner-text">
-      <strong>Installer Location App</strong>
+      <strong>Installer ${appName}</strong>
       <span>${ios
         ? "Appuyez sur Partager puis « Sur l'écran d'accueil »."
         : "Accès rapide depuis votre écran d'accueil, comme une application."}</span>

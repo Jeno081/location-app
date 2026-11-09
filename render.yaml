@@ -35,6 +35,68 @@ services:
         value: "false"
       - key: DB_POOL_SIZE
         value: "2"
-      # Dossier des fichiers : nécessite un disque persistant (plan payant).
-      # - key: UPLOAD_DIR
-      #   value: /var/data/uploads
+      # Identité de l'instance (branding par client)
+      - key: APP_NAME
+        sync: false
+      - key: APP_SHORT_NAME
+        sync: false
+      - key: APP_COMPANY_NAME
+        sync: false
+      - key: APP_TAGLINE
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: CLIENT_SLUG
+        sync: false
+      - key: APP_DEFAULT_LANGUAGE
+        value: fr
+      - key: APP_LOCALE
+        value: fr-FR
+      - key: APP_CURRENCY
+        value: USD
+      - key: APP_CURRENCY_SYMBOL
+        value: "$"
+      - key: APP_TIMEZONE
+        value: Africa/Kinshasa
+      - key: APP_PRIMARY_COLOR
+        value: "#4f46e5"
+      - key: APP_ACCENT_COLOR
+        value: "#14b8a6"
+      - key: APP_THEME_COLOR
+        value: "#0b1220"
+      - key: APP_BACKGROUND_COLOR
+        value: "#000000"
+      - key: APP_LOGO_URL
+        sync: false
+      - key: APP_ICON_192_URL
+        sync: false
+      - key: APP_ICON_512_URL
+        sync: false
+      - key: APP_ICON_MASKABLE_URL
+        sync: false
+      - key: APP_APPLE_ICON_URL
+        sync: false
+      - key: APP_FAVICON_URL
+        sync: false
+      # Firebase Admin (privé) et Firebase Web (public) par client
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+      - key: FIREBASE_WEB_API_KEY
+        sync: false
+      - key: FIREBASE_WEB_AUTH_DOMAIN
+        sync: false
+      - key: FIREBASE_WEB_PROJECT_ID
+        sync: false
+      - key: FIREBASE_WEB_STORAGE_BUCKET
+        sync: false
+      - key: FIREBASE_WEB_MESSAGING_SENDER_ID
+        sync: false
+      - key: FIREBASE_WEB_APP_ID
+        sync: false
+      - key: FIREBASE_VAPID_KEY
+        sync: false
+      # Les fichiers sont persistés en base MySQL : aucun disque Render requis.

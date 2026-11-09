@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const config = require("../config");
 const pushService = require("../services/pushService");
 const crypto = require("crypto");
 const { Parser } = require("json2csv");
@@ -126,7 +127,7 @@ exports.createPayment = async (req, res) => {
       if (logement) {
         pushService.sendToUser(logement.bailleur_id, {
           title: "Nouveau paiement",
-          body: `${req.user.nom || "Un locataire"} a déclaré ${montantNombre} $ pour ${moisListe.map(moisLabel).join(", ")}.`,
+          body: `${req.user.nom || "Un locataire"} a déclaré ${montantNombre} ${config.APP_CURRENCY_SYMBOL} pour ${moisListe.map(moisLabel).join(", ")}.`,
           url: "/bailleur.html#paiements",
           tag: `payment-${ids[0]}`,
           type: "payment"
@@ -227,7 +228,7 @@ exports.validerPaiement = async (req, res) => {
   pushService.sendToUser(payment.locataire_id, {
     title: statut_bailleur === "valide" ? "Paiement validé" : "Paiement refusé",
     body: statut_bailleur === "valide"
-      ? `Votre paiement de ${payment.montant} $ a été validé.`
+      ? `Votre paiement de ${payment.montant} ${config.APP_CURRENCY_SYMBOL} a été validé.`
       : `Motif : ${motif}`,
     url: "/locataire.html#paiements",
     tag: `payment-${payment.id}`,

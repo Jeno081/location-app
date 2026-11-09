@@ -3,6 +3,7 @@
 // ============================================
 
 const db = require("../database/db");
+const config = require("../config");
 
 const MOIS_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
@@ -48,7 +49,7 @@ exports.getCalendar = async (req, res) => {
       type: "loyer",
       date: `${annee}-${String(mois).padStart(2, "0")}-05`,
       titre: c.locataire_nom,
-      description: `Loyer ${c.montant_loyer} $ — ${c.property_titre}`,
+      description: `Loyer ${c.montant_loyer} ${config.APP_CURRENCY_SYMBOL} — ${c.property_titre}`,
       montant: Number(c.montant_loyer) || 0,
       statut: paye ? "paye" : "en_attente",
       paiement: paye

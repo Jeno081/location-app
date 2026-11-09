@@ -2,7 +2,7 @@
 // sw.js — Service Worker de Location App
 // ============================================
 
-const CACHE_VERSION = "location-app-v28";
+const CACHE_VERSION = "location-app-v29";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
@@ -19,35 +19,37 @@ const PRECACHE = [
   "/locataire.html",
   OFFLINE_URL,
   "/manifest.json",
+  "/app-config.js?v=29",
+  "/firebase-config.js?v=29",
+  "/js/app-config.js?v=29",
   "/css/style.css",
   "/css/animations.css",
-  "/css/theme.css?v=28",
-  "/js/icons.js?v=28",
-  "/js/ui.js?v=28",
-  "/js/onboarding.js?v=28",
+  "/css/theme.css?v=29",
+  "/js/icons.js?v=29",
+  "/js/ui.js?v=29",
+  "/js/onboarding.js?v=29",
   "/js/animations.js",
   "/js/notifications.js?v=6",
   "/js/charts.js",
   "/js/calendar.js",
-  "/js/navbar.js?v=28",
-  "/js/bailleur.js?v=28",
-  "/js/chat.js?v=28",
-  "/js/i18n.js?v=28",
-  "/js/login.js?v=28",
+  "/js/navbar.js?v=29",
+  "/js/bailleur.js?v=29",
+  "/js/chat.js?v=29",
+  "/js/i18n.js?v=29",
+  "/js/login.js?v=29",
   "/js/index.js",
-  "/js/locataire.js?v=28",
-  "/js/profil.js?v=28",
-  "/js/changer-mot-de-passe.js?v=28",
-  "/js/pwa.js?v=28",
-  "/js/pullToRefresh.js?v=28",
-  "/js/push.js?v=28",
-  "/js/firebase-config.js?v=28",
-  "/vendor/firebase-app-compat.js?v=28",
-  "/vendor/firebase-messaging-compat.js?v=28",
-  "/vendor/lucide.min.js?v=28",
-  "/vendor/chart.umd.min.js?v=28",
-  "/vendor/pdf.min.js?v=28",
-  "/vendor/pdf.worker.min.js?v=28",
+  "/js/locataire.js?v=29",
+  "/js/profil.js?v=29",
+  "/js/changer-mot-de-passe.js?v=29",
+  "/js/pwa.js?v=29",
+  "/js/pullToRefresh.js?v=29",
+  "/js/push.js?v=29",
+  "/vendor/firebase-app-compat.js?v=29",
+  "/vendor/firebase-messaging-compat.js?v=29",
+  "/vendor/lucide.min.js?v=29",
+  "/vendor/chart.umd.min.js?v=29",
+  "/vendor/pdf.min.js?v=29",
+  "/vendor/pdf.worker.min.js?v=29",
   "/assets/hero-bg.jpeg",
   "/icons/logo.png",
   "/icons/icon-192.png",
@@ -146,7 +148,7 @@ self.addEventListener("push", (event) => {
 
   const data = payload.data || {};
   const notification = payload.notification || {};
-  const title = data.title || notification.title || "Location App";
+  const title = data.title || notification.title || "Notification";
   const body = data.body || notification.body || "";
   const url = data.url || (payload.fcmOptions && payload.fcmOptions.link) || "/";
   const tag = data.tag || "location-app";

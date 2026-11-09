@@ -45,7 +45,7 @@ async function loadCalendar(mois, annee) {
         '<span class="calendar-stat-label">Loyers payés</span>' +
       '</div>' +
       '<div class="calendar-stat">' +
-        '<span class="calendar-stat-value">' + data.stats.montant_attendu + ' $</span>' +
+        '<span class="calendar-stat-value">' + formatMoney(data.stats.montant_attendu) + '</span>' +
         '<span class="calendar-stat-label">Attendu</span>' +
       '</div>' +
       '<div class="calendar-stat">' +

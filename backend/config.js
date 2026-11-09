@@ -75,6 +75,67 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, "uploads");
 
+// --- Identité de l'instance (branding par client) --------------------------
+function texteEnv(nom, valeurParDefaut = "") {
+  const valeur = process.env[nom];
+  return valeur === undefined || valeur === "" ? valeurParDefaut : String(valeur).trim();
+}
+
+function couleurEnv(nom, valeurParDefaut) {
+  const valeur = texteEnv(nom, valeurParDefaut);
+  return /^#[0-9a-f]{6}$/i.test(valeur) ? valeur : valeurParDefaut;
+}
+
+function langueEnv() {
+  return ["fr", "en"].includes(texteEnv("APP_DEFAULT_LANGUAGE", "fr"))
+    ? texteEnv("APP_DEFAULT_LANGUAGE", "fr")
+    : "fr";
+}
+
+const APP_NAME = texteEnv("APP_NAME", "Location App");
+const APP_SHORT_NAME = texteEnv("APP_SHORT_NAME", APP_NAME);
+const APP_COMPANY_NAME = texteEnv("APP_COMPANY_NAME", APP_NAME);
+const APP_TAGLINE = texteEnv("APP_TAGLINE", "Gestion locative");
+const APP_DESCRIPTION = texteEnv(
+  "APP_DESCRIPTION",
+  `${APP_NAME} — gérez vos biens, contrats, loyers et locataires depuis un espace unique.`
+);
+const APP_URL = texteEnv("APP_URL", "");
+const CLIENT_SLUG = texteEnv("CLIENT_SLUG", "");
+const APP_SUPPORT_EMAIL = texteEnv("APP_SUPPORT_EMAIL", "");
+const APP_SUPPORT_PHONE = texteEnv("APP_SUPPORT_PHONE", "");
+const APP_DEFAULT_LANGUAGE = langueEnv();
+const APP_LOCALE = texteEnv("APP_LOCALE", "fr-FR");
+const APP_CURRENCY = texteEnv("APP_CURRENCY", "USD");
+const APP_CURRENCY_SYMBOL = texteEnv("APP_CURRENCY_SYMBOL", "$");
+const APP_TIMEZONE = texteEnv("APP_TIMEZONE", "");
+
+const APP_LOGO_URL = texteEnv("APP_LOGO_URL", "/icons/logo.png");
+const APP_ICON_192_URL = texteEnv("APP_ICON_192_URL", "/icons/icon-192.png");
+const APP_ICON_512_URL = texteEnv("APP_ICON_512_URL", "/icons/icon-512.png");
+const APP_ICON_MASKABLE_URL = texteEnv("APP_ICON_MASKABLE_URL", "/icons/maskable-512.png");
+const APP_APPLE_ICON_URL = texteEnv("APP_APPLE_ICON_URL", "/icons/apple-touch-icon.png");
+const APP_FAVICON_URL = texteEnv("APP_FAVICON_URL", "/icons/favicon-32.png");
+
+const APP_PRIMARY_COLOR = couleurEnv("APP_PRIMARY_COLOR", "#4f46e5");
+const APP_ACCENT_COLOR = couleurEnv("APP_ACCENT_COLOR", "#14b8a6");
+const APP_THEME_COLOR = couleurEnv("APP_THEME_COLOR", "#0b1220");
+const APP_BACKGROUND_COLOR = couleurEnv("APP_BACKGROUND_COLOR", "#000000");
+
+// Chaque client possède son propre projet Firebase. Les valeurs Web sont
+// publiques ; le compte de service reste uniquement dans les variables privées.
+const FIREBASE_WEB_API_KEY = texteEnv("FIREBASE_WEB_API_KEY", "");
+const FIREBASE_WEB_AUTH_DOMAIN = texteEnv("FIREBASE_WEB_AUTH_DOMAIN", "");
+const FIREBASE_WEB_PROJECT_ID = texteEnv("FIREBASE_WEB_PROJECT_ID", "");
+const FIREBASE_WEB_STORAGE_BUCKET = texteEnv("FIREBASE_WEB_STORAGE_BUCKET", "");
+const FIREBASE_WEB_MESSAGING_SENDER_ID = texteEnv("FIREBASE_WEB_MESSAGING_SENDER_ID", "");
+const FIREBASE_WEB_APP_ID = texteEnv("FIREBASE_WEB_APP_ID", "");
+const FIREBASE_VAPID_KEY = texteEnv("FIREBASE_VAPID_KEY", "");
+
+if (APP_TIMEZONE) {
+  process.env.TZ = APP_TIMEZONE;
+}
+
 module.exports = {
   NODE_ENV,
   IS_PRODUCTION,
@@ -98,5 +159,35 @@ module.exports = {
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL || "",
   FIREBASE_PRIVATE_KEY: (process.env.FIREBASE_PRIVATE_KEY || "").replace(/\\n/g, "\n"),
   FIREBASE_SERVICE_ACCOUNT_JSON: process.env.FIREBASE_SERVICE_ACCOUNT_JSON || "",
-  APP_URL: process.env.APP_URL || ""
+  FIREBASE_WEB_API_KEY,
+  FIREBASE_WEB_AUTH_DOMAIN,
+  FIREBASE_WEB_PROJECT_ID,
+  FIREBASE_WEB_STORAGE_BUCKET,
+  FIREBASE_WEB_MESSAGING_SENDER_ID,
+  FIREBASE_WEB_APP_ID,
+  FIREBASE_VAPID_KEY,
+  APP_NAME,
+  APP_SHORT_NAME,
+  APP_COMPANY_NAME,
+  APP_TAGLINE,
+  APP_DESCRIPTION,
+  APP_URL,
+  CLIENT_SLUG,
+  APP_SUPPORT_EMAIL,
+  APP_SUPPORT_PHONE,
+  APP_DEFAULT_LANGUAGE,
+  APP_LOCALE,
+  APP_CURRENCY,
+  APP_CURRENCY_SYMBOL,
+  APP_TIMEZONE,
+  APP_LOGO_URL,
+  APP_ICON_192_URL,
+  APP_ICON_512_URL,
+  APP_ICON_MASKABLE_URL,
+  APP_APPLE_ICON_URL,
+  APP_FAVICON_URL,
+  APP_PRIMARY_COLOR,
+  APP_ACCENT_COLOR,
+  APP_THEME_COLOR,
+  APP_BACKGROUND_COLOR
 };

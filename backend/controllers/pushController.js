@@ -4,6 +4,7 @@
 
 const db = require("../database/db");
 const pushService = require("../services/pushService");
+const config = require("../config");
 
 exports.subscribe = async (req, res) => {
   const token = String(req.body.token || "").trim();
@@ -58,7 +59,7 @@ exports.test = async (req, res) => {
     : "/locataire.html#messages";
 
   const envoyes = await pushService.sendToUser(req.user.id, {
-    title: "Location App",
+    title: config.APP_NAME || "Location App",
     body: "Les notifications fonctionnent. Vous recevrez désormais les nouveautés ici.",
     url: destination,
     tag: "test-notification",

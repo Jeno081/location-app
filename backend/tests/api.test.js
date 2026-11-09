@@ -14,6 +14,21 @@ const DATE_DEBUT_TEST = TODAY.toISOString().slice(0, 10);
 const DATE_FIN_TEST = new Date(TODAY.getFullYear() + 1, TODAY.getMonth(), TODAY.getDate())
   .toISOString().slice(0, 10);
 
+function cleMois(decalage = 0) {
+  const date = new Date(TODAY.getFullYear(), TODAY.getMonth() + decalage, 1);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+const MOIS_ACTUEL = cleMois(0);
+const MOIS_SUIVANT = cleMois(1);
+const MOIS_SUIVANT_2 = cleMois(2);
+const MOIS_REFUS = cleMois(3);
+const MOIS_LABEL_ACTUEL = new Date(TODAY.getFullYear(), TODAY.getMonth(), 1)
+  .toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+  .replace(/^./, (lettre) => lettre.toUpperCase());
+const MOIS_NUM_ACTUEL = TODAY.getMonth() + 1;
+const ANNEE_ACTUELLE = TODAY.getFullYear();
+
 const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "location-app-uploads-"));
 process.env.NODE_ENV = "test";
 process.env.UPLOAD_DIR = uploadDir;
@@ -335,7 +350,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   // Paiement avec preuve.
   const form = new FormData();
   form.append("contract_id", String(contractId));
-  form.append("mois", "2026-10");
+  form.append("mois", MOIS_ACTUEL);
   form.append("montant", "650");
   form.append("methode", "mobile_money");
   form.append("preuve", new Blob(["preuve"], { type: "image/png" }), "preuve.png");
@@ -346,14 +361,14 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
     body: form
   }));
   assert.strictEqual(r.status, 201, JSON.stringify(r.body));
-  assert.strictEqual(r.body.mois, "2026-10");
-  assert.strictEqual(r.body.mois_label, "Octobre 2026");
+  assert.strictEqual(r.body.mois, MOIS_ACTUEL);
+  assert.strictEqual(r.body.mois_label, MOIS_LABEL_ACTUEL);
   const paymentId = r.body.paymentId;
 
   // Duplicata refusé.
   const duplicate = new FormData();
   duplicate.append("contract_id", String(contractId));
-  duplicate.append("mois", "2026-10");
+  duplicate.append("mois", MOIS_ACTUEL);
   duplicate.append("montant", "650");
   duplicate.append("preuve", new Blob(["preuve"], { type: "image/png" }), "preuve.png");
   r = await asJson(await fetch(`${baseUrl}/api/payments`, {
@@ -383,7 +398,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   assert.strictEqual(Number(r.body.dashboard[0].total_paye), 650);
 
   // Le calendrier utilise la clé de mois canonique et les paiements validés.
-  r = await asJson(await fetch(`${baseUrl}/api/calendar?mois=10&annee=2026`, { headers: auth(bailleurToken) }));
+  r = await asJson(await fetch(`${baseUrl}/api/calendar?mois=${MOIS_NUM_ACTUEL}&annee=${ANNEE_ACTUELLE}`, { headers: auth(bailleurToken) }));
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.body.stats.loyers_attendus, 1);
   assert.strictEqual(r.body.stats.loyers_payes, 1);
@@ -393,7 +408,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   const multiForm = () => {
     const form = new FormData();
     form.append("contract_id", String(contractId));
-    form.append("mois", JSON.stringify(["2026-12", "2027-01"]));
+    form.append("mois", JSON.stringify([MOIS_SUIVANT, MOIS_SUIVANT_2]));
     form.append("montant", "1300");
     form.append("methode", "mobile_money");
     form.append("preuve", new Blob(["preuve"], { type: "image/png" }), "preuve.png");
@@ -447,7 +462,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   r = await asJson(await fetch(`${baseUrl}/api/payments`, {
     method: "POST",
     headers: { Authorization: `Bearer ${tenantToken}` },
-    body: paymentForm("2026-11")
+    body: paymentForm(MOIS_REFUS)
   }));
   assert.strictEqual(r.status, 201, JSON.stringify(r.body));
   const refusedPaymentId = r.body.paymentId;
@@ -482,7 +497,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   r = await asJson(await fetch(`${baseUrl}/api/payments`, {
     method: "POST",
     headers: { Authorization: `Bearer ${tenantToken}` },
-    body: paymentForm("2026-11")
+    body: paymentForm(MOIS_REFUS)
   }));
   assert.strictEqual(r.status, 201, JSON.stringify(r.body));
   const retryPaymentId = r.body.paymentId;
@@ -492,7 +507,7 @@ test("parcours complet : contrat, signature, PDF, paiement, terminaison", async 
   r = await asJson(await fetch(`${baseUrl}/api/payments`, {
     method: "POST",
     headers: { Authorization: `Bearer ${tenantToken}` },
-    body: paymentForm("2026-11")
+    body: paymentForm(MOIS_REFUS)
   }));
   assert.strictEqual(r.status, 409);
 

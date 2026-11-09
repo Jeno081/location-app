@@ -50,6 +50,13 @@ app.use("/uploads", express.static(config.UPLOAD_DIR, {
   setHeaders: (res) => res.setHeader("X-Content-Type-Options", "nosniff")
 }));
 
+// Configuration publique de l'instance (branding, devise, manifeste PWA).
+const appConfigController = require("./controllers/appConfigController");
+app.get("/api/config", appConfigController.getConfig);
+app.get("/app-config.js", appConfigController.getBootstrapScript);
+app.get("/manifest.json", appConfigController.getManifest);
+app.get("/firebase-config.js", appConfigController.getFirebaseConfig);
+
 app.use(express.static(config.FRONTEND_DIR, {
   maxAge: config.IS_PRODUCTION ? "1h" : 0,
   setHeaders: (res, filePath) => {
@@ -70,7 +77,7 @@ app.get("/api/health", async (req, res) => {
 });
 
 app.get("/api", (req, res) => {
-  res.json({ message: "API Location App opérationnelle" });
+  res.json({ message: `API ${config.APP_NAME} opérationnelle` });
 });
 
 // Limitation de la force brute sur l'authentification.

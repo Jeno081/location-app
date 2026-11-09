@@ -3,6 +3,13 @@
 // ============================================
 
 const PDFDocument = require("pdfkit");
+const config = require("../config");
+
+const APP_NAME = config.APP_NAME;
+const APP_NAME_UPPER = APP_NAME.toUpperCase();
+const APP_INITIAL = APP_NAME.charAt(0).toUpperCase() || "L";
+const APP_TAGLINE = config.APP_TAGLINE || "Gestion locative";
+const CURRENCY_SYMBOL = config.APP_CURRENCY_SYMBOL || "$";
 
 const COLORS = {
   ink: "#0f172a",
@@ -12,7 +19,7 @@ const COLORS = {
   line: "#e2e8f0",
   paper: "#ffffff",
   wash: "#f8fafc",
-  accent: "#4f46e5",
+  accent: config.APP_PRIMARY_COLOR || "#4f46e5",
   accentSoft: "#eef2ff",
   gold: "#b08a57",
   success: "#047857",
@@ -35,7 +42,7 @@ function formatDate(value) {
     return `${jour}/${mois}/${annee}`;
   }
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString("fr-FR");
+  return Number.isNaN(d.getTime()) ? String(value) : d.toLocaleDateString(config.APP_LOCALE || "fr-FR");
 }
 
 function formatMonth(value) {
@@ -46,7 +53,7 @@ function formatMonth(value) {
 
 function money(value) {
   const n = Number(value) || 0;
-  return `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`;
+  return `${n.toLocaleString(config.APP_LOCALE || "fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${CURRENCY_SYMBOL}`;
 }
 
 function createDocument(meta = {}) {
@@ -55,11 +62,11 @@ function createDocument(meta = {}) {
     margin: 50,
     bufferPages: true,
     info: {
-      Title: meta.title || "Location App",
-      Author: "Location App",
-      Subject: meta.subject || "Gestion locative",
-      Creator: "Location App",
-      Producer: "Location App"
+      Title: meta.title || APP_NAME,
+      Author: APP_NAME,
+      Subject: meta.subject || APP_TAGLINE,
+      Creator: APP_NAME,
+      Producer: APP_NAME
     }
   });
 
@@ -68,7 +75,7 @@ function createDocument(meta = {}) {
     doc.save();
     doc.rect(0, 0, width, 5).fill(COLORS.accent);
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.soft);
-    doc.text("LOCATION APP", 50, 24, { lineBreak: false, characterSpacing: 1.2 });
+    doc.text(APP_NAME_UPPER, 50, 24, { lineBreak: false, characterSpacing: 1.2 });
     doc.restore();
     doc.y = 64;
   });
@@ -86,11 +93,11 @@ function drawHeader(doc, { title, reference, date, status }) {
 
   // Marque
   doc.roundedRect(50, 22, 32, 32, 9).fill(COLORS.gold);
-  doc.font("Helvetica-Bold").fontSize(15).fillColor(COLORS.ink).text("L", 50, 29, { width: 32, align: "center", lineBreak: false });
+  doc.font("Helvetica-Bold").fontSize(15).fillColor(COLORS.ink).text(APP_INITIAL, 50, 29, { width: 32, align: "center", lineBreak: false });
   doc.font("Helvetica").fontSize(7.5).fillColor(COLORS.ink).text(".", 66, 37, { lineBreak: false });
 
-  doc.font("Helvetica-Bold").fontSize(11).fillColor("#ffffff").text("LOCATION APP", 94, 26, { lineBreak: false, characterSpacing: 0.8 });
-  doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text("Gestion locative privée", 94, 42, { lineBreak: false });
+  doc.font("Helvetica-Bold").fontSize(11).fillColor("#ffffff").text(APP_NAME_UPPER, 94, 26, { width: 220, lineBreak: false, characterSpacing: 0.8 });
+  doc.font("Helvetica").fontSize(7).fillColor("#94a3b8").text(APP_TAGLINE, 94, 42, { lineBreak: false, width: 250 });
 
   // Titre à droite
   doc.font("Helvetica").fontSize(6.6).fillColor("#94a3b8")
@@ -260,7 +267,7 @@ function drawFooters(doc, { documentLabel }) {
     doc.save();
     doc.moveTo(50, 760).lineTo(width - 50, 760).lineWidth(0.6).strokeColor(COLORS.line).stroke();
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.soft)
-      .text(`LOCATION APP  ·  ${documentLabel}`, 50, 769, { width: 300, lineBreak: false, characterSpacing: 0.6 });
+      .text(`${APP_NAME_UPPER}  ·  ${documentLabel}`, 50, 769, { width: 300, lineBreak: false, characterSpacing: 0.6 });
     doc.font("Helvetica").fontSize(7).fillColor(COLORS.soft)
       .text(`Page ${i + 1} / ${total}`, width - 150, 769, { width: 100, align: "right", lineBreak: false });
     doc.restore();

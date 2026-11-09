@@ -53,7 +53,16 @@ Ajouter ces variables d'environnement dans Render :
 | `FIREBASE_PROJECT_ID` | `project_id` du fichier JSON |
 | `FIREBASE_CLIENT_EMAIL` | `client_email` |
 | `FIREBASE_PRIVATE_KEY` | `private_key` avec les `\n` échappés |
+| `FIREBASE_WEB_API_KEY` | clé Web Firebase |
+| `FIREBASE_WEB_AUTH_DOMAIN` | `....firebaseapp.com` |
+| `FIREBASE_WEB_PROJECT_ID` | même projet |
+| `FIREBASE_WEB_STORAGE_BUCKET` | `....appspot.com` |
+| `FIREBASE_WEB_MESSAGING_SENDER_ID` | sender ID |
+| `FIREBASE_WEB_APP_ID` | app ID Web |
+| `FIREBASE_VAPID_KEY` | clé publique Web Push |
 | `APP_URL` | `https://location-app-dx4m.onrender.com` |
+
+Le fichier `/firebase-config.js` est généré depuis ces variables : ne modifiez plus le fichier statique `frontend/js/firebase-config.js` pour un nouveau client.
 
 Alternative : `FIREBASE_SERVICE_ACCOUNT_JSON` = JSON complet encodé en base64.
 

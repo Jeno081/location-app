@@ -77,7 +77,7 @@ async function envoyerAuxTokens(tokens, payload) {
   lastError = null;
   const messageBase = {
     data: {
-      title: String(payload.title || "Location App"),
+      title: String(payload.title || config.APP_NAME || "Location App"),
       body: String(payload.body || ""),
       url: String(payload.url || "/"),
       tag: String(payload.tag || "location-app"),
