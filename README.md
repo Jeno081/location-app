@@ -32,6 +32,20 @@ Le nom, le logo, les couleurs, la devise et la locale sont configurables par les
 
 Les PDF (contrats et quittances) utilisent également le nom de l'application et le symbole monétaire configurés.
 
+## Installation d'une nouvelle instance
+
+Une base sans bailleur est verrouillée : les pages redirigent vers `/install.html` et les API privées répondent `503 NOT_INSTALLED`. L'inscription publique du bailleur est désactivée en production.
+
+Créer le premier compte avec :
+
+```bash
+npm run seed
+```
+
+Variables nécessaires : `SEED_BAILLEUR_NOM`, `SEED_BAILLEUR_EMAIL`, `SEED_BAILLEUR_PASSWORD` (12 caractères minimum), `SEED_BAILLEUR_TELEPHONE` (optionnel). Le script exécute les migrations, crée le bailleur, marque `app_settings.installed_at` et est idempotent. L'option `--reset-password` remplace explicitement le mot de passe d'un bailleur existant.
+
+Une base qui possède déjà un bailleur est automatiquement marquée comme installée par la migration de backfill : une instance existante n'est jamais verrouillée.
+
 ## Stack
 
 - **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer

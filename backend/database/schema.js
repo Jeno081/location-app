@@ -239,6 +239,13 @@ const SCHEMA = [
     UNIQUE KEY uq_push_subscriptions_token (token),
     KEY idx_push_subscriptions_user (user_id),
     CONSTRAINT fk_push_subscriptions_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  `CREATE TABLE IF NOT EXISTS app_settings (
+    cle VARCHAR(100) NOT NULL,
+    valeur TEXT NULL,
+    date_maj DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (cle)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`
 ];
 

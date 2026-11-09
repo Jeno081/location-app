@@ -9,6 +9,7 @@
   "scripts": {
     "start": "npm --prefix backend start",
     "dev": "npm --prefix backend run dev",
+    "seed": "npm --prefix backend run seed",
     "test": "npm --prefix backend test",
     "db:migrate": "npm --prefix backend run db:migrate",
     "db:import-sqlite": "node scripts/import-sqlite.js"

@@ -52,10 +52,17 @@ app.use("/uploads", express.static(config.UPLOAD_DIR, {
 
 // Configuration publique de l'instance (branding, devise, manifeste PWA).
 const appConfigController = require("./controllers/appConfigController");
+const installationController = require("./controllers/installationController");
+const { apiInstallationGate, pageInstallationGate } = require("./middleware/installationMiddleware");
+
 app.get("/api/config", appConfigController.getConfig);
+app.get("/api/install/status", installationController.status);
 app.get("/app-config.js", appConfigController.getBootstrapScript);
 app.get("/manifest.json", appConfigController.getManifest);
 app.get("/firebase-config.js", appConfigController.getFirebaseConfig);
+
+// Une instance non installée affiche la page d'attente, jamais l'application.
+app.use(pageInstallationGate);
 
 app.use(express.static(config.FRONTEND_DIR, {
   maxAge: config.IS_PRODUCTION ? "1h" : 0,
@@ -79,6 +86,9 @@ app.get("/api/health", async (req, res) => {
 app.get("/api", (req, res) => {
   res.json({ message: `API ${config.APP_NAME} opérationnelle` });
 });
+
+// Toutes les routes API privées sont verrouillées avant l'installation.
+app.use("/api", apiInstallationGate);
 
 // Limitation de la force brute sur l'authentification.
 app.use("/api/auth/login", createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }));

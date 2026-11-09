@@ -114,7 +114,21 @@ async function runMigrations() {
     }
   }
 
-  // 4. Normaliser les anciens libellés de mois (« Octobre 2026 » -> « 2026-10 »).
+  // 4. État d'installation : les instances existantes qui ont déjà un bailleur
+  //    sont marquées comme installées pour ne jamais être verrouillées.
+  const bailleur = await db.get("SELECT id FROM users WHERE role = 'bailleur' LIMIT 1");
+  if (bailleur) {
+    const deja = await db.get("SELECT valeur FROM app_settings WHERE cle = 'installed_at' LIMIT 1");
+    if (!deja) {
+      await db.run(
+        "INSERT IGNORE INTO app_settings (cle, valeur) VALUES ('installed_at', ?), ('installation_source', 'backfill')",
+        [new Date().toISOString()]
+      );
+      console.log("[migrate] installation existante marquee comme installee");
+    }
+  }
+
+  // 5. Normaliser les anciens libellés de mois (« Octobre 2026 » -> « 2026-10 »).
   const paiements = await db.all("SELECT id, mois FROM payments");
   let normalises = 0;
   for (const paiement of paiements) {

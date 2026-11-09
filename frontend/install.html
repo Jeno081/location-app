@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b1220">
+  <title>Installation — Location App</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme.css">
+  <script src="/app-config.js?v=30"></script>
+  <style>
+    .install-wrap {
+      min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(circle at 50% 0%, #eef2ff 0, #f4f5fa 48%, #eef0f7 100%);
+    }
+    .install-card {
+      width: min(560px, 100%); background: #fff; border: 1px solid #e5e7eb;
+      border-radius: 24px; padding: 34px 30px; box-shadow: 0 24px 60px rgba(15,23,42,.12);
+    }
+    .install-logo { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; display: block; margin-bottom: 18px; }
+    .install-card h1 { margin: 0 0 10px; font-size: 1.5rem; color: #0f172a; }
+    .install-card p { color: #64748b; line-height: 1.6; font-size: .9rem; }
+    .install-command {
+      margin: 18px 0; padding: 14px 16px; border-radius: 12px; background: #0b1220;
+      color: #e2e8f0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .86rem;
+    }
+    .install-status { margin-top: 16px; font-size: .8rem; color: #4f46e5; font-weight: 700; }
+    .install-hint { margin-top: 14px; font-size: .72rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <main class="install-wrap">
+    <section class="install-card">
+      <img class="install-logo" id="installLogo" src="/icons/logo.png" alt="">
+      <h1 id="installTitle">Installation en cours</h1>
+      <p>
+        Cette instance de <strong id="installAppName">Location App</strong> n'est pas encore installée.
+        Le premier compte bailleur doit être créé avec le script de seed.
+      </p>
+      <div class="install-command">npm run seed</div>
+      <p>Le script lit <code>SEED_BAILLEUR_*</code> depuis les variables d'environnement. Consultez le guide de déploiement avant de l'exécuter.</p>
+      <p class="install-status" id="installStatus">En attente de l'installation…</p>
+      <p class="install-hint">Cette page se déverrouillera automatiquement une fois le seed terminé.</p>
+    </section>
+  </main>
+
+  <script src="js/app-config.js?v=30"></script>
+  <script>
+    (function () {
+      const cfg = window.APP_CONFIG || {};
+      if (cfg.appName) {
+        document.getElementById("installTitle").textContent = `Installation de ${cfg.appName}`;
+        document.getElementById("installAppName").textContent = cfg.appName;
+        document.title = `Installation — ${cfg.appName}`;
+      }
+      if (cfg.logoUrl) document.getElementById("installLogo").src = cfg.logoUrl;
+
+      async function verifier() {
+        try {
+          const response = await fetch("/api/install/status", { cache: "no-store" });
+          if (!response.ok) return;
+          const etat = await response.json();
+          if (etat.installed) {
+            window.location.replace("/login.html");
+            return;
+          }
+          document.getElementById("installStatus").textContent = "En attente du script npm run seed…";
+        } catch (err) { /* réessai */ }
+      }
+
+      verifier();
+      setInterval(verifier, 5000);
+    })();
+  </script>
+</body>
+</html>

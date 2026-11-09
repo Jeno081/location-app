@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "seed": "node scripts/seed.js",
     "dev": "nodemon server.js",
     "db:migrate": "node -e \"require('./database/migrate').runMigrations().then(() => process.exit(0)).catch((err) => { console.error(err); process.exit(1); })\"",
     "test": "node tests/api.test.js"

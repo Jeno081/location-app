@@ -99,4 +99,13 @@ services:
         sync: false
       - key: FIREBASE_VAPID_KEY
         sync: false
+      # Variables uniquement nécessaires pour exécuter `npm run seed`
+      - key: SEED_BAILLEUR_NOM
+        sync: false
+      - key: SEED_BAILLEUR_EMAIL
+        sync: false
+      - key: SEED_BAILLEUR_PASSWORD
+        sync: false
+      - key: SEED_BAILLEUR_TELEPHONE
+        sync: false
       # Les fichiers sont persistés en base MySQL : aucun disque Render requis.

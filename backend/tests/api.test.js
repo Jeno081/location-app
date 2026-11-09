@@ -105,6 +105,34 @@ test("healthcheck et compte bailleur", async () => {
   assert.strictEqual(r.status, 200);
   assert.strictEqual(r.body.status, "ok");
 
+  r = await asJson(await fetch(`${baseUrl}/api/config`));
+  assert.strictEqual(r.status, 200);
+  assert.ok(r.body.appName);
+  assert.ok(r.body.currency);
+  assert.ok(r.body.currencySymbol);
+  assert.strictEqual(JSON.stringify(r.body).includes("PRIVATE KEY"), false);
+
+  r = await asJson(await fetch(`${baseUrl}/api/install/status`));
+  assert.strictEqual(r.status, 200);
+  assert.strictEqual(r.body.installed, false);
+
+  r = await asJson(await fetch(`${baseUrl}/api/properties`, { headers: auth("invalid") }));
+  assert.strictEqual(r.status, 503);
+  assert.strictEqual(r.body.code, "NOT_INSTALLED");
+
+  const bootstrap = await fetch(`${baseUrl}/app-config.js`);
+  assert.strictEqual(bootstrap.status, 200);
+  assert.match(await bootstrap.text(), /window\.APP_CONFIG/);
+
+  const manifest = await asJson(await fetch(`${baseUrl}/manifest.json`));
+  assert.strictEqual(manifest.status, 200);
+  assert.ok(manifest.body.name);
+  assert.ok(Array.isArray(manifest.body.icons));
+
+  const firebaseConfig = await fetch(`${baseUrl}/firebase-config.js`);
+  assert.strictEqual(firebaseConfig.status, 200);
+  assert.match(await firebaseConfig.text(), /FIREBASE_CONFIG/);
+
   r = await asJson(await fetch(`${baseUrl}/api/auth/bailleur-existe`));
   assert.strictEqual(r.body.existe, false);
 
@@ -120,6 +148,9 @@ test("healthcheck et compte bailleur", async () => {
     })
   }));
   assert.strictEqual(r.status, 201, JSON.stringify(r.body));
+
+  r = await asJson(await fetch(`${baseUrl}/api/install/status`));
+  assert.strictEqual(r.body.installed, true);
 
   r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",

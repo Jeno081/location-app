@@ -5,6 +5,7 @@
 const db = require("../database/db");
 const bcrypt = require("bcryptjs");
 const { signToken } = require("../middleware/authMiddleware");
+const installationService = require("../services/installationService");
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -70,6 +71,12 @@ exports.register = async (req, res) => {
       INSERT INTO users (nom, email, mot_de_passe, telephone, role, doit_changer_mot_de_passe, cree_par_bailleur)
       VALUES (?, ?, ?, ?, 'bailleur', 0, 0)
     `, [nom, email, hashed, telephone]);
+
+    try {
+      await installationService.marquerInstallee("registration");
+    } catch (err) {
+      console.warn("[installation] marquage impossible :", err.message);
+    }
 
     res.status(201).json({
       message: "Compte créé avec succès",
