@@ -6,7 +6,7 @@ const express = require("express");
 const router = express.Router();
 const incidentController = require("../../controllers/incidentController");
 const upload = require("../../middleware/incidentUpload");
-const { persistUploads } = require("../../services/fileStore");
+const { persistPublicUploads } = require("../../services/fileStore");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 
 router.post(
@@ -14,7 +14,7 @@ router.post(
   verifyToken,
   requireRole("locataire"),
   upload.array("photos", 5),
-  persistUploads,
+  persistPublicUploads("incidents"),
   incidentController.createIncident
 );
 

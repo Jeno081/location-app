@@ -39,7 +39,8 @@ function configurationPublique() {
         && config.FIREBASE_WEB_MESSAGING_SENDER_ID
         && config.FIREBASE_WEB_APP_ID
         && config.FIREBASE_VAPID_KEY
-      )
+      ),
+      publicMediaStorage: config.PUBLIC_MEDIA_STORAGE
     }
   };
 }

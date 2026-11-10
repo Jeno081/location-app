@@ -122,6 +122,31 @@ const APP_ACCENT_COLOR = couleurEnv("APP_ACCENT_COLOR", "#14b8a6");
 const APP_THEME_COLOR = couleurEnv("APP_THEME_COLOR", "#0b1220");
 const APP_BACKGROUND_COLOR = couleurEnv("APP_BACKGROUND_COLOR", "#000000");
 
+// --- Stockage des médias publics (photos, avatars, signalements) ----------
+// Les documents sensibles et preuves de paiement restent toujours en MySQL.
+const CLOUDINARY_CLOUD_NAME = texteEnv("CLOUDINARY_CLOUD_NAME", "");
+const CLOUDINARY_API_KEY = texteEnv("CLOUDINARY_API_KEY", "");
+const CLOUDINARY_API_SECRET = texteEnv("CLOUDINARY_API_SECRET", "");
+const CLOUDINARY_FOLDER = texteEnv("CLOUDINARY_FOLDER", CLIENT_SLUG || "location-app");
+const CLOUDINARY_CONFIGURE = Boolean(
+  CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET
+);
+const PUBLIC_MEDIA_STORAGE_DEMANDE = texteEnv(
+  "PUBLIC_MEDIA_STORAGE",
+  texteEnv("STORAGE_DRIVER", "db")
+).toLowerCase();
+const PUBLIC_MEDIA_STORAGE = PUBLIC_MEDIA_STORAGE_DEMANDE === "cloudinary" && CLOUDINARY_CONFIGURE
+  ? "cloudinary"
+  : "db";
+
+if (PUBLIC_MEDIA_STORAGE_DEMANDE === "cloudinary" && !CLOUDINARY_CONFIGURE) {
+  console.warn("[config] PUBLIC_MEDIA_STORAGE=cloudinary mais les identifiants Cloudinary sont incomplets : repli sur MySQL.");
+}
+
+if (APP_TIMEZONE) {
+  process.env.TZ = APP_TIMEZONE;
+}
+
 // Chaque client possède son propre projet Firebase. Les valeurs Web sont
 // publiques ; le compte de service reste uniquement dans les variables privées.
 const FIREBASE_WEB_API_KEY = texteEnv("FIREBASE_WEB_API_KEY", "");
@@ -189,5 +214,12 @@ module.exports = {
   APP_PRIMARY_COLOR,
   APP_ACCENT_COLOR,
   APP_THEME_COLOR,
-  APP_BACKGROUND_COLOR
+  APP_BACKGROUND_COLOR,
+  PUBLIC_MEDIA_STORAGE,
+  PUBLIC_MEDIA_STORAGE_DEMANDE,
+  CLOUDINARY_CLOUD_NAME,
+  CLOUDINARY_API_KEY,
+  CLOUDINARY_API_SECRET,
+  CLOUDINARY_FOLDER,
+  CLOUDINARY_CONFIGURE
 };

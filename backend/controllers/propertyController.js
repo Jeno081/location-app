@@ -4,6 +4,8 @@
 
 const db = require("../database/db");
 const { resolveStoredPath } = require("../utils/files");
+const { estUrlCloudinary } = require("../services/storage/cloudinaryDriver");
+const { deleteStoredFiles } = require("../services/fileStore");
 
 const STATUTS = ["disponible", "loue", "archive"];
 
@@ -19,7 +21,7 @@ async function filtrerPhotos(properties) {
     try { photos = JSON.parse(property.photos); } catch (err) { photos = []; }
     if (!Array.isArray(photos)) photos = [];
     property.photos = JSON.stringify(
-      photos.filter((photo) => enBase.has(photo) || Boolean(resolveStoredPath(photo)))
+      photos.filter((photo) => enBase.has(photo) || Boolean(resolveStoredPath(photo)) || estUrlCloudinary(photo))
     );
   }
   return properties;
@@ -134,6 +136,11 @@ exports.deleteProperty = async (req, res) => {
   }
 
   await db.run("DELETE FROM properties WHERE id = ?", [property.id]);
+
+  let photos = [];
+  try { photos = property.photos ? JSON.parse(property.photos) : []; } catch (err) { photos = []; }
+  if (Array.isArray(photos) && photos.length > 0) await deleteStoredFiles(photos);
+
   res.json({ message: "Logement supprimé avec succès" });
 };
 

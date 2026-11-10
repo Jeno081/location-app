@@ -9,11 +9,13 @@
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { Readable } = require("stream");
 const { execFile } = require("child_process");
 const util = require("util");
 const sharp = require("sharp");
 const db = require("../database/db");
 const config = require("../config");
+const cloudinaryDriver = require("./storage/cloudinaryDriver");
 
 const execFileAsync = util.promisify(execFile);
 
@@ -102,7 +104,7 @@ async function persistFile(file) {
 
 // Convertit à la demande une ancienne vidéo (souvent .mov) déjà stockée.
 async function ensurePlayableVideo(stored) {
-  if (!stored) return stored;
+  if (!stored || cloudinaryDriver.estUrlCloudinary(stored)) return stored;
   let row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
 
   // Ancien enregistrement pointant encore vers le .mov alors que le MP4 converti existe.
@@ -161,6 +163,51 @@ async function persistUploads(req, res, next) {
   }
 }
 
+function fichiersRequete(req) {
+  const files = [];
+  if (req.file) files.push(req.file);
+  if (Array.isArray(req.files)) files.push(...req.files);
+  else if (req.files && typeof req.files === "object") {
+    for (const values of Object.values(req.files)) files.push(...values);
+  }
+  return files;
+}
+
+// Enregistre un média public (photo de logement, avatar, signalement) :
+// Cloudinary si activé, sinon MySQL. Les documents privés ne passent jamais ici.
+async function persistPublicFile(file, category) {
+  if (!file || !file.path) return null;
+
+  if (config.PUBLIC_MEDIA_STORAGE === "cloudinary" && cloudinaryDriver.estConfigure()) {
+    try {
+      const resultat = await cloudinaryDriver.envoyerFichier(file, category);
+      await fs.promises.unlink(file.path).catch(() => {});
+      return resultat.secure_url;
+    } catch (err) {
+      await fs.promises.unlink(file.path).catch(() => {});
+      throw err;
+    }
+  }
+
+  return persistFile(file);
+}
+
+function persistPublicUploads(category) {
+  return async function (req, res, next) {
+    const dejaStockes = [];
+    try {
+      for (const file of fichiersRequete(req)) {
+        file.storedPath = await persistPublicFile(file, category);
+        if (file.storedPath) dejaStockes.push(file.storedPath);
+      }
+      next();
+    } catch (err) {
+      await deleteStoredFiles(dejaStockes);
+      next(err);
+    }
+  };
+}
+
 function safeStoredPath(stored) {
   if (!stored || typeof stored !== "string") return null;
   if (!stored.startsWith("/uploads/")) return null;
@@ -172,6 +219,27 @@ function safeStoredPath(stored) {
 // Envoie un fichier stocké (base d'abord, disque local ensuite).
 async function sendStoredFile(res, stored, options = {}) {
   if (!stored) return false;
+  if (cloudinaryDriver.estUrlCloudinary(stored)) {
+    // Proxy authentifié : évite les problèmes CORS et ne révèle pas l'URL
+    // Cloudinary au navigateur pour les médias de signalement.
+    try {
+      const reponse = await fetch(stored, { signal: AbortSignal.timeout(45000) });
+      if (!reponse.ok || !reponse.body) return false;
+      res.status(200);
+      res.setHeader("Content-Type", reponse.headers.get("content-type") || "application/octet-stream");
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      if (options.download) {
+        res.setHeader("Content-Disposition", `attachment; filename="${options.download}"`);
+      } else if (options.inlineName) {
+        res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(options.inlineName)}"`);
+      }
+      Readable.fromWeb(reponse.body).pipe(res);
+      return true;
+    } catch (err) {
+      console.warn("[cloudinary] proxy impossible :", err.message);
+      return false;
+    }
+  }
   const row = await db.get("SELECT mime, donnees FROM files WHERE path = ?", [stored]);
   if (row) {
     res.setHeader("Content-Type", row.mime);
@@ -205,6 +273,10 @@ async function deleteStoredFiles(paths) {
   for (const stored of paths) {
     if (!stored || typeof stored !== "string") continue;
     try {
+      if (cloudinaryDriver.estUrlCloudinary(stored)) {
+        await cloudinaryDriver.supprimerFichier(stored);
+        continue;
+      }
       await db.run("DELETE FROM files WHERE path = ?", [stored]);
       const absolute = safeStoredPath(stored);
       if (absolute && fs.existsSync(absolute)) fs.unlinkSync(absolute);
@@ -226,6 +298,8 @@ async function persistLocalFile(absolutePath, mime) {
 
 module.exports = {
   persistUploads,
+  persistPublicUploads,
+  persistPublicFile,
   persistFile,
   persistLocalFile,
   sendStoredFile,

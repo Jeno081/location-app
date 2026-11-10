@@ -31,6 +31,7 @@ const ANNEE_ACTUELLE = TODAY.getFullYear();
 
 const uploadDir = fs.mkdtempSync(path.join(os.tmpdir(), "location-app-uploads-"));
 process.env.NODE_ENV = "test";
+process.env.PUBLIC_MEDIA_STORAGE = "db";
 process.env.UPLOAD_DIR = uploadDir;
 process.env.JWT_SECRET = "test-secret-0123456789-abcdefghijklmnopqrstuvwxyz";
 process.env.PORT = "0";
@@ -110,6 +111,7 @@ test("healthcheck et compte bailleur", async () => {
   assert.ok(r.body.appName);
   assert.ok(r.body.currency);
   assert.ok(r.body.currencySymbol);
+  assert.ok(["db", "cloudinary"].includes(r.body.features.publicMediaStorage));
   assert.strictEqual(JSON.stringify(r.body).includes("PRIVATE KEY"), false);
 
   r = await asJson(await fetch(`${baseUrl}/api/install/status`));
@@ -813,8 +815,7 @@ test("reinitialisation du mot de passe bailleur", async () => {
   assert.strictEqual(r.status, 404);
 });
 
-test("abonnements aux notifications push", async () => {
-  let r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
+test("abonnements aux notifications push", async () => {  let r = await asJson(await fetch(`${baseUrl}/api/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email: "bailleur@test.com", mot_de_passe: "Secret123" })
@@ -843,4 +844,17 @@ test("abonnements aux notifications push", async () => {
     body: JSON.stringify({ token: fakeToken })
   }));
   assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+});
+
+test("analyse des URL Cloudinary", () => {
+  const { analyserUrl, estUrlCloudinary } = require("../services/storage/cloudinaryDriver");
+  const asset = analyserUrl("https://res.cloudinary.com/demo/image/upload/v123456/properties/photo.webp");
+  assert.deepStrictEqual(asset, {
+    publicId: "properties/photo",
+    resourceType: "image",
+    deliveryType: "upload",
+    format: "webp"
+  });
+  assert.strictEqual(estUrlCloudinary("https://res.cloudinary.com/demo/video/upload/v1/clients/incident.mp4"), true);
+  assert.strictEqual(estUrlCloudinary("/uploads/photo.jpg"), false);
 });

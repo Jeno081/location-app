@@ -77,7 +77,11 @@ app.use(express.static(config.FRONTEND_DIR, {
 app.get("/api/health", async (req, res) => {
   try {
     await db.query("SELECT 1");
-    res.json({ status: "ok", version: require("./package.json").version });
+    res.json({
+      status: "ok",
+      version: require("./package.json").version,
+      storage: config.PUBLIC_MEDIA_STORAGE
+    });
   } catch (err) {
     res.status(503).json({ status: "error" });
   }

@@ -4,6 +4,7 @@
 
 const db = require("../database/db");
 const bcrypt = require("bcryptjs");
+const { deleteStoredFiles } = require("../services/fileStore");
 const { signToken } = require("../middleware/authMiddleware");
 const { deleteTenantAccount } = require("../services/tenantService");
 
@@ -135,8 +136,12 @@ exports.updateProfil = async (req, res) => {
 
 exports.uploadPhotoProfil = async (req, res) => {
   if (!req.file) return res.status(400).json({ message: "Aucune photo envoyée" });
-  const chemin = `/uploads/avatars/${req.file.filename}`;
+  const chemin = req.file.storedPath || `/uploads/avatars/${req.file.filename}`;
+  const ancien = await db.get("SELECT photo_profil FROM users WHERE id = ?", [req.user.id]);
   await db.run("UPDATE users SET photo_profil = ? WHERE id = ?", [chemin, req.user.id]);
+  if (ancien && ancien.photo_profil && ancien.photo_profil !== chemin) {
+    await deleteStoredFiles([ancien.photo_profil]);
+  }
   res.json({ message: "Photo mise à jour", photo_profil: chemin });
 };
 

@@ -78,6 +78,17 @@ services:
         sync: false
       - key: APP_FAVICON_URL
         sync: false
+      # Médias publics : MySQL par défaut, Cloudinary si activé
+      - key: PUBLIC_MEDIA_STORAGE
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: CLOUDINARY_FOLDER
+        sync: false
       # Firebase Admin (privé) et Firebase Web (public) par client
       - key: FIREBASE_PROJECT_ID
         sync: false

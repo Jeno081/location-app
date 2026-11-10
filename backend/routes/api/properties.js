@@ -7,7 +7,7 @@ const router = express.Router();
 const propertyController = require("../../controllers/propertyController");
 const { verifyToken, requireRole } = require("../../middleware/authMiddleware");
 const upload = require("../../middleware/uploadMiddleware");
-const { persistUploads } = require("../../services/fileStore");
+const { persistPublicUploads } = require("../../services/fileStore");
 
 // --- Routes PUBLIQUES ---
 router.get("/", propertyController.getAllProperties);
@@ -57,7 +57,7 @@ router.post(
   verifyToken,
   requireRole("bailleur"),
   upload.array("photos", 5),
-  persistUploads,
+  persistPublicUploads("properties"),
   async (req, res) => {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "Aucune photo envoyee" });
@@ -71,7 +71,7 @@ router.post(
     if (!property) return res.status(404).json({ message: "Logement introuvable" });
     if (property.bailleur_id !== bailleur_id) return res.status(403).json({ message: "Non autorise" });
 
-    const newPhotos = req.files.map(f => `/uploads/${f.filename}`);
+    const newPhotos = req.files.map((f) => f.storedPath).filter(Boolean);
     const existing = property.photos ? JSON.parse(property.photos) : [];
     const allPhotos = [...existing, ...newPhotos];
 

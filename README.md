@@ -46,11 +46,19 @@ Variables nécessaires : `SEED_BAILLEUR_NOM`, `SEED_BAILLEUR_EMAIL`, `SEED_BAILL
 
 Une base qui possède déjà un bailleur est automatiquement marquée comme installée par la migration de backfill : une instance existante n'est jamais verrouillée.
 
+## Stockage des médias
+
+- `PUBLIC_MEDIA_STORAGE=db` : photos de logement, avatars et signalements restent dans MySQL (comportement historique).
+- `PUBLIC_MEDIA_STORAGE=cloudinary` : ces médias publics vont sur Cloudinary, dans `CLOUDINARY_FOLDER/<catégorie>`.
+- Les documents d'identité et preuves de paiement restent **toujours** dans MySQL, quel que soit le réglage.
+
+Variables Cloudinary : `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `CLOUDINARY_FOLDER`. Le secret ne doit jamais être exposé au frontend.
+
 ## Stack
 
-- **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer
+- **Backend** : Node.js, Express 5, mysql2, JWT, bcrypt, PDFKit, Multer, Cloudinary
 - **Frontend** : HTML / CSS / JavaScript vanilla, Chart.js, Lucide
-- **Base** : MySQL 8 (Clever Cloud) — pool de connexions, clés étrangères et contraintes d'unicité. Les fichiers envoyés sont stockés dans la table `files`.
+- **Base** : MySQL 8 (Clever Cloud) — pool de connexions, clés étrangères et contraintes d'unicité. Les fichiers privés sont stockés dans la table `files` ; les médias publics peuvent aller sur Cloudinary.
 
 ## Démarrage
 
