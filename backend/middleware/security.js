@@ -17,8 +17,8 @@ function securityHeaders(req, res, next) {
       "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob:",
-      "media-src 'self' blob:",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://*.cloudinary.com",
+      "media-src 'self' blob: https://res.cloudinary.com https://*.cloudinary.com",
       "connect-src 'self' blob: https://*.googleapis.com https://*.google.com",
       "worker-src 'self' blob: https://cdn.jsdelivr.net",
       "object-src 'none'",
@@ -94,6 +94,24 @@ function errorHandler(err, req, res, next) {
   }
   if (err.code === "ER_CHECK_CONSTRAINT_VIOLATED") {
     return res.status(400).json({ message: "Valeur invalide." });
+  }
+
+  const erreursBase = new Set([
+    "ECONNREFUSED",
+    "ETIMEDOUT",
+    "EHOSTUNREACH",
+    "ENETUNREACH",
+    "PROTOCOL_CONNECTION_LOST",
+    "ER_CON_COUNT_ERROR",
+    "ER_ACCESS_DENIED_ERROR",
+    "POOL_CLOSED"
+  ]);
+  if (erreursBase.has(err.code)) {
+    console.error("[db]", req.method, req.originalUrl, err.code, err.message);
+    return res.status(503).json({
+      message: "Base de données temporairement indisponible. Réessayez dans quelques instants.",
+      code: "DATABASE_UNAVAILABLE"
+    });
   }
 
   const status = Number(err.status) || 500;

@@ -15,6 +15,7 @@ const poolOptions = {
   waitForConnections: true,
   connectionLimit: config.DB_POOL_SIZE,
   queueLimit: 0,
+  connectTimeout: 10000,
   charset: "utf8mb4",
   // Les DATETIME sont renvoyés sous forme de chaînes "AAAA-MM-JJ HH:MM:SS",
   // comme avant avec SQLite : le frontend les parse sans conversion de fuseau.

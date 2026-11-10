@@ -2,7 +2,7 @@
 // sw.js — Service Worker de Location App
 // ============================================
 
-const CACHE_VERSION = "location-app-v30";
+const CACHE_VERSION = "location-app-v31";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const OFFLINE_URL = "/offline.html";
@@ -20,37 +20,37 @@ const PRECACHE = [
   OFFLINE_URL,
   "/install.html",
   "/manifest.json",
-  "/app-config.js?v=30",
-  "/firebase-config.js?v=30",
-  "/js/app-config.js?v=30",
+  "/app-config.js?v=31",
+  "/firebase-config.js?v=31",
+  "/js/app-config.js?v=31",
   "/css/style.css",
   "/css/animations.css",
-  "/css/theme.css?v=30",
-  "/js/icons.js?v=30",
-  "/js/ui.js?v=30",
-  "/js/onboarding.js?v=30",
+  "/css/theme.css?v=31",
+  "/js/icons.js?v=31",
+  "/js/ui.js?v=31",
+  "/js/onboarding.js?v=31",
   "/js/animations.js",
   "/js/notifications.js?v=6",
   "/js/charts.js",
   "/js/calendar.js",
-  "/js/navbar.js?v=30",
-  "/js/bailleur.js?v=30",
-  "/js/chat.js?v=30",
-  "/js/i18n.js?v=30",
-  "/js/login.js?v=30",
+  "/js/navbar.js?v=31",
+  "/js/bailleur.js?v=31",
+  "/js/chat.js?v=31",
+  "/js/i18n.js?v=31",
+  "/js/login.js?v=31",
   "/js/index.js",
-  "/js/locataire.js?v=30",
-  "/js/profil.js?v=30",
-  "/js/changer-mot-de-passe.js?v=30",
-  "/js/pwa.js?v=30",
-  "/js/pullToRefresh.js?v=30",
-  "/js/push.js?v=30",
-  "/vendor/firebase-app-compat.js?v=30",
-  "/vendor/firebase-messaging-compat.js?v=30",
-  "/vendor/lucide.min.js?v=30",
-  "/vendor/chart.umd.min.js?v=30",
-  "/vendor/pdf.min.js?v=30",
-  "/vendor/pdf.worker.min.js?v=30",
+  "/js/locataire.js?v=31",
+  "/js/profil.js?v=31",
+  "/js/changer-mot-de-passe.js?v=31",
+  "/js/pwa.js?v=31",
+  "/js/pullToRefresh.js?v=31",
+  "/js/push.js?v=31",
+  "/vendor/firebase-app-compat.js?v=31",
+  "/vendor/firebase-messaging-compat.js?v=31",
+  "/vendor/lucide.min.js?v=31",
+  "/vendor/chart.umd.min.js?v=31",
+  "/vendor/pdf.min.js?v=31",
+  "/vendor/pdf.worker.min.js?v=31",
   "/assets/hero-bg.jpeg",
   "/icons/logo.png",
   "/icons/icon-192.png",
@@ -117,6 +117,25 @@ self.addEventListener("fetch", (event) => {
             || (await caches.match(OFFLINE_URL))
             || new Response("Hors ligne", { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } });
         })
+    );
+    return;
+  }
+
+  // La configuration et le manifeste peuvent changer sans nouvelle version du
+  // Service Worker (nom, logo, couleurs, Firebase) : réseau d'abord.
+  if (url.pathname === "/app-config.js"
+    || url.pathname === "/firebase-config.js"
+    || url.pathname === "/manifest.json") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (isCacheable(response)) {
+            const copie = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copie));
+          }
+          return response;
+        })
+        .catch(async () => (await caches.match(request)) || new Response("", { status: 504 }))
     );
     return;
   }
