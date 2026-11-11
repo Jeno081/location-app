@@ -81,9 +81,9 @@ npm start
 # → http://localhost:3000
 ```
 
-Le premier écran permet de créer le **compte bailleur unique**. Les comptes locataires sont ensuite créés par le bailleur lors de la création d'un contrat (mot de passe temporaire à changer à la première connexion).
+En production, le compte bailleur est créé par `npm run seed` ; l'inscription publique est désactivée. En développement/test, l'inscription initiale reste disponible.
 
-Le déploiement Render + Clever Cloud est décrit pas à pas dans [DEPLOYMENT.md](DEPLOYMENT.md).
+Le déploiement d'une nouvelle instance cliente est décrit pas à pas dans [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md). L'ancien guide mono-instance reste dans [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Windows — lancement en un clic
 
